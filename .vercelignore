@@ -1,0 +1,11 @@
+preview*.log
+preview*.png
+prepare-assets.cjs
+Iniciar.ps1
+LEIA-ME.txt
+server.mjs
+conteudos/
+
+unreal/
+.git/
+.env*

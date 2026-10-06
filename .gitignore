@@ -1,0 +1,12 @@
+node_modules/
+preview*.log
+preview*.png
+.vercel/
+.env*
+
+# Materiais de produção locais, separados da landing
+conteudos/
+unreal/
+prepare-assets.cjs
+*.blend
+*.blend1

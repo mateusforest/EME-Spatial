@@ -1,0 +1,20 @@
+EME SPATIAL — landing independente
+
+Página inicial: /
+Jornada de criação: /criar-projeto
+
+Para iniciar, com Node.js 18 ou superior instalado:
+  npm start
+Abrir http://127.0.0.1:4195
+Não é necessário instalar dependências para rodar o site.
+
+Arquivos editáveis: index.html, style.css, app.js.
+As imagens otimizadas estão em assets. prepare-assets.cjs é apenas o registro da preparação inicial, e depende dos arquivos locais de origem; não é necessário para rodar ou publicar.
+
+As experiências 3D são abertas no EME Select. Elas não são carregadas em segundo plano pela landing.
+O briefing fica no localStorage deste navegador e pode ser baixado em texto. Nenhum dado é enviado a um servidor. Formulário comercial e recebimento de anexos ainda não têm serviço conectado.
+
+O projeto não altera o site EME Select. Publicação e ligação do domínio emespatial.com ainda não realizadas.
+Para hospedagem estática, servir index.html tanto em / quanto em /criar-projeto.
+
+Imagens: Torre M criada para esta proposta a partir da referência fornecida. Símbolo S e referências de interiores fornecidos pelo usuário. G400 e Moradas da Serra reutilizam as imagens do projeto EME Select existente, para corresponder aos destinos reais dos links.
