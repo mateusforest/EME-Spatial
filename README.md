@@ -26,7 +26,7 @@ Abra http://127.0.0.1:4195. `npm run build` verifica TypeScript e gera `dist/`. 
 
 ## Hospedagem e integração
 
-Vercel compila com Vite e publica `dist/`. O domínio personalizado será configurado separadamente. As experiências e seus modelos são servidos pelo próprio EME Spatial. Somente a consulta pública de disponibilidade do Moradas da Serra usa uma reescrita específica para o EME Select; o portal e os bancos permanecem no Select.
+Vercel compila com Vite e publica `dist/`. Endereço de produção: https://www.emespatial.com. As experiências e seus modelos são servidos pelo próprio EME Spatial. Somente a consulta pública de disponibilidade do Moradas da Serra usa uma reescrita específica para o EME Select; o portal e os bancos permanecem no Select.
 
 Rotas de drone e rascunhos ficam no armazenamento deste domínio. Dados previamente salvos no navegador em emeselect.com não são transferidos automaticamente. Vídeos podem ser baixados na própria sessão. O serviço opcional de gravação em disco do ambiente local não está hospedado na Vercel.
 
