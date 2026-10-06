@@ -10,3 +10,6 @@ unreal/
 prepare-assets.cjs
 *.blend
 *.blend1
+
+dist/
+*.tsbuildinfo

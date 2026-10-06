@@ -1,0 +1,44 @@
+[
+  {
+    "asset": "oak_veneer_01",
+    "map": "Diffuse",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/oak_veneer_01/oak_veneer_01_diff_2k.jpg",
+    "md5": "0ad13b8daf8dc00318a437f56e54c484",
+    "file": "oak_veneer_01_diff_2k.jpg"
+  },
+  {
+    "asset": "oak_veneer_01",
+    "map": "Rough",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/oak_veneer_01/oak_veneer_01_rough_2k.jpg",
+    "md5": "cacab0148320161ceced18ae909e3ada",
+    "file": "oak_veneer_01_rough_2k.jpg"
+  },
+  {
+    "asset": "oak_veneer_01",
+    "map": "nor_gl",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/oak_veneer_01/oak_veneer_01_nor_gl_2k.jpg",
+    "md5": "a6b8dd99a4407aa5dd24d5eee25492d3",
+    "file": "oak_veneer_01_nor_gl_2k.jpg"
+  },
+  {
+    "asset": "marble_01",
+    "map": "Diffuse",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/marble_01/marble_01_diff_2k.jpg",
+    "md5": "4eeefea16242cecb3b429ac0c8f88740",
+    "file": "marble_01_diff_2k.jpg"
+  },
+  {
+    "asset": "marble_01",
+    "map": "Rough",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/marble_01/marble_01_rough_2k.jpg",
+    "md5": "c4cf0375d84277c6020bf230823efdcc",
+    "file": "marble_01_rough_2k.jpg"
+  },
+  {
+    "asset": "marble_01",
+    "map": "nor_gl",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/marble_01/marble_01_nor_gl_2k.jpg",
+    "md5": "f25efb0b61ec7ac183b3b0f4d032ed17",
+    "file": "marble_01_nor_gl_2k.jpg"
+  }
+]

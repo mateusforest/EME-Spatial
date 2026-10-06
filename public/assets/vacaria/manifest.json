@@ -1,0 +1,98 @@
+[
+  {
+    "id": "fachadas",
+    "source": "03-Referencias/02-Fachadas-Platibanda.png",
+    "output": "public/assets/vacaria/fachadas.webp",
+    "format": "webp",
+    "width": 1672,
+    "height": 941,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 361546
+  },
+  {
+    "id": "entrada",
+    "source": "03-Referencias/01-Entrada-Sem-Casas.png",
+    "output": "public/assets/vacaria/entrada.webp",
+    "format": "webp",
+    "width": 1536,
+    "height": 1024,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 319370
+  },
+  {
+    "id": "sala-cozinha",
+    "source": "03-Referencias/03-Sala-Cozinha.png",
+    "output": "public/assets/vacaria/sala-cozinha.webp",
+    "format": "webp",
+    "width": 1536,
+    "height": 1024,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 168926
+  },
+  {
+    "id": "quarto",
+    "source": "03-Referencias/04-Quarto-Casal.png",
+    "output": "public/assets/vacaria/quarto.webp",
+    "format": "webp",
+    "width": 1536,
+    "height": 1024,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 144680
+  },
+  {
+    "id": "lazer",
+    "source": "03-Referencias/05-Lazer.png",
+    "output": "public/assets/vacaria/lazer.webp",
+    "format": "webp",
+    "width": 1536,
+    "height": 1024,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 463864
+  },
+  {
+    "id": "planta",
+    "source": "02-Base/01-Planta-Base-45m2.png",
+    "output": "public/assets/vacaria/planta.webp",
+    "format": "webp",
+    "width": 2400,
+    "height": 1835,
+    "channels": 4,
+    "premultiplied": true,
+    "hasAlpha": true,
+    "size": 242004
+  },
+  {
+    "id": "implantacao",
+    "source": "02-Base/03-Implantacao-Ultima-Referencia.png",
+    "output": "public/assets/vacaria/implantacao.webp",
+    "format": "webp",
+    "width": 1024,
+    "height": 1536,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 348404
+  },
+  {
+    "id": "terreno",
+    "source": "02-Base/02-Terreno-Demarcacao-Original.jpeg",
+    "output": "public/assets/vacaria/terreno.webp",
+    "format": "webp",
+    "width": 738,
+    "height": 1600,
+    "channels": 3,
+    "premultiplied": false,
+    "hasAlpha": false,
+    "size": 155668
+  }
+]

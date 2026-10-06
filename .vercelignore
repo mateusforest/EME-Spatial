@@ -9,3 +9,10 @@ conteudos/
 unreal/
 .git/
 .env*
+
+node_modules/
+dist/
+*.tsbuildinfo
+/assets/
+server.mjs
+

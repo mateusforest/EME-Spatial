@@ -1,9 +1,10 @@
 {
-  "framework": null,
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "rewrites": [
-    {"source":"/criar-projeto","destination":"/index.html"},
-    {"source":"/criar-projeto/","destination":"/index.html"}
-  ]
+ "framework":"vite","buildCommand":"npm run build","outputDirectory":"dist",
+ "redirects":[{"source":"/spatial","destination":"/","permanent":false}],
+ "rewrites":[
+ {"source":"/criar-projeto","destination":"/index.html"},
+ {"source":"/criar-projeto/","destination":"/index.html"},
+ {"source":"/apresentar/:path*","destination":"/experience.html"},
+ {"source":"/api/public/developments/moradas-da-serra","destination":"https://www.emeselect.com/api/public/developments/moradas-da-serra"}
+ ]
 }

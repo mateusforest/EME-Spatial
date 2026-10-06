@@ -6,4 +6,4 @@ if (-not $spatialNode) {
 }
 if (-not (Test-Path -LiteralPath $spatialNode)) { throw 'Instale o Node.js 18 ou superior para iniciar o site.' }
 Write-Host 'EME Spatial: http://127.0.0.1:4195'
-& $spatialNode server.mjs
+& $spatialNode node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4195

@@ -1,0 +1,39 @@
+{
+  "source": "M-exterior-v03.blend",
+  "file": "m-exterior-v03.glb",
+  "bytes": 2836560,
+  "objects": 2968,
+  "foliage_reduction": [
+    {
+      "mesh": "mesh.002",
+      "before": 353477,
+      "after": 78569
+    },
+    {
+      "mesh": "Shared botanical geometry 10",
+      "before": 9516,
+      "after": 2916
+    },
+    {
+      "mesh": "Shared botanical geometry 11",
+      "before": 9516,
+      "after": 2926
+    },
+    {
+      "mesh": "Shared botanical geometry 12",
+      "before": 9516,
+      "after": 2943
+    },
+    {
+      "mesh": "Shared botanical geometry 30",
+      "before": 20076,
+      "after": 6547
+    },
+    {
+      "mesh": "Shared botanical geometry 32",
+      "before": 20076,
+      "after": 6545
+    }
+  ],
+  "credits": "Poly Haven CC0: island_tree_02, shrub_02, fern_02; optimized for browser."
+}

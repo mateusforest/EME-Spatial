@@ -1,0 +1,18 @@
+{
+  "source": "Poly Haven shrub_02 CC0, original LOD2 a/c",
+  "meshes": [
+    {
+      "name": "shrub_02_c_LOD2",
+      "triangles": 2824,
+      "vertices": 2419
+    },
+    {
+      "name": "shrub_02_a_LOD2",
+      "triangles": 2335,
+      "vertices": 1935
+    }
+  ],
+  "bytes": 368096,
+  "building_loaded": false,
+  "renders": 0
+}
