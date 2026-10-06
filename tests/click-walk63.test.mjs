@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {walkingPath63} from '../src/developments/mClickWalk63.ts';
+import {canStand} from '../src/developments/mWalking.ts';
+const bounds={minX:-5,maxX:5,minZ:-5,maxZ:5};
+const obstacle={minX:-.7,maxX:.7,minZ:-1,maxZ:1};
+const s={obstacles:[obstacle],bounds},start={x:-3,z:0},end={x:3,z:0};const path=walkingPath63(start,end,s);assert.ok(path.length>1);let from=start;for(const to of path){for(let i=0;i<=100;i++){const t=i/100;assert.ok(canStand({x:from.x+(to.x-from.x)*t,z:from.z+(to.z-from.z)*t},s.obstacles,bounds),'route crossed furniture');}from=to;}assert.deepEqual(path.at(-1),end);
+assert.deepEqual(walkingPath63(start,{x:0,z:0},s),[]);
+assert.deepEqual(walkingPath63(start,end,{...s,obstacles:[{minX:-.1,maxX:.1,minZ:-5,maxZ:5}]}),[]);
+assert.equal(walkingPath63({x:-3,z:3},{x:3,z:3},s).length,1);
+assert.deepEqual(walkingPath63(start,{x:6,z:0},s),[]);
+console.log('PASS: direct path, furniture detour, blocked target, closed wall, boundary');
+const excluded={obstacles:[],bounds,exclusions:[[{x:-.7,z:-1},{x:.7,z:-1},{x:.7,z:1},{x:-.7,z:1}]]};
+assert.ok(walkingPath63(start,end,excluded).length>1,'should go around excluded pool/void');
+assert.deepEqual(walkingPath63(start,end,{obstacles:[],bounds,areas:[{minX:-5,maxX:-1,minZ:-5,maxZ:5},{minX:1,maxX:5,minZ:-5,maxZ:5}]}),[],'cannot cross gap between walkable areas');
+console.log('PASS: exclusion polygon and disconnected walkable areas');

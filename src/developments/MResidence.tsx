@@ -17,7 +17,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildMExterior } from './mPublishedExterior';
 import { buildMInterior, PILOT_FLOOR, EYE_HEIGHT } from './mInterior';
 import { buildMLandscape } from './mLandscape';
-import { walkStep } from './mWalking';
+import { walkStep, type WalkPoint } from './mWalking';
+import {walkingPath63,type WalkSpace63} from './mClickWalk63';
 import { M_LEVELS, M_STEP, unitForFloor, unitFloorLabel, areaLabel, type MUnit } from './mUnits';
 import {M_SITE,M_SITE_VIEWS,mViewDirection,type MDestination} from './mSiteLayout';
 import MSiteGuide from './MSiteGuide';
@@ -35,6 +36,7 @@ export default function MResidence(){
  const host=useRef<HTMLDivElement>(null),api=useRef<ExperienceApi|undefined>(undefined);
  const droneApi=useRef<DroneStudio56|undefined>(undefined),[droneState,setDroneState]=useState<DroneState56|null>(null);
  const marker=useRef<HTMLButtonElement>(null);
+ const clickEnabled=useRef(true),[clickWalk,setClickWalk]=useState(true),[walkMessage,setWalkMessage]=useState('Clique no piso para caminhar.');
  const [tower,setTower]=useState<'m'|'b'>('m'),[commonWalk,setCommonWalk]=useState(false),[scanFloor,setScanFloor]=useState(8),[journey,setJourney]=useState(false),[cardOpen,setCardOpen]=useState(false);
  const [room,setRoom]=useState<string|null>(null),[rooms,setRooms]=useState<string[]>([]);
  const [ready,setReady]=useState(false),[error,setError]=useState(false),[place,setPlace]=useState<Destination>('Edifício');
@@ -86,7 +88,7 @@ export default function MResidence(){
   exterior.ready.then(async()=>{if(!disposed){commonFinish53(scene,own,exterior.surfaces,landscape.deckY);promenade=promenade54(scene,own,exterior.surfaces);lightRig=lightRig53(scene,crown);const detailedCars=await garageAssets55(scene,own,()=>disposed);if(disposed)return;mount.dataset.garageDetailedCars=String(detailedCars??0);garageFinish=garageExperience55(scene,renderer,own);parkedCars=scene.getObjectByName('Garage55 detailed vehicles');lighting=installMLighting51(scene,floors,crown,own);renderer.shadowMap.needsUpdate=true;await renderer.compileAsync(scene,camera);if(!disposed){preparing=false;setReady(true);requestRender();}}}).catch(e=>{console.error('EME scene loading',e);if(!disposed)setError(true);});
   let inside=false,yaw=0,pitch=0,desired:T.Vector3|null=null,target:T.Vector3|null=null,currentRoom:string|null=null,drone:DroneStudio56|undefined;
   const pressed=new Set<string>();let pointer:number|null=null,previousX=0,previousY=0;
-  const clearMovement=()=>{pressed.clear();pointer=null;};
+  const clearMovement=()=>{pressed.clear();pointer=null;stopClick();};
   const look=()=>{camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);};
   const highlight=own(new T.Box3Helper(new T.Box3(),0xbe9a58));highlight.visible=false;scene.add(highlight);own(highlight.geometry);own(highlight.material as T.Material);
   const hm=highlight.material as T.LineBasicMaterial;hm.transparent=true;hm.opacity=.5;
@@ -99,10 +101,27 @@ export default function MResidence(){
   let inspectedUnit:MUnit|null=null,inspectedFloor=0;
   function inspect(n:number,pinned=false){const next=currentUnit(n);inspectedUnit=next;inspectedFloor=n;setInspected(next);setScanFloor(n);cardPinned=pinned;if(pinned)setCardOpen(true);const s=towerSpec();highlight.box.set(new T.Vector3(s.x-s.width/2,s.base+(next.startFloor-1)*s.step,s.z-s.depth/2),new T.Vector3(s.x+s.width/2,s.base+next.endFloor*s.step,s.z+s.depth/2));highlight.visible=pinned;requestRender();}
   const floorAt=(e:PointerEvent)=>{const rect=canvas.getBoundingClientRect();mouse.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(mouse,camera);const hit=raycaster.intersectObjects(picks,false)[0]?.object;if(hit){selectedTower=hit.userData.tower;setTower(selectedTower);}return hit?.userData.floor as number|undefined;};
+  const clickRay=new T.Raycaster(undefined,undefined,0,40);let clickRoute:WalkPoint[]=[];let clickOrigin=new T.Vector3();let clickSpace:WalkSpace63|undefined;
+  const destinationRing=new T.Mesh(own(new T.RingGeometry(.15,.21,40)),own(new T.MeshBasicMaterial({color:'#b8dca9',side:T.DoubleSide,depthWrite:false})));destinationRing.rotation.x=-Math.PI/2;destinationRing.visible=false;scene.add(destinationRing);
+  function stopClick(message?:string){const moving=clickRoute.length>0;clickRoute=[];destinationRing.visible=false;if(message)setWalkMessage(message);else if(moving)setWalkMessage('Caminhada interrompida. Clique no piso para continuar.');}
+  function clickDestination(e:PointerEvent){
+   if(!clickEnabled.current||!inside||flight||drone?.isOpen)return;
+   const rect=canvas.getBoundingClientRect();mouse.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);clickRay.setFromCamera(mouse,camera);
+   const hit=clickRay.intersectObjects(common?scene.children:interior?[interior.group]:[],true).find(h=>{if(h.object===destinationRing||!(h.object instanceof T.Mesh))return false;for(let p:T.Object3D|null=h.object;p;p=p.parent)if(!p.visible)return false;return true;});
+   const floorY=camera.position.y-1.65;
+   if(!hit?.face||hit.distance>40||Math.abs(hit.point.y-floorY)>.22||hit.face.normal.clone().transformDirection(hit.object.matrixWorld).y<.75){stopClick('Escolha um ponto livre no piso deste pavimento.');requestRender();return;}
+   if(common){clickOrigin.set(0,0,0);clickSpace={obstacles:common.obstacles,bounds:common.bounds,areas:common.areas,exclusions:common.exclusions};}
+   else if(interior){const level=interior.levels.reduce((a,b)=>Math.abs(a.elevation-walkElevation)<Math.abs(b.elevation-walkElevation)?a:b);const origin=towerSpec();clickOrigin.set(origin.x,0,origin.z);clickSpace={obstacles:level.obstacles,bounds:level.bounds,areas:level.walkAreas};}
+   else return;
+   const from={x:camera.position.x-clickOrigin.x,z:camera.position.z-clickOrigin.z},to={x:hit.point.x-clickOrigin.x,z:hit.point.z-clickOrigin.z};
+   clickRoute=walkingPath63(from,to,clickSpace);
+   if(!clickRoute.length){stopClick('Não há passagem livre até esse ponto. Escolha outro local.');requestRender();return;}
+   destinationRing.position.set(hit.point.x,hit.point.y+.025,hit.point.z);destinationRing.visible=true;setWalkMessage('Caminhando… Arraste ou use as setas para interromper.');requestRender();
+  }
   const pickMove=(e:PointerEvent)=>{if(drone?.isOpen||inside||interior?.group.visible||dragStart||camera.position.y<0)return;const n=floorAt(e);canvas.style.cursor=n?'pointer':'grab';if(n&&!cardPinned)inspect(n);};
   const down=(e:PointerEvent)=>{if(drone?.isOpen||e.button!==0)return;dragStart={x:e.clientX,y:e.clientY};if(flight)return;if(!inside)return;canvas.focus();pointer=e.pointerId;previousX=e.clientX;previousY=e.clientY;canvas.setPointerCapture(e.pointerId);};
-  const drag=(e:PointerEvent)=>{if(drone?.isOpen||!inside||pointer!==e.pointerId)return;yaw-=(e.clientX-previousX)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-previousY)*.004,-1.1,1.1);previousX=e.clientX;previousY=e.clientY;look();requestRender();};
-  const release=(e:PointerEvent)=>{if(pointer===e.pointerId)pointer=null;if(!drone?.isOpen&&!inside&&camera.position.y>=0&&!interior?.group.visible&&dragStart&&Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)<6){const n=floorAt(e);if(n)inspect(n,true);}dragStart=null;};
+  const drag=(e:PointerEvent)=>{if(drone?.isOpen||!inside||pointer!==e.pointerId)return;if(dragStart&&Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)>6)stopClick();yaw-=(e.clientX-previousX)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-previousY)*.004,-1.1,1.1);previousX=e.clientX;previousY=e.clientY;look();requestRender();};
+  const release=(e:PointerEvent)=>{if(pointer===e.pointerId)pointer=null;if(inside&&dragStart&&Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)<6)clickDestination(e);if(!drone?.isOpen&&!inside&&camera.position.y>=0&&!interior?.group.visible&&dragStart&&Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)<6){const n=floorAt(e);if(n)inspect(n,true);}dragStart=null;};
   const cancel=()=>{pointer=null;dragStart=null;};
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',drag);canvas.addEventListener('pointermove',pickMove);canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',cancel);canvas.addEventListener('lostpointercapture',cancel);
   window.addEventListener('blur',clearMovement);document.addEventListener('visibilitychange',clearMovement);canvas.addEventListener('blur',clearMovement);
@@ -160,7 +179,7 @@ export default function MResidence(){
   };
   function scan(n:number){if(inside)return;const s=towerSpec(),next=facadeShift54(camera.position.y,controls.target.y,s.base+(n-.5)*s.step-controls.target.y,s.base,s.levels,s.step);desired=camera.position.clone();desired.y=next.eyeY;target=controls.target.clone();target.y=next.targetY;cardPinned=false;setCardOpen(false);inspect(next.floor);requestRender();}
   function walkCommon(){const view=COMMON_VISITS54[currentPlace];if(!view)return;const from=camera.position.clone(),q0=camera.quaternion.clone();exteriorControls();setRoom(null);setCommonWalk(true);common=view;inside=true;controls.enabled=false;setInspected(null);inspectedUnit=null;highlight.visible=false;setPanelOpen(false);setCardOpen(false);camera.fov=68;camera.updateProjectionMatrix();const to=new T.Vector3(...view.eye),lookAt=new T.Vector3(...view.look);camera.position.copy(to);camera.lookAt(lookAt);const e=new T.Euler().setFromQuaternion(camera.quaternion,'YXZ');yaw=e.y;pitch=e.x;controls.target.copy(lookAt);flight={from,to,q0,q1:camera.quaternion.clone(),t:0,duration:1.8};camera.position.copy(from);camera.quaternion.copy(q0);stop();setJourney(true);canvas.focus();requestRender();}
-  api.current={quality:mode=>{qualityMode=mode;qualityLevel=mode==='auto'?initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory):mode;governor.reset(qualityLevel);applyQuality();requestRender();},time:n=>{timeValue=n;requestRender();},go,visit,scan,walk:walkCommon,clearSelection:()=>{setInspected(null);inspectedUnit=null;setCardOpen(false);cardPinned=false;highlight.visible=false;requestRender();},floor:n=>{if(!n){go(selectedTower==='b'?'Torre Lago':'Edifício');return;}visit('Planta',currentUnit(n));},move:(direction,active)=>{if(!inside||flight)return;if(active)pressed.add(direction);else pressed.delete(direction);requestRender();},zoom:n=>{stop();if(inside){camera.fov=T.MathUtils.clamp(camera.fov*n,40,85);camera.updateProjectionMatrix();}else camera.position.sub(controls.target).multiplyScalar(n).add(controls.target);requestRender();}};
+  api.current={quality:mode=>{qualityMode=mode;qualityLevel=mode==='auto'?initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory):mode;governor.reset(qualityLevel);applyQuality();requestRender();},time:n=>{timeValue=n;requestRender();},go,visit,scan,walk:walkCommon,clearSelection:()=>{setInspected(null);inspectedUnit=null;setCardOpen(false);cardPinned=false;highlight.visible=false;requestRender();},floor:n=>{if(!n){go(selectedTower==='b'?'Torre Lago':'Edifício');return;}visit('Planta',currentUnit(n));},move:(direction,active)=>{if(!inside||flight)return;if(active){stopClick();pressed.add(direction)}else pressed.delete(direction);requestRender();},zoom:n=>{stop();if(inside){camera.fov=T.MathUtils.clamp(camera.fov*n,40,85);camera.updateProjectionMatrix();}else camera.position.sub(controls.target).multiplyScalar(n).add(controls.target);requestRender();}};
   drone=createDroneStudio56({scene,camera,renderer,controls,mount,request:requestRender,emit:setDroneState,
    focus:()=>{const s={x:0,z:0,base:M_BASE,levels:M_LEVELS,step:M_STEP};return[s.x,s.base+s.levels*s.step*.5,s.z];},
    context:()=>({place:currentPlace,room:currentRoom,floor:unit.startFloor,tower:selectedTower}),getTime:()=>timeValue,time:n=>{timeValue=n;setDayTime(n);requestRender();},
@@ -176,7 +195,7 @@ export default function MResidence(){
     stop();
    },
   });droneApi.current=drone;
-  const key=(e:KeyboardEvent)=>{if(drone?.isOpen)return;if(e.key==='Home'){e.preventDefault();go('Duas torres');return;}const direction=keyMap[e.key]||keyMap[e.key.toLowerCase()];if(inside&&direction&&!flight){e.preventDefault();pressed.add(direction);requestRender();return;}if(!inside&&facadeDestination54(currentPlace)&&['ArrowUp','ArrowDown','PageUp','PageDown'].includes(e.key)){e.preventDefault();const s=towerSpec();scan((controls.target.y-s.base)/s.step+.5+(['ArrowUp','PageUp'].includes(e.key)?1:-1));return;}if(!['ArrowLeft','ArrowRight','+','-'].includes(e.key))return;e.preventDefault();stop();if(e.key==='+'||e.key==='-')api.current?.zoom(e.key==='+'?.85:1.15);else{const p=camera.position.clone().sub(controls.target);p.applyAxisAngle(new T.Vector3(0,1,0),e.key==='ArrowLeft'?.15:-.15);camera.position.copy(controls.target).add(p);}requestRender();};canvas.addEventListener('keydown',key);
+  const key=(e:KeyboardEvent)=>{if(drone?.isOpen)return;if(e.key==='Home'){e.preventDefault();go('Duas torres');return;}const direction=keyMap[e.key]||keyMap[e.key.toLowerCase()];if(inside&&e.key==='Escape'){stopClick('Caminhada interrompida.');requestRender();return;}if(inside&&direction&&!flight){e.preventDefault();stopClick();pressed.add(direction);requestRender();return;}if(!inside&&facadeDestination54(currentPlace)&&['ArrowUp','ArrowDown','PageUp','PageDown'].includes(e.key)){e.preventDefault();const s=towerSpec();scan((controls.target.y-s.base)/s.step+.5+(['ArrowUp','PageUp'].includes(e.key)?1:-1));return;}if(!['ArrowLeft','ArrowRight','+','-'].includes(e.key))return;e.preventDefault();stop();if(e.key==='+'||e.key==='-')api.current?.zoom(e.key==='+'?.85:1.15);else{const p=camera.position.clone().sub(controls.target);p.applyAxisAngle(new T.Vector3(0,1,0),e.key==='ArrowLeft'?.15:-.15);camera.position.copy(controls.target).add(p);}requestRender();};canvas.addEventListener('keydown',key);
   const wheelHeight=(e:WheelEvent)=>{if(drone?.isOpen||!e.shiftKey||inside||!facadeDestination54(currentPlace))return;e.preventDefault();e.stopImmediatePropagation();const s=towerSpec();scan((controls.target.y-s.base)/s.step+.5-e.deltaY*.008);};canvas.addEventListener('wheel',wheelHeight,{capture:true,passive:false});
   function applyQuality(){if(drone?.driving)return;const profile=profiles58[qualityLevel];renderer.setPixelRatio(pixelRatio58(qualityLevel,mount.clientWidth,mount.clientHeight,devicePixelRatio));renderer.setSize(mount.clientWidth,mount.clientHeight);if(sun.shadow.mapSize.x!==profile.shadow){sun.shadow.mapSize.setScalar(profile.shadow);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;}setEffectiveQuality(qualityLevel==='light'?'Leve':qualityLevel==='high'?'Alta':'Equilibrada');mount.dataset.quality=qualityLevel;}
   applyQuality();
@@ -205,6 +224,15 @@ export default function MResidence(){
     }look();
    }
    }
+   if(clickRoute.length&&inside&&!flight&&!drone?.isOpen&&clickSpace){
+    if(!clickEnabled.current||pressed.size)stopClick();
+    else {const target=clickRoute[0],start={x:camera.position.x-clickOrigin.x,z:camera.position.z-clickOrigin.z},dx=target.x-start.x,dz=target.z-start.z,distance=Math.hypot(dx,dz),step=Math.min(distance,(common?2.4:1.65)*dt);
+     const next=walkStep(start,dx/Math.max(distance,.001)*step,dz/Math.max(distance,.001)*step,clickSpace.obstacles,clickSpace.bounds,clickSpace.areas,clickSpace.exclusions);
+     if(distance>.05&&Math.hypot(next.x-start.x,next.z-start.z)<step*.15){stopClick('Passagem bloqueada. Escolha outro ponto.');}
+     else {camera.position.x=next.x+clickOrigin.x;camera.position.z=next.z+clickOrigin.z;const angle=Math.atan2(-dx,-dz);yaw+=Math.atan2(Math.sin(angle-yaw),Math.cos(angle-yaw))*(1-Math.exp(-dt*3));look();if(distance<.055||distance<=step+.005)clickRoute.shift();if(!clickRoute.length)stopClick('Você chegou. Clique em outro ponto para continuar.');}
+    }
+   }
+   mount.dataset.clickWalking=String(clickRoute.length>0);
    drone?.update(now);
    const orbitChanged=!drone?.driving&&(!inside||drone?.isOpen)&&controls.enabled&&controls.update();
    if(parkedCars)parkedCars.visible=camera.position.y<5;
@@ -223,7 +251,7 @@ export default function MResidence(){
    mount.dataset.drawCalls=String(renderer.info.render.calls);mount.dataset.triangles=String(renderer.info.render.triangles);
    if(qualityMode==='auto'&&!drone?.driving){const next=governor.sample(performance.now()-started);if(next){qualityLevel=next;applyQuality();requestRender();}}
 
-   if(drone?.needsFrame||flight||desired||orbitChanged||(inside&&pressed.size))requestRender();
+   if(drone?.needsFrame||flight||desired||orbitChanged||clickRoute.length||(inside&&pressed.size))requestRender();
   };
   const visibility=()=>{clearMovement();last=performance.now();if(document.hidden)suspendRender();else requestRender();};document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',suspendRender);window.addEventListener('pageshow',visibility);
   const visibleObserver=new IntersectionObserver(([entry])=>{offscreen=!entry.isIntersecting;if(offscreen){clearMovement();suspendRender();}else{last=performance.now();requestRender();}});visibleObserver.observe(mount);
@@ -246,6 +274,7 @@ export default function MResidence(){
   <button ref={marker} className="m-floor-marker54" style={{visibility:'hidden'}} aria-label={inspected?`Ver imóvel · ${inspected.name} · ${unitFloorLabel(inspected)}`:'Ver imóvel'} onClick={()=>setCardOpen(true)}><i aria-hidden="true"/><span>{inspected?unitFloorLabel(inspected):''} · Ver imóvel</span></button>
   {facadeMode&&!reference&&<section className="m-height54" aria-label="Percorrer a torre"><span>{tower==='b'?'Torre Lago':'Torre M'}</span><button aria-label="Subir um andar" onClick={()=>api.current?.scan(scanFloor+1)}>↑</button><input type="range" min="1" max={levels} value={scanFloor} aria-label="Altura na fachada" onChange={e=>api.current?.scan(Number(e.target.value))}/><output>{scanFloor}º</output><button aria-label="Descer um andar" onClick={()=>api.current?.scan(scanFloor-1)}>↓</button></section>}
   {canWalk&&!reference&&<div className="m-common54"><span>{place}</span><button disabled={!ready||journey} onClick={()=>commonWalk?navigate(place):api.current?.walk()}>{commonWalk?'Voltar à vista geral':'Caminhar aqui'} <b aria-hidden="true">↗</b></button></div>}
+  {((room&&room!=='Planta')||commonWalk)&&!droneState?.open&&<section className="m-click-walk63"><label><input type="checkbox" checked={clickWalk} onChange={e=>{clickEnabled.current=e.target.checked;setClickWalk(e.target.checked);}}/> Clicar no piso para caminhar</label><small role="status">{clickWalk?walkMessage:'Arraste para olhar. Use as setas para caminhar.'}</small></section>}
   {journey&&<div className="m-journey54" role="status">Entrando no ambiente…</div>}
   {siteGuide&&<MSiteGuide close={()=>setSiteGuide(false)} go={navigate}/>}
   {room&&room!=='Planta'&&<div className="m-view-direction">Olhar: {direction}</div>}

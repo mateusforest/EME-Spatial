@@ -35,3 +35,6 @@
 
 .m-header-actions .m-gallery62-link{display:inline-flex;align-items:center;padding:12px 18px;border-radius:28px;background:#f7f5ec;color:#173a32;text-decoration:none;font-size:14px;letter-spacing:normal}.m-gallery62-link:focus-visible{outline:3px solid #947549;outline-offset:3px}
 
+
+.m-click-walk63{position:absolute;top:86px;left:50%;transform:translateX(-50%);z-index:7;padding:10px 16px;border-radius:12px;background:#faf9eff0;max-width:90vw;font-size:12px}.m-click-walk63 label{display:flex;align-items:center;gap:8px;cursor:pointer}.m-click-walk63 small{display:block;max-width:300px;margin-top:5px;color:#526257}@media(max-width:700px){.m-click-walk63{top:70px;width:280px}}
+
