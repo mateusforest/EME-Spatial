@@ -1,1 +1,9 @@
-{"rewrites":[{"source":"/criar-projeto","destination":"/index.html"},{"source":"/criar-projeto/","destination":"/index.html"}]}
+{
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "rewrites": [
+    {"source":"/criar-projeto","destination":"/index.html"},
+    {"source":"/criar-projeto/","destination":"/index.html"}
+  ]
+}
