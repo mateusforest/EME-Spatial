@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {facadeFloor68,facadeRequest68} from '../src/developments/mFacade68.ts';
+const base=15,step=3.5,levels=22;
+for(let n=1;n<=levels;n++)assert.equal(facadeFloor68(base+(n-.5)*step,base,step,levels),n);
+const boundary=base+8*step;
+for(const offset of [-.05,.02,-.02,.06])assert.equal(facadeFloor68(boundary+offset,base,step,levels,8),8);
+assert.equal(facadeFloor68(boundary+.2,base,step,levels,8),9);
+assert.equal(facadeFloor68(boundary-.2,base,step,levels,9),8);
+assert.equal(facadeRequest68(30,22),22);assert.equal(facadeRequest68(-1,22),1);
+let selected=8;for(let i=0;i<4;i++)selected=facadeRequest68(selected+1,22);assert.equal(selected,12);
+console.log('PASS floor centres, damping hysteresis, bounds and rapid relative commands');
