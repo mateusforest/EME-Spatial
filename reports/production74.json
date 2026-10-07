@@ -33,5 +33,43 @@
     "request download",
     "responsive 390px",
     "no page errors"
-  ]
+  ],
+  "finalProduction": {
+    "userApprovedValidation": true,
+    "job": "dc9ccf765da84bc2a1a7e977eb249631",
+    "engine": "CYCLES",
+    "images": 3,
+    "imageSize": [
+      1600,
+      900
+    ],
+    "video": {
+      "frames": 144,
+      "uniqueFrames": 144,
+      "fps": 24,
+      "duration": 6.0,
+      "size": [
+        1280,
+        720
+      ]
+    },
+    "resultReview": "pending",
+    "publicMediaPublished": false,
+    "folder": "C:\\Users\\EME\\Downloads\\eme-spatial\\conteudos\\producao74\\final"
+  },
+  "productionDomain": "https://www.emespatial.com/portal/producao",
+  "mfPhotoMotionTests": [
+    "push",
+    "pull",
+    "left",
+    "right",
+    "derived project and parent provenance",
+    "new media requires review"
+  ],
+  "portalUserLibrary": {
+    "origin": "https://www.emespatial.com",
+    "importedFinals": 4,
+    "validationApprovedPerUser": true,
+    "finalsInReview": true
+  }
 }

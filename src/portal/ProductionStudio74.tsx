@@ -6,7 +6,7 @@ import './production74.css';
 type Request74={schema_version:string;id:string;projectId:string;projectName:string;unit:string;sourceSha256:string;design:unknown;mode:string;validationId:string|null};
 const queueKey='eme-spatial:production-requests:v74';
 function requests():Request74[]{try{const v=JSON.parse(localStorage.getItem(queueKey)||'[]');return Array.isArray(v)?v:[];}catch{return [];}}
-function Preview({row}:{row:Media74}){const [url,setUrl]=useState('');useEffect(()=>{const u=URL.createObjectURL(row.blob);setUrl(u);return()=>URL.revokeObjectURL(u);},[row.blob]);return row.kind==='video'?<video src={url} controls preload="none"/>:<img src={url} alt={row.name} loading="lazy"/>;}
+function Preview({row}:{row:Media74}){const [url,setUrl]=useState('');useEffect(()=>{const u=URL.createObjectURL(row.blob);setUrl(u);return()=>URL.revokeObjectURL(u);},[row.blob]);if(!url)return null;return row.kind==='video'?<video src={url} controls preload="none"/>:<img src={url} alt={row.name} loading="lazy"/>;}
 export default function ProductionStudio74(){
  const [rows,setRows]=useState<Media74[]>([]),[queue,setQueue]=useState(requests),[mode,setMode]=useState('validation'),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[project,setProject]=useState('all');
  const refresh=async()=>setRows((await list74()).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));
