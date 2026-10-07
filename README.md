@@ -41,3 +41,6 @@ Os arquivos pesados de produção de Blender e Unreal ficam fora do repositório
 Na Torre M, entre em uma residência ou escolha “Caminhar aqui” em uma área comum. Com “Clicar no piso para caminhar” ativado, clique/toque em um ponto livre do piso do mesmo pavimento. O percurso contorna os obstáculos cadastrados e respeita os limites de circulação. Arrastar para olhar, usar as setas/WASD ou pressionar Esc interrompe o movimento. O modo pode ser desativado pela caixa de seleção.
 
 `npm run test:walk` verifica trajetos diretos, desvio de móveis, paredes fechadas, limites, exclusões e áreas desconectadas. O acabamento Blender/Cycles do apartamento de estudo no nível 14, frente direita, está na galeria; não substitui automaticamente os materiais e modelos navegáveis.
+
+### Apartamento refinado (64)
+A unidade de estudo m-14 carrega sua sala e jantar diretamente do Blender 63 em GLB, sob demanda. Acesse /apresentar/m?apartamento=14. Atlas PBR gravados no Cycles, Draco e iluminação interativa; renders e experiência não são pixel-identical. Teste de circulação: node --experimental-strip-types tests/apartment64.test.mjs.
