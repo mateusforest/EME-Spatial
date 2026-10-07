@@ -1,0 +1,29 @@
+{
+  "source": "a77ba09",
+  "geometries": 42,
+  "materials": 34,
+  "textures": 26,
+  "images": [
+    "/assets/m/materials/realism50/stone-color.webp",
+    "/assets/m/materials/realism50/stone-normal.webp",
+    "/assets/m/materials/realism50/stone-rough.webp",
+    "/assets/m/materials/realism50/oak-color.webp",
+    "/assets/m/materials/realism50/oak-normal.webp",
+    "/assets/m/materials/realism50/oak-rough.webp",
+    "Embedded source texture",
+    "Embedded source texture",
+    "Embedded source texture",
+    "/assets/m/materials/refinement49/linen-normal.png",
+    "/assets/m/materials/refinement49/linen-rough.png",
+    "Embedded source texture",
+    "/assets/m/materials/refinement49/limestone-color.png",
+    "/assets/m/materials/refinement49/limestone-normal.png",
+    "/assets/m/materials/refinement49/limestone-rough.png",
+    "Embedded source texture",
+    "Embedded source texture",
+    "Embedded source texture",
+    "Embedded source texture"
+  ],
+  "sha256": "54afa3b48d30c096a49cf35889b6f4f715c4ae4bcc79642eff93bc107871cee1",
+  "description": "Full floor 14 from a77ba09, unchanged authored geometry. Ceiling derived from identical normal-floor slab. Distant landscape captured from source scene at floor height."
+}

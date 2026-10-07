@@ -2,7 +2,7 @@ import React,{lazy,Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
 
 const Patio=lazy(()=>import('./developments/PatioM'));
-const M=lazy(()=>import('./developments/MResidence'));
+const M=lazy(()=>import('./developments/MSceneRouter71'));
 const Presentation=lazy(()=>import('./presentation/Presentation'));
 const Moradas=lazy(()=>import('./developments/DevelopmentPage'));
 const Vacaria=lazy(()=>import('./developments/VacariaPage'));

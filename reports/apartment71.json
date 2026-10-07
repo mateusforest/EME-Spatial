@@ -1,0 +1,94 @@
+{
+  "scope": "Steps 1-4: baseline backup, measurement, independent full apartment 14, resource lifecycle and return state. No geometry redesign.",
+  "sourceCommit": "a77ba09ea6f7118560d2f94b6b9c188d13165301",
+  "environment": "Local Vite development build, Edge headless, 1280x800, hardwareConcurrency=4, reduced motion. One recorded baseline and final run; not a universal loading-time or FPS guarantee.",
+  "baseline": {
+    "readyMs": 58513,
+    "render": {
+      "frame": 119,
+      "calls": 878,
+      "triangles": 10403494,
+      "points": 0,
+      "lines": 234
+    },
+    "memory": {
+      "geometries": 845,
+      "textures": 143
+    },
+    "geometryBytes": 126487396,
+    "textures": 176,
+    "textureRGBAEstimate": 631302826.6666664,
+    "heap": 276069335,
+    "requests": 120,
+    "encodedBytes": 77805734
+  },
+  "isolatedApartment": {
+    "readyMs": 8708,
+    "render": {
+      "frame": 66,
+      "calls": 35,
+      "triangles": 100926,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 57,
+      "textures": 30
+    },
+    "geometryBytes": 4060594,
+    "textures": 26,
+    "textureRGBAEstimate": 178956970.66666672,
+    "heap": 58775270,
+    "requests": 120,
+    "encodedBytes": 23072702
+  },
+  "notes": [
+    "Texture RGBA values are estimates, not measured GPU memory.",
+    "Triangle counts are per rendered frame at the same Living destination.",
+    "The complete apartment and balcony remain 3D; distant exterior uses a captured panorama with approximate night tint.",
+    "Exterior rebuilds on return instead of retaining two GPU scenes.",
+    "Three.js internal texture counters can remain after disposal; old WebGL contexts were verified lost, old geometry counters zero, and only one canvas active.",
+    "Drone routes spanning exterior and isolated apartment require separate recordings."
+  ],
+  "transitionChecks": {
+    "report": [
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 4,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 4,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "positionError": 0,
+        "targetError": 0,
+        "time": "75",
+        "quality": "light"
+      }
+    ],
+    "errors": []
+  }
+}
