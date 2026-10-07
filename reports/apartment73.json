@@ -1,0 +1,546 @@
+{
+  "steps": [
+    7,
+    8
+  ],
+  "baseline": {
+    "readyMs": 58513,
+    "render": {
+      "frame": 119,
+      "calls": 878,
+      "triangles": 10403494,
+      "points": 0,
+      "lines": 234
+    },
+    "memory": {
+      "geometries": 845,
+      "textures": 143
+    },
+    "geometryBytes": 126487396,
+    "textures": 176,
+    "textureRGBAEstimate": 631302826.6666664,
+    "heap": 276069335,
+    "requests": 120,
+    "encodedBytes": 77805734
+  },
+  "performance": {
+    "hardware": "RTX 4070 / Ryzen 5 5600XT; same physical computer",
+    "qualification": "Same physical RTX 4070 computer. Limited profile uses 4x CPU throttling and 2 exposed cores, not a physical low-end GPU. Fresh page contexts in one browser; shader/system caches may benefit the second run. Load timings are samples, not a performance guarantee.",
+    "results": [
+      {
+        "profile": {
+          "name": "desktop-light",
+          "width": 1280,
+          "height": 800,
+          "cpu": 1,
+          "cores": 4
+        },
+        "readyMs": 8309,
+        "metrics": {
+          "geometryBytes": 2922614,
+          "textureRGBAEstimate": 38884693.333333336,
+          "drawCalls": 36,
+          "triangles": 100946,
+          "geometries": 59,
+          "textures": 25,
+          "encodedBytes": 16554513
+        },
+        "frame": {
+          "samples": 139,
+          "p50ms": 33.5,
+          "p95ms": 34.80000001192093
+        },
+        "idle": 0,
+        "errors": []
+      },
+      {
+        "profile": {
+          "name": "limited-simulated",
+          "width": 1280,
+          "height": 720,
+          "cpu": 4,
+          "cores": 2
+        },
+        "readyMs": 2379,
+        "metrics": {
+          "geometryBytes": 2922614,
+          "textureRGBAEstimate": 38884693.333333336,
+          "drawCalls": 36,
+          "triangles": 100946,
+          "geometries": 59,
+          "textures": 25,
+          "encodedBytes": 16554513
+        },
+        "frame": {
+          "samples": 146,
+          "p50ms": 34.70000000298023,
+          "p95ms": 34.900000005960464
+        },
+        "idle": 0,
+        "errors": []
+      }
+    ]
+  },
+  "scheduler": {
+    "beforeP50ms": 49.8,
+    "afterP50ms": 33.5,
+    "change": "On-demand requestAnimationFrame pacing without a full frame interval timer ahead of vsync"
+  },
+  "blender": {
+    "unit": "m-14",
+    "sourceSha256": "3be4396a72f5a24971ffbc7c2d762d24e65a4975f73c07a535a5f0e4c2ae1090",
+    "glbSha256": "46305d256652d83fa491275743d4e461f467e1ac7062285758d72fa79cb58938",
+    "blender": "4.5.14 LTS",
+    "meshes": [
+      {
+        "name": "Reference mineral structure",
+        "triangles": 896,
+        "expectedTriangles": 896,
+        "boundsErrorMetres": 1.4901161193847656e-7,
+        "surfaceAreaError": 0.00008826754287838412,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Reference timber screens",
+        "triangles": 712,
+        "expectedTriangles": 712,
+        "boundsErrorMetres": 4.6193599700927734e-7,
+        "surfaceAreaError": 0.00006663132126050186,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Reference glazing",
+        "triangles": 900,
+        "expectedTriangles": 900,
+        "boundsErrorMetres": 0.0000016689300537109375,
+        "surfaceAreaError": 0.00027631117018245277,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Reference bronze frames",
+        "triangles": 912,
+        "expectedTriangles": 912,
+        "boundsErrorMetres": 0,
+        "surfaceAreaError": 0.00013976384471448,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M approved facade planting",
+        "triangles": 22592,
+        "expectedTriangles": 22592,
+        "boundsErrorMetres": 0.0000015497207641601562,
+        "surfaceAreaError": 0.000006230050721311997,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M approved facade planting",
+        "triangles": 18680,
+        "expectedTriangles": 18680,
+        "boundsErrorMetres": 0.0000017002371350827161,
+        "surfaceAreaError": 0.0000036756763095446843,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Facade terrace limestone",
+        "triangles": 128,
+        "expectedTriangles": 128,
+        "boundsErrorMetres": 0.0000010728836059570312,
+        "surfaceAreaError": 8.993864781814409e-7,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Facade bronze tracks",
+        "triangles": 648,
+        "expectedTriangles": 648,
+        "boundsErrorMetres": 0.000002384185791015625,
+        "surfaceAreaError": 0.0001497461565094227,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Facade mineral joints",
+        "triangles": 288,
+        "expectedTriangles": 288,
+        "boundsErrorMetres": 1.7881393432617188e-7,
+        "surfaceAreaError": 2.2113512221366705e-7,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Facade recessed linen",
+        "triangles": 432,
+        "expectedTriangles": 432,
+        "boundsErrorMetres": 0.0000021457672119140625,
+        "surfaceAreaError": 0.00003073201435199735,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "Facade planter soil",
+        "triangles": 48,
+        "expectedTriangles": 48,
+        "boundsErrorMetres": 0.0000010728836059570312,
+        "surfaceAreaError": 0.00003357842400930622,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M gallery broadleaf understory",
+        "triangles": 6624,
+        "expectedTriangles": 6912,
+        "boundsErrorMetres": 0.000001914472164799008,
+        "surfaceAreaError": 8.940838860382883e-7,
+        "zeroAreaTrianglesRemoved": 288
+      },
+      {
+        "name": "M planting containers",
+        "triangles": 1536,
+        "expectedTriangles": 1536,
+        "boundsErrorMetres": 0.0000021463036574687067,
+        "surfaceAreaError": 0.0000027987444184418564,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M planting trunks",
+        "triangles": 448,
+        "expectedTriangles": 448,
+        "boundsErrorMetres": 0.0000027418136596679688,
+        "surfaceAreaError": 0.000002471237726231479,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M planting crowns",
+        "triangles": 11200,
+        "expectedTriangles": 14000,
+        "boundsErrorMetres": 0.0000023256163359519633,
+        "surfaceAreaError": 0.00002695278320530292,
+        "zeroAreaTrianglesRemoved": 2800
+      },
+      {
+        "name": "",
+        "triangles": 1668,
+        "expectedTriangles": 1668,
+        "boundsErrorMetres": 0.0000035762786865234375,
+        "surfaceAreaError": 0.00003116533412139688,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 7560,
+        "expectedTriangles": 7800,
+        "boundsErrorMetres": 0.0000015497207641601562,
+        "surfaceAreaError": 0.000017047016697802064,
+        "zeroAreaTrianglesRemoved": 240
+      },
+      {
+        "name": "",
+        "triangles": 624,
+        "expectedTriangles": 624,
+        "boundsErrorMetres": 0.000001430511474609375,
+        "surfaceAreaError": 0.00000683798222489429,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 1060,
+        "expectedTriangles": 1060,
+        "boundsErrorMetres": 0.0000030994415283203125,
+        "surfaceAreaError": 0.00004382741593644823,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 132,
+        "expectedTriangles": 132,
+        "boundsErrorMetres": 0.000001430511474609375,
+        "surfaceAreaError": 0.000011488995147246328,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 1080,
+        "expectedTriangles": 1200,
+        "boundsErrorMetres": 0.0000036954879760742188,
+        "surfaceAreaError": 0.0000012109793123826762,
+        "zeroAreaTrianglesRemoved": 120
+      },
+      {
+        "name": "",
+        "triangles": 300,
+        "expectedTriangles": 300,
+        "boundsErrorMetres": 0.000002384185791015625,
+        "surfaceAreaError": 0.00000410948623574825,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 24,
+        "expectedTriangles": 24,
+        "boundsErrorMetres": 0.0000030994415283203125,
+        "surfaceAreaError": 0.00007660562172873142,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 36,
+        "expectedTriangles": 36,
+        "boundsErrorMetres": 0.0000018477439880371094,
+        "surfaceAreaError": 0.00022475534521504414,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 128,
+        "expectedTriangles": 128,
+        "boundsErrorMetres": 0.0000016689300537109375,
+        "surfaceAreaError": 0.0000020755822832951853,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "",
+        "triangles": 128,
+        "expectedTriangles": 128,
+        "boundsErrorMetres": 0.0000016689300537109375,
+        "surfaceAreaError": 0.0000041688563587882754,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M Blender window reveals 14",
+        "triangles": 12032,
+        "expectedTriangles": 12032,
+        "boundsErrorMetres": 0.0000030994415283203125,
+        "surfaceAreaError": 0.0004959625936464818,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M47_Floor_14_M47_Bronze001",
+        "triangles": 4888,
+        "expectedTriangles": 4888,
+        "boundsErrorMetres": 0.0000012218952178955078,
+        "surfaceAreaError": 0.00000806343729919945,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M47_Floor_14_M47_Stone001",
+        "triangles": 752,
+        "expectedTriangles": 752,
+        "boundsErrorMetres": 0.0000016782432794570923,
+        "surfaceAreaError": 0.00005641175169834867,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_1_L_Wood",
+        "triangles": 1896,
+        "expectedTriangles": 1896,
+        "boundsErrorMetres": 0,
+        "surfaceAreaError": 0.00003786277007478134,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_1_L_Bronze",
+        "triangles": 288,
+        "expectedTriangles": 288,
+        "boundsErrorMetres": 0.0000018477439880371094,
+        "surfaceAreaError": 0.0000038119854787743712,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_1_L_Ceramic",
+        "triangles": 364,
+        "expectedTriangles": 364,
+        "boundsErrorMetres": 0.0000013113021850585938,
+        "surfaceAreaError": 0.0000014836944994267576,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_1_L_Olive",
+        "triangles": 6716,
+        "expectedTriangles": 6716,
+        "boundsErrorMetres": 0.0000015497207641601562,
+        "surfaceAreaError": 0.000001747062630785834,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_1_L_Linen",
+        "triangles": 1104,
+        "expectedTriangles": 1104,
+        "boundsErrorMetres": 0.0000017881393432617188,
+        "surfaceAreaError": 0.000011103548859026091,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Wood",
+        "triangles": 840,
+        "expectedTriangles": 840,
+        "boundsErrorMetres": 0.000001430511474609375,
+        "surfaceAreaError": 0.000037124925353460014,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Linen",
+        "triangles": 1284,
+        "expectedTriangles": 1284,
+        "boundsErrorMetres": 0.0000017881393432617188,
+        "surfaceAreaError": 0.000027566384890320705,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Olive",
+        "triangles": 3772,
+        "expectedTriangles": 3772,
+        "boundsErrorMetres": 0.0000017881393432617188,
+        "surfaceAreaError": 0.000007660597710845707,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Stone",
+        "triangles": 216,
+        "expectedTriangles": 216,
+        "boundsErrorMetres": 0.0000015497207641601562,
+        "surfaceAreaError": 0.000008011936708740564,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Bronze",
+        "triangles": 288,
+        "expectedTriangles": 288,
+        "boundsErrorMetres": 0.0000018477439880371094,
+        "surfaceAreaError": 0.0000050828576853567675,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M48_Balcony_3_R_Ceramic",
+        "triangles": 364,
+        "expectedTriangles": 364,
+        "boundsErrorMetres": 0.0000015497207641601562,
+        "surfaceAreaError": 0.00000230613581955752,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M51 balcony downlights",
+        "triangles": 672,
+        "expectedTriangles": 672,
+        "boundsErrorMetres": 0.000006389804184436798,
+        "surfaceAreaError": 0.00004964255952177865,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M51 recessed warm coves",
+        "triangles": 24,
+        "expectedTriangles": 24,
+        "boundsErrorMetres": 0.000005912967026233673,
+        "surfaceAreaError": 0.00022568781780663016,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M14 preserved ceiling Reference mineral structure",
+        "triangles": 130,
+        "expectedTriangles": 130,
+        "boundsErrorMetres": 0.0000036656856536865234,
+        "surfaceAreaError": 0.0003431061306855554,
+        "zeroAreaTrianglesRemoved": 0
+      },
+      {
+        "name": "M14 preserved ceiling Reference timber screens",
+        "triangles": 172,
+        "expectedTriangles": 172,
+        "boundsErrorMetres": 0.0000033527612686157227,
+        "surfaceAreaError": 0.00044829398802903597,
+        "zeroAreaTrianglesRemoved": 0
+      }
+    ],
+    "cameras": 9,
+    "missingTextures": [],
+    "approval": {
+      "schema": "eme-spatial-production/1",
+      "unit": "m-14",
+      "source": "apartment72/floor14.json.gz",
+      "geometryRevision": 72,
+      "approval": "original",
+      "approvedAt": null,
+      "design": {
+        "wood": 0,
+        "fabric": 0,
+        "accent": 0,
+        "stone": 0,
+        "table": "round"
+      },
+      "finishes": {
+        "wood": [
+          "Carvalho",
+          "#c5a078"
+        ],
+        "fabric": [
+          "Linho natural",
+          "#e4dccb"
+        ],
+        "accent": [
+          "Caramelo",
+          "#b78a60"
+        ],
+        "stone": [
+          "Pedra clara",
+          "#d4c8b3"
+        ]
+      },
+      "exportedAt": "2026-10-07T08:07:03.011Z"
+    },
+    "limitations": [
+      "Material response and lighting are renderer-specific; this is geometric/material synchronization, not pixel-identical rendering.",
+      "Panorama outside the apartment is a web background, not additional 3D property geometry.",
+      "Physical glass and a production sky are prepared; final light/render validation belongs to step 9."
+    ]
+  },
+  "reopen": {
+    "materialsChecked": 32,
+    "camerasChecked": 9,
+    "missingTextures": [],
+    "savedScenePreserved": true
+  },
+  "productionFile": "conteudos/apartamento14-sincronizado73/EME-M14-pavimento-completo.blend",
+  "workflow": {
+    "savedOnly": true,
+    "automaticTwoWaySync": false,
+    "retiredStudyUsed": false,
+    "finalRendersCreated": false
+  },
+  "lifecycle": {
+    "report": [
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 4,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "positionError": 0,
+        "targetError": 0,
+        "time": "75",
+        "quality": "light"
+      }
+    ],
+    "errors": []
+  },
+  "variantTest": {
+    "testOnly": true,
+    "design": {
+      "wood": 2,
+      "fabric": 1,
+      "accent": 1,
+      "stone": 1,
+      "table": "oval"
+    },
+    "materialsChecked": 32,
+    "camerasChecked": 9,
+    "missingTextures": [],
+    "savedScenePreserved": true
+  }
+}

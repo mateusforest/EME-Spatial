@@ -62,11 +62,15 @@ export default function MResidence(){
   try{renderer=new T.WebGLRenderer({antialias:true});}catch{setError(true);return;}
   let qualityMode:Quality58='auto',qualityLevel=initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory);
   const governor=governor58(qualityLevel);
-  let preparing=true,disposed=false,pendingFrame=0,pendingTimer:ReturnType<typeof setTimeout>|undefined,offscreen=false,lastDraw=0,drawFrame:(now:number)=>void=()=>{};
-  const requestRender=()=>{if(disposed||offscreen||document.hidden||pendingFrame||pendingTimer!==undefined)return;
-   pendingTimer=setTimeout(()=>{pendingTimer=undefined;if(disposed||offscreen||document.hidden)return;pendingFrame=requestAnimationFrame(now=>{pendingFrame=0;if(disposed||offscreen||document.hidden)return;lastDraw=now;drawFrame(now);});},Math.max(0,1000/profiles58[qualityLevel].fps-(performance.now()-lastDraw)));
+  let preparing=true,disposed=false,pendingFrame=0,offscreen=false,lastDraw=0,drawFrame:(now:number)=>void=()=>{};
+  const requestRender=()=>{if(disposed||offscreen||document.hidden||pendingFrame)return;
+   const tick=(now:number)=>{pendingFrame=0;if(disposed||offscreen||document.hidden)return;
+    const interval=1000/profiles58[qualityLevel].fps,elapsed=now-lastDraw;
+    if(elapsed+1<interval){pendingFrame=requestAnimationFrame(tick);return;}
+    lastDraw=elapsed>interval*2?now:lastDraw+interval;drawFrame(now);
+   };pendingFrame=requestAnimationFrame(tick);
   };
-  const suspendRender=()=>{cancelAnimationFrame(pendingFrame);pendingFrame=0;if(pendingTimer!==undefined)clearTimeout(pendingTimer);pendingTimer=undefined;};
+  const suspendRender=()=>{cancelAnimationFrame(pendingFrame);pendingFrame=0;lastDraw=0;};
   const resources=new Set<{dispose:()=>void}>(),own=<A extends {dispose:()=>void}>(a:A)=>{if(disposed)a.dispose();else resources.add(a);return a;};
   renderer.setPixelRatio(pixelRatio58(qualityLevel,mount.clientWidth,mount.clientHeight,devicePixelRatio));renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
