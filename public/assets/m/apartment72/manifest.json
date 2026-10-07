@@ -1,0 +1,399 @@
+{
+  "source": "apartment71/floor14.json.gz",
+  "sourceSha256": "54afa3b48d30c096a49cf35889b6f4f715c4ae4bcc79642eff93bc107871cee1",
+  "images": [
+    {
+      "source": "realism50/stone-color.webp",
+      "uuid": "a9ab7689-73ec-4747-b0ff-bb736bbae5f5",
+      "originalSize": [
+        2048,
+        2048
+      ],
+      "sizes": {
+        "light": [
+          1024,
+          1024
+        ],
+        "detail": [
+          2048,
+          2048
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/b708880b27f34f-light.webp",
+        "detail": "/assets/m/apartment72/b708880b27f34f-detail.webp"
+      },
+      "bytes": {
+        "light": 156764,
+        "detail": 573224
+      }
+    },
+    {
+      "source": "realism50/stone-normal.webp",
+      "uuid": "590905c0-f857-4142-963a-1451ab6e4b13",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/c99842d09ce569-light.webp",
+        "detail": "/assets/m/apartment72/c99842d09ce569-detail.webp"
+      },
+      "bytes": {
+        "light": 64250,
+        "detail": 105098
+      }
+    },
+    {
+      "source": "realism50/stone-rough.webp",
+      "uuid": "579ca42e-d016-4d0b-8b98-c0c012debccd",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/bd0cc3b2728169-light.webp",
+        "detail": "/assets/m/apartment72/bd0cc3b2728169-detail.webp"
+      },
+      "bytes": {
+        "light": 54360,
+        "detail": 136910
+      }
+    },
+    {
+      "source": "realism50/oak-color.webp",
+      "uuid": "43ba1c8e-23e1-457c-8119-d7d0d3ea36df",
+      "originalSize": [
+        2048,
+        2048
+      ],
+      "sizes": {
+        "light": [
+          1024,
+          1024
+        ],
+        "detail": [
+          2048,
+          2048
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/a767e3a3c1a531-light.webp",
+        "detail": "/assets/m/apartment72/a767e3a3c1a531-detail.webp"
+      },
+      "bytes": {
+        "light": 197900,
+        "detail": 940146
+      }
+    },
+    {
+      "source": "realism50/oak-normal.webp",
+      "uuid": "cdb3a1ea-75e4-4191-8ac6-6fc586274c2d",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/70301895d18c5a-light.webp",
+        "detail": "/assets/m/apartment72/70301895d18c5a-detail.webp"
+      },
+      "bytes": {
+        "light": 231834,
+        "detail": 487930
+      }
+    },
+    {
+      "source": "realism50/oak-rough.webp",
+      "uuid": "a94ffc97-4209-45bb-a545-84379becdc4b",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/91516ecd0bacda-light.webp",
+        "detail": "/assets/m/apartment72/91516ecd0bacda-detail.webp"
+      },
+      "bytes": {
+        "light": 174770,
+        "detail": 859226
+      }
+    },
+    {
+      "source": "embedded-09fb5dbe1779c5",
+      "uuid": "fe0807ff-5b1a-4cc3-862d-54458a1c2cb0",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          1024,
+          1024
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/09fb5dbe1779c5-light.webp",
+        "detail": "/assets/m/apartment72/09fb5dbe1779c5-detail.webp"
+      },
+      "bytes": {
+        "light": 82570,
+        "detail": 82570
+      }
+    },
+    {
+      "source": "embedded-614d1a7055c3c7",
+      "uuid": "063a8f22-9720-48ed-a1f8-1dc580f51cfc",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/614d1a7055c3c7-light.webp",
+        "detail": "/assets/m/apartment72/614d1a7055c3c7-detail.webp"
+      },
+      "bytes": {
+        "light": 255910,
+        "detail": 753410
+      }
+    },
+    {
+      "source": "embedded-6468ba1af2cf13",
+      "uuid": "76bdd1b8-f429-4b2b-a688-d22d1f1f300c",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/6468ba1af2cf13-light.webp",
+        "detail": "/assets/m/apartment72/6468ba1af2cf13-detail.webp"
+      },
+      "bytes": {
+        "light": 122688,
+        "detail": 281160
+      }
+    },
+    {
+      "source": "refinement49/linen-normal.png",
+      "uuid": "b864ca38-84db-41c0-b05c-102b0289feb1",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/26faf27d5fecad-light.webp",
+        "detail": "/assets/m/apartment72/26faf27d5fecad-detail.webp"
+      },
+      "bytes": {
+        "light": 232,
+        "detail": 940
+      }
+    },
+    {
+      "source": "refinement49/linen-rough.png",
+      "uuid": "6f6588af-5295-405a-aa6e-6d725d0d2cc2",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/ef79cd9323af08-light.webp",
+        "detail": "/assets/m/apartment72/ef79cd9323af08-detail.webp"
+      },
+      "bytes": {
+        "light": 198,
+        "detail": 512
+      }
+    },
+    {
+      "source": "refinement49/limestone-color.png",
+      "uuid": "795b2988-7450-4112-ba99-b8c7c69e3be9",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          1024,
+          1024
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/7d5c3559651749-light.webp",
+        "detail": "/assets/m/apartment72/7d5c3559651749-detail.webp"
+      },
+      "bytes": {
+        "light": 21180,
+        "detail": 21180
+      }
+    },
+    {
+      "source": "refinement49/limestone-normal.png",
+      "uuid": "3f6e030c-5c33-4d37-8bb7-e30b080d9b85",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/6302b58f31705e-light.webp",
+        "detail": "/assets/m/apartment72/6302b58f31705e-detail.webp"
+      },
+      "bytes": {
+        "light": 195312,
+        "detail": 504430
+      }
+    },
+    {
+      "source": "refinement49/limestone-rough.png",
+      "uuid": "d07e825f-7baf-4946-a48d-7eefa31a38ea",
+      "originalSize": [
+        1024,
+        1024
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          1024,
+          1024
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/17b503363ae6b9-light.webp",
+        "detail": "/assets/m/apartment72/17b503363ae6b9-detail.webp"
+      },
+      "bytes": {
+        "light": 63834,
+        "detail": 166570
+      }
+    },
+    {
+      "source": "embedded-197aa4da1bddb8",
+      "uuid": "8cf0054e-81f4-4865-87a0-9b5d8fc54039",
+      "originalSize": [
+        512,
+        512
+      ],
+      "sizes": {
+        "light": [
+          512,
+          512
+        ],
+        "detail": [
+          512,
+          512
+        ]
+      },
+      "urls": {
+        "light": "/assets/m/apartment72/197aa4da1bddb8-light.webp",
+        "detail": "/assets/m/apartment72/197aa4da1bddb8-detail.webp"
+      },
+      "bytes": {
+        "light": 2720,
+        "detail": 2720
+      }
+    }
+  ],
+  "lodCount": 5,
+  "sceneBytes": 1325543,
+  "sceneSha256": "3be4396a72f5a24971ffbc7c2d762d24e65a4975f73c07a535a5f0e4c2ae1090"
+}

@@ -25,10 +25,10 @@ export function save70(storage:Pick<Storage,'setItem'>,design:Design70){
  return valid;
 }
 /** Materials are private to floor 14; textures remain shared and no other unit is changed. */
-export function installDesign70(source:T.Group,own:Own,surfaces:ReturnType<typeof mSurfaces>,request:()=>void=()=>{}){
+export function installDesign70(source:T.Group,own:Own,surfaces:ReturnType<typeof mSurfaces>,request:()=>void=()=>{},sharedStone?:{color:T.Texture;normal:T.Texture;rough:T.Texture}){
  const loader=typeof document==='undefined'?null:new T.TextureLoader();
  const stoneMap=(kind:string,color=false)=>{if(!loader)return null;const t=own(loader.load('/assets/m/materials/refinement49/limestone-'+kind+'.png',request));t.wrapS=t.wrapT=T.RepeatWrapping;if(color)t.colorSpace=T.SRGBColorSpace;return t;};
- const stoneColor=stoneMap('color',true),stoneNormal=stoneMap('normal'),stoneRough=stoneMap('rough');
+ const stoneColor=sharedStone?.color??stoneMap('color',true),stoneNormal=sharedStone?.normal??stoneMap('normal'),stoneRough=sharedStone?.rough??stoneMap('rough');
  const repeated=new Map<string,T.Texture>();
  const detail=(texture:T.Texture|null,scale:number)=>{if(!texture)return null;const key=texture.uuid+':'+scale;let copy=repeated.get(key);if(!copy){copy=own(texture.clone());copy.repeat.setScalar(scale);copy.anisotropy=4;copy.needsUpdate=true;repeated.set(key,copy);}return copy;};
  const furniture=source.getObjectByName('M apartment furnishing web44');

@@ -1,0 +1,125 @@
+{
+  "scope": "Apartment 14 only; exact floor architecture, configurator and continuous balcony preserved",
+  "changes": [
+    "Shared vertices with identical close-range triangles, UVs and normals",
+    "External cacheable WebP maps; lossless normal/roughness maps; light/detail resolution tiers",
+    "Five distance-dependent balcony furniture index buffers with hysteresis",
+    "Shared configurator texture sources",
+    "Four fixed area lights, one shadowed sun, cached panorama reflections and instanced contact occlusion"
+  ],
+  "measurements": {
+    "before": {
+      "readyMs": 9422,
+      "light": {
+        "render": {
+          "frame": 66,
+          "calls": 35,
+          "triangles": 100926,
+          "points": 0,
+          "lines": 0
+        },
+        "memory": {
+          "geometries": 57,
+          "textures": 30
+        },
+        "geometryBytes": 4060594,
+        "textureSourceBytes": 167772160.00000003,
+        "sourceCount": 24,
+        "heap": 52859316
+      },
+      "high": {
+        "render": {
+          "frame": 101,
+          "calls": 76,
+          "triangles": 217364,
+          "points": 0,
+          "lines": 0
+        },
+        "memory": {
+          "geometries": 57,
+          "textures": 30
+        },
+        "geometryBytes": 4060594,
+        "textureSourceBytes": 167772160.00000003,
+        "sourceCount": 24,
+        "heap": 37481258
+      },
+      "errors": []
+    },
+    "after": {
+      "readyMs": 8219,
+      "light": {
+        "render": {
+          "frame": 91,
+          "calls": 36,
+          "triangles": 100946,
+          "points": 0,
+          "lines": 0
+        },
+        "memory": {
+          "geometries": 64,
+          "textures": 25
+        },
+        "geometryBytes": 2922614,
+        "textureSourceBytes": 38884693.333333336,
+        "sourceCount": 17,
+        "heap": 69140337
+      },
+      "high": {
+        "render": {
+          "frame": 127,
+          "calls": 36,
+          "triangles": 100946,
+          "points": 0,
+          "lines": 0
+        },
+        "memory": {
+          "geometries": 64,
+          "textures": 25
+        },
+        "geometryBytes": 2922614,
+        "textureSourceBytes": 114382165.33333328,
+        "sourceCount": 17,
+        "heap": 48390345
+      },
+      "errors": []
+    },
+    "qualification": "Local Edge headless at 1280x800; single load samples, not an FPS benchmark. Texture bytes are RGBA+mipmap estimates per unique source, not measured total GPU VRAM; per-frame triangles may include shadow passes."
+  },
+  "checks": {
+    "far": 5,
+    "near": 0,
+    "idle": 1,
+    "errors": [],
+    "shaderErrors": []
+  },
+  "lifecycle": {
+    "report": [
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 4,
+        "canvases": 1
+      },
+      {
+        "contextLost": true,
+        "geometries": 0,
+        "textures": 3,
+        "canvases": 1
+      },
+      {
+        "positionError": 0,
+        "targetError": 0,
+        "time": "75",
+        "quality": "light"
+      }
+    ],
+    "errors": []
+  }
+}
