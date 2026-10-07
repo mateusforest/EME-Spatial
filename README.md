@@ -43,7 +43,7 @@ Na Torre M, entre em uma residência ou escolha “Caminhar aqui” em uma área
 `npm run test:walk` verifica trajetos diretos, desvio de móveis, paredes fechadas, limites, exclusões e áreas desconectadas. O acabamento Blender/Cycles do apartamento de estudo no nível 14, frente direita, está na galeria; não substitui automaticamente os materiais e modelos navegáveis.
 
 ### Apartamento refinado (64)
-A unidade de estudo m-14 carrega sua sala e jantar diretamente do Blender 63 em GLB, sob demanda. Acesse /apresentar/m?apartamento=14. Atlas PBR gravados no Cycles, Draco e iluminação interativa; renders e experiência não são pixel-identical. Teste de circulação: node --experimental-strip-types tests/apartment64.test.mjs.
+O apartamento 14 reutiliza o pavimento completo da fachada (mApartment69). Personalização v70 no próprio modelo: prévia, descarte e aprovação salva por navegador. Materiais privados dessa unidade, mapas PBR compartilhados. O recorte 64 e renders 63 foram retirados de public e arquivados localmente em conteudos/arquivo-estudo-descontinuado-70; fontes Blender preservadas. Testes: tests/apartment69.test.mjs e tests/design70.test.mjs.
 
 ### Configurador independente de cozinha (65)
 Rota: /apresentar/cozinha. Modelo autorado no Blender a partir da área social do apartamento 14, com três módulos de layout e materiais independentes. Carrega apenas kitchen65.glb (~1 MB), cinco texturas locais e o decodificador Draco; não importa a torre ou o campus. Renderização por demanda com pausa em aba oculta, limite de densidade e sombras reduzidas em equipamentos modestos. Salva até quatro propostas localmente, compara A/B, exporta PNG e compartilha escolhas pelo link. Nenhuma chamada de IA ou gravação no servidor. Fonte Blender e exportação: conteudos/configurator65 (local, fora do Git). Validação de opções: tests/configurator65.test.mjs.
@@ -59,3 +59,17 @@ Rota: /apresentar/cozinha. Modelo autorado no Blender a partir da área social d
 - `npm run test:portal` verifica persistência do estúdio, validação, conflito entre abas e falha de armazenamento. `npm run build` valida TypeScript e gera as três entradas separadas.
 
 Antes de usar em produção com dados reais: integrar autenticação e autorização, migrar armazenamento para o servidor e revisar a emissão fiscal e a assinatura de contratos. A remoção do módulo no Select deve acontecer só depois de migrar os dados e validar o novo fluxo.
+
+## Landing e soluções · direção visual aprovada
+
+A entrada pública usa `src/marketing` (React), separada do portal e dos motores 3D. O visual aprovado foi implementado com categorias, ferramentas, comparação Básico/Interativo/Pro, projetos autorais, acervo e processo de criação.
+
+- `/solucoes/edificios`, `/solucoes/mixed-use`, `/solucoes/casas`, `/solucoes/condominios`, `/solucoes/interiores`: páginas por categoria com escopo, entregáveis e seleção de modelo.
+- `/projetos/torre-m` e `/projetos/mixed-use`: páginas autorais. Mixed Use permanece em desenvolvimento, com referência visual identificada.
+- `/personalizar`: apresentação leve de materiais com preferências locais e ligação para a personalização real em `/apresentar/m?apartamento=14&personalizar=1`. Os seletores não alteram a fotografia de referência.
+- `/criar-projeto`: briefing em três etapas, recebendo categoria, nível e interesse pela URL. Rascunho local e download JSON; nenhum pedido é enviado automaticamente.
+- A landing não importa Three.js, não inicia vídeos e não baixa GLBs. As experiências são abertas sob demanda por links explícitos.
+- A imagem `public/assets/casa-conceito.webp` é uma referência conceitual gerada para esta landing, não uma obra construída ou modelo 3D concluído. As demais imagens são do acervo existente.
+- `app.js` e `style.css` permanecem como referência legada; não são carregados pela nova entrada pública.
+
+Validação da implementação: build/TypeScript, navegação das 11 rotas principais em desktop e larguras 390/768, seleção de categoria/nível, persistência de briefing, download JSON, preferências de materiais e ausência de modelos 3D no carregamento da landing.

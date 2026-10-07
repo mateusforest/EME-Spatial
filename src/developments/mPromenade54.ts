@@ -1,7 +1,6 @@
 import * as T from 'three';
 import {craft53} from './mCraft53';
 import {addMGalleryFoliage} from './mGalleryFoliage';
-import {patioPoint53} from './mPatioLayout53';
 import {botany54} from './mBotany54';
 import {M_SITE} from './mSiteLayout';
 import type {Own,mSurfaces} from './mSurfaces';
@@ -40,10 +39,6 @@ export function promenade54(scene:T.Scene,own:Own,surfaces:ReturnType<typeof mSu
  run([[-41,38],[-54,18],[-57,-45],[-39,-94],[-62,-160],[-109,-191],[-185,-169],[-194,-62],[-181,26]],2.4,false,false,.3,true);
  run([[116,-48],[146,-59],[196,-90],[198,-153],[148,-181],[72,-182],[-12,-174],[-62,-160]],2.4,false,false,.3,true);
  run([[0,12],[0,24],[0,43]],6.7,false,false,.29);
- // Both residential streets follow the exact shared site mapping, so LEDs follow their curbs.
- for(const z of [115,160])for(const side of [-1,1]){const p=Array.from({length:91},(_,i)=>{const q=patioPoint53(-135+i*3.55,z+side*5.25);return [q.x,q.z];});run(p,.06,false,false,.27);}
- for(const x of [-140,190])for(const side of [-1,1])run(Array.from({length:25},(_,i)=>{const p=patioPoint53(x+side*5.25,115+i*45/24);return[p.x,p.z];}),.06,false,false,.27);
- for(const side of [-1,1])run(Array.from({length:28},(_,i)=>{const p=patioPoint53(side*6.5,73+i*42/27);return[p.x,p.z];}),.06,false,false,.27);
  const k=craft53(root,own),b=k.box;
  const seats:[[number,number,number],...number[][]]=[[37,38.3,0],[89,39.8,0],[126,37.8,0],[183,22,Math.PI/2],[83,-18,Math.PI/2],[113,-69,-.4],[30,-47,-.2]];
  for(const [x,z,a]of seats){const group=new T.Group();group.position.set(x,.39,z);group.rotation.y=a;root.add(group);const seat=craft53(group,own);for(let i=0;i<6;i++)seat.box(0,.46,-.40+i*.14,3.4,.09,.11,wood);for(let i=0;i<4;i++)seat.box(0,.75+i*.14,-.46,3.4,.10,.10,wood);for(const dx of [-1.25,1.25])seat.box(dx,.24,0,.09,.48,.80,metal);seat.box(0,.23,-.32,3.1,.035,.05,led);seat.flush();b(x,.54,z-1.25,4.4,.4,1.1,stone);addMGalleryFoliage(root,own,[-1.5,-.5,.5,1.5].map(dx=>[x+dx,.75,z-1.25,2.1]));}

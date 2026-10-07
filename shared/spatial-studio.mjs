@@ -1,8 +1,8 @@
 import {validateScene,validateProposal} from './spatial-scene.mjs';
 export const spatialLevels = [
- {id:'visual',label:'Apresentação',description:'Imagens, plantas e pontos de visita. Sem caminhada livre.',factor:.30,license:'Entrega web; hospedagem e direitos dos materiais definidos por projeto.'},
- {id:'interactive',label:'Navegável',description:'Geometria otimizada, caminhada e seleção de espaços.',factor:.65,license:'Motor web e bibliotecas de ativos; conferir licenças comerciais.'},
- {id:'signature',label:'Signature',description:'Alto realismo, materiais e luz avançados; produção especializada.',factor:1,license:'Motor gráfico e infraestrutura GPU a contratar conforme uso.'},
+ {id:'visual',label:'Básico',description:'3D leve com rotação, configurações e drone externo. Sem caminhada interna.',factor:.30,license:'Entrega web; hospedagem e direitos dos materiais definidos por projeto.'},
+ {id:'interactive',label:'Interativo',description:'Navegação nos ambientes, personalização e percursos internos e externos.',factor:.65,license:'Motor web e bibliotecas de ativos; conferir licenças comerciais.'},
+ {id:'signature',label:'Pro',description:'Alto realismo, materiais e luz refinados, interações e produção audiovisual personalizada.',factor:1,license:'Motor gráfico e infraestrutura GPU a contratar conforme uso.'},
 ];
 export function initialSpatialProject(){return {name:'G400 · piloto de produção',level:'interactive',scope:'pilot',brief:'Validar uma tipologia e um ambiente social, com navegação coerente com a planta. Medir horas, retrabalho e custo antes de expandir.',manualHours:200,automatableShare:.6,reductionTarget:.5,hourCost:115,resources:2500,contingency:.15,tax:.10,margin:.30,people:2,hoursPerWeek:30,reviewWeeks:1,courtesy:1,platformInvestment:0,plan:null};}
 const fail=message=>{throw Object.assign(new Error(message),{status:400});};

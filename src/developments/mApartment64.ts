@@ -6,10 +6,13 @@ import type {Own} from './mSurfaces';
 import type {MUnit} from './mUnits';
 import type {buildMInterior,InteriorLevel,RoomView} from './mInterior';
 import type {Obstacle} from './mWalking';
+import {balcony67,balcony67Obstacles} from './mBalcony67';
+import {mSurfaces} from './mSurfaces';
 
-export const apartment64Bounds:Obstacle={minX:.76,maxX:11.30,minZ:-4.20,maxZ:4.08};
+export const apartment64Bounds:Obstacle={minX:.76,maxX:11.30,minZ:-4.20,maxZ:9.16};
 // Measured furniture envelopes from the Blender social room, in glTF metres.
 export const apartment64Obstacles:Obstacle[]=[
+ ...balcony67Obstacles,
  {minX:1.76,maxX:5.54,minZ:-1.14,maxZ:.14},
  {minX:4.23,maxX:5.37,minZ:.1,maxZ:1.31},
  {minX:2.38,maxX:4.02,minZ:.73,maxZ:2.37},
@@ -22,10 +25,12 @@ export const apartment64Obstacles:Obstacle[]=[
  {minX:.85,maxX:1.72,minZ:3.08,maxZ:4.08},
  {minX:9.86,maxX:10.84,minZ:2.96,maxZ:4.08},
 ];
-export function buildMApartment64(own:Own,unit:MUnit,disposed:()=>boolean):ReturnType<typeof buildMInterior>{
+export function buildMApartment64(own:Own,unit:MUnit,disposed:()=>boolean,sharedSurfaces?:ReturnType<typeof mSurfaces>):ReturnType<typeof buildMInterior>{
  const group=new T.Group(),ceiling=new T.Group();group.name='Apartamento 14 · Interior Blender 63';group.add(ceiling);
+ const surfaces=sharedSurfaces??mSurfaces(own);balcony67(group,ceiling,own,surfaces);
  const views:Record<string,RoomView>={
   Living:{eye:[10.65,1.97,2.65],look:[4.5,1.2,-1.05]},
+  Sacada:{eye:[6,1.97,7.7],look:[6,1.55,20]},
   'Cozinha e jantar':{eye:[6.05,1.97,2.9],look:[8,1.3,-2.8]},
   'Detalhes e materiais':{eye:[5.95,1.97,2.35],look:[3.15,.95,-.1]},
  };
@@ -46,7 +51,7 @@ export function buildMApartment64(own:Own,unit:MUnit,disposed:()=>boolean):Retur
   // Close the unmodeled side of this social-room study, without inventing other rooms.
   const wall=own(new T.MeshStandardMaterial({color:'#cfc1a6',roughness:.85}));
   const side=new T.Mesh(own(new T.BoxGeometry(.10,2.95,8.55)),wall);side.position.set(11.4,1.80,0);side.receiveShadow=true;group.add(side);
-  // Open sliding bay: unobstructed entry to the view, bounded walking stays indoors.
+  // Open sliding bay connects the living room to the walkable balcony.
   const metal=own(new T.MeshStandardMaterial({color:'#393c34',metalness:.75,roughness:.3}));
   for(const x of [.72,11.32]){const frame=new T.Mesh(own(new T.BoxGeometry(.055,2.95,.07)),metal);frame.position.set(x,1.80,4.34);group.add(frame);}
   RectAreaLightUniformsLib.init();
@@ -55,6 +60,6 @@ export function buildMApartment64(own:Own,unit:MUnit,disposed:()=>boolean):Retur
   }
   group.userData.apartment64Ready=true;
  }).finally(()=>draco.dispose());
- return {group,ceiling,obstacles:level.obstacles,ready:Promise.all([ready]),views,bounds:level.bounds,levels:[level],stairs:[],doorways:[],floorHeight:3.5,unit};
+ return {group,ceiling,obstacles:level.obstacles,ready:Promise.all([ready,surfaces.ready.then(()=>{})]),views,bounds:level.bounds,levels:[level],stairs:[],doorways:[{x:6,z:4.34,level:0}],floorHeight:3.5,unit};
 }
 

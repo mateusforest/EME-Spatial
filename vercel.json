@@ -11,6 +11,18 @@
   ],
   "rewrites": [
     {
+      "source": "/solucoes/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projetos/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/personalizar",
+      "destination": "/index.html"
+    },
+    {
       "source": "/portal",
       "destination": "/portal.html"
     },

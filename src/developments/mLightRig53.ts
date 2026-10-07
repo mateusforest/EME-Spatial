@@ -1,6 +1,5 @@
 import * as T from 'three';
 import {RectAreaLightUniformsLib} from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import {patioPoint53} from './mPatioLayout53';
 
 /** A fixed four-light budget avoids recompiling every material when a room is selected. */
 export function lightRig53(scene:T.Scene,crown:T.Group){
@@ -19,10 +18,6 @@ export function lightRig53(scene:T.Scene,crown:T.Group){
   }else if(target.x>125&&target.z<65&&target.z>-45){
    down(0,145,7.3,0,12,18,2.5*night);down(1,163,7.3,0,12,18,2.5*night);
    down(2,153,54.2,-3,15,12,2.6*night);down(3,153,4,27,12,14,1.4*night);
-  }else if(target.z>73){
-   const club=patioPoint53(-9,136),entry=patioPoint53(0,80);
-   down(0,club.x,3.65,club.z,27,25,2.8*night);down(1,entry.x,3.72,entry.z,24,11,3*night);
-   down(2,club.x+44,3,club.z+3,29,24,1.4*night,'#b9e0dd');down(3,40,6.7,124,16,8,1.5*night);
   }else if(target.y>85){
    down(0,0,crown.position.y+8.7,-4,12,7,3*night);down(1,0,crown.position.y+4.55,0,24,16,2*night);
    down(2,-16,4.15,6,10,5,2.8*night);down(3,20,4.15,9,10,6,2.8*night);
