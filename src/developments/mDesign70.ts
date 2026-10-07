@@ -29,16 +29,19 @@ export function installDesign70(source:T.Group,own:Own,surfaces:ReturnType<typeo
  const loader=typeof document==='undefined'?null:new T.TextureLoader();
  const stoneMap=(kind:string,color=false)=>{if(!loader)return null;const t=own(loader.load('/assets/m/materials/refinement49/limestone-'+kind+'.png',request));t.wrapS=t.wrapT=T.RepeatWrapping;if(color)t.colorSpace=T.SRGBColorSpace;return t;};
  const stoneColor=stoneMap('color',true),stoneNormal=stoneMap('normal'),stoneRough=stoneMap('rough');
+ const repeated=new Map<string,T.Texture>();
+ const detail=(texture:T.Texture|null,scale:number)=>{if(!texture)return null;const key=texture.uuid+':'+scale;let copy=repeated.get(key);if(!copy){copy=own(texture.clone());copy.repeat.setScalar(scale);copy.anisotropy=4;copy.needsUpdate=true;repeated.set(key,copy);}return copy;};
  const furniture=source.getObjectByName('M apartment furnishing web44');
  const channels=new Map<string,T.MeshStandardMaterial[]>();
  furniture?.traverse(o=>{
   if(!(o instanceof T.Mesh)||Array.isArray(o.material)||!(o.material instanceof T.MeshStandardMaterial))return;
   const channel=o.userData.finish70 as string|undefined;if(!channel)return;
-  const m=own(o.material.clone());o.material=m;m.name='M14 '+channel;
-  if(channel==='wood')surfaces.finishWood(m);
+  const m=own(new T.MeshPhysicalMaterial());T.MeshStandardMaterial.prototype.copy.call(m,o.material);o.material=m;m.name='M14 '+channel;
+  if(channel==='wood'){surfaces.finishWood(m);m.map=detail(m.map,.55);m.normalMap=detail(m.normalMap,.55);m.roughnessMap=detail(m.roughnessMap,.55);m.normalScale.set(.10,.10);m.roughness=.58;m.clearcoat=.16;m.clearcoatRoughness=.42;}
   if(channel==='stone'){surfaces.finishStone(m);if(stoneColor){m.map=stoneColor;m.normalMap=stoneNormal;m.roughnessMap=stoneRough;m.normalScale.set(.12,.12);m.roughness=.55;}}
-  if(channel==='fabric'||channel==='accent'||channel==='rug')surfaces.finishLinen(m);
-  if(channel==='metal'){m.metalness=.72;m.roughness=.3;}
+  if(channel==='fabric'||channel==='accent'||channel==='rug'||channel==='green'){surfaces.finishLinen(m);const scale=channel==='rug'?5:3;m.normalMap=detail(m.normalMap,scale);m.roughnessMap=detail(m.roughnessMap,scale);m.normalScale.set(channel==='rug'?.45:.3,channel==='rug'?.45:.3);m.roughness=.93;m.sheen=.5;m.sheenColor.set('#d8cebc');m.sheenRoughness=.85;}
+  if(channel==='metal'){m.metalness=.82;m.roughness=.34;}
+  if(channel==='wall'){m.color.set('#e4dfd2');m.roughness=.96;m.normalMap=stoneNormal;m.normalScale.set(.035,.035);}
   m.envMapIntensity=.85;
   channels.set(channel,[...(channels.get(channel)||[]),m]);
  });

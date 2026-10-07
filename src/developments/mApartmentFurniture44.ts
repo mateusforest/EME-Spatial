@@ -10,8 +10,14 @@ export function furnishMApartments44(floors:T.Group[],own:Own){
  function layout(variant:number,upper:boolean,penthouseLower=false,refined=false){
   const key=variant+':'+upper+':'+penthouseLower+':'+refined;if(cache.has(key))return cache.get(key)!;
   const batches:T.BufferGeometry[][]=mats.map(()=>[]);const tableBatches:T.BufferGeometry[][]=mats.map(()=>[]);let table=false;
-  const put=(g:T.BufferGeometry,m:number,x:number,y:number,z:number,a=0)=>{g.rotateY(a);g.translate(x,y+.5,z);(table?tableBatches:batches)[m].push(g);};
-  const box=(x:number,y:number,z:number,w:number,h:number,d:number,m:number,soft=false,a=0)=>put(soft?new RoundedBoxGeometry(w,h,d,1,Math.min(.08,h*.3)):new T.BoxGeometry(w,h,d),m,x,y,z,a);
+  const put=(g:T.BufferGeometry,m:number,x:number,y:number,z:number,a=0)=>{
+   // Map each piece in local metric coordinates before rotating it: grain follows the joinery.
+   if(refined){const pos=g.getAttribute('position'),normal=g.getAttribute('normal'),uv=g.getAttribute('uv');
+    if(g instanceof T.CylinderGeometry){const radius=g.parameters.radiusTop,height=g.parameters.height;for(let j=0;j<uv.count;j++){const cap=Math.abs(normal.getY(j))>.7;uv.setXY(j,cap?pos.getX(j):uv.getX(j)*2*Math.PI*radius,cap?pos.getZ(j):uv.getY(j)*height);}}
+    else{for(let j=0;j<pos.count;j++){const nx=Math.abs(normal.getX(j)),ny=Math.abs(normal.getY(j));uv.setXY(j,nx>.7?pos.getZ(j):pos.getX(j),ny>.7?pos.getZ(j):pos.getY(j));}}
+   }
+   g.rotateY(a);g.translate(x,y+.5,z);(table?tableBatches:batches)[m].push(g);};
+  const box=(x:number,y:number,z:number,w:number,h:number,d:number,m:number,soft=false,a=0)=>put(soft?new RoundedBoxGeometry(w,h,d,refined?2:1,Math.min(.08,h*.3)):new T.BoxGeometry(w,h,d),m,x,y,z,a);
   const cyl=(x:number,y:number,z:number,r:number,h:number,m:number)=>put(new T.CylinderGeometry(r,r,h,refined?32:12),m,x,y,z);
   function plant(x:number,z:number){cyl(x,.3,z,.27,.6,3);for(let j=0;j<5;j++){const a=j*2.4;put(new T.IcosahedronGeometry(.31,0),6,x+Math.cos(a)*.24,.8+j*.1,z+Math.sin(a)*.24);}}
   function chair(x:number,z:number,a=0,f=1){
@@ -29,7 +35,7 @@ export function furnishMApartments44(floors:T.Group[],own:Own){
   }
   function bed(x:number,z:number){
    box(x,.26,z,2.25,.4,2.45,0,true);box(x,.57,z,2.15,.25,2.35,1,true);
-   box(x,1,z-1.2,2.9,1.55,.18,variant===2?5:3,true);
+   box(x,1,z-1.2,2.9,1.55,.18,refined?1:variant===2?5:3,true);
    for(const dx of [-.53,.53])box(x+dx,.78,z-.68,.82,.18,.52,1,true);
    box(x,.72,z+.67,2.17,.08,.82,2,true);
    for(const dx of [-1.65,1.65]){box(x+dx,.4,z-.7,.68,.7,.65,0);cyl(x+dx,.91,z-.7,.18,.26,3);}
@@ -74,7 +80,7 @@ export function furnishMApartments44(floors:T.Group[],own:Own){
    }
   }
   const parts:{geometry:T.BufferGeometry;material:T.Material}[]=[];
-  [...batches,...tableBatches].forEach((gs,index)=>{const i=index%mats.length;if(!gs.length)return;const flat=gs.map(g=>{if(!refined)g.deleteAttribute('uv');const f=g.index?g.toNonIndexed():g;if(f!==g)g.dispose();return f;});const geo=mergeGeometries(flat,false);flat.forEach(g=>g.dispose());if(geo){if(refined){const pos=geo.getAttribute('position'),norm=geo.getAttribute('normal'),uv=[];for(let n=0;n<pos.count;n++){const x=pos.getX(n),y=pos.getY(n),z=pos.getZ(n),nx=Math.abs(norm.getX(n)),ny=Math.abs(norm.getY(n));uv.push(nx>.7?z:x,ny>.7?z:y);}geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));}geo.userData.finish70=['wood','fabric','green','stone','metal','accent','leaf','wall','rug'][i];if(index>=mats.length){geo.translate(-6.7,0,-1.95);geo.userData.table70=true;}parts.push({geometry:own(geo),material:mats[i]});}});
+  [...batches,...tableBatches].forEach((gs,index)=>{const i=index%mats.length;if(!gs.length)return;const flat=gs.map(g=>{if(!refined)g.deleteAttribute('uv');const f=g.index?g.toNonIndexed():g;if(f!==g)g.dispose();return f;});const geo=mergeGeometries(flat,false);flat.forEach(g=>g.dispose());if(geo){geo.userData.finish70=['wood','fabric','green','stone','metal','accent','leaf','wall','rug'][i];if(index>=mats.length){geo.translate(-6.7,0,-1.95);geo.userData.table70=true;}parts.push({geometry:own(geo),material:mats[i]});}});
   cache.set(key,parts);return parts;
  }
  floors.forEach((floor,i)=>{
