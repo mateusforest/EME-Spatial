@@ -1,0 +1,11 @@
+{
+  "sourceSha256": "3be4396a72f5a24971ffbc7c2d762d24e65a4975f73c07a535a5f0e4c2ae1090",
+  "design": {
+    "wood": 0,
+    "fabric": 0,
+    "accent": 0,
+    "stone": 0,
+    "table": "round"
+  },
+  "unit": "m-14"
+}

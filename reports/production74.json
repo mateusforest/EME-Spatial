@@ -1,0 +1,37 @@
+{
+  "validationJob": "e398b0868dc144bdac06edbfce41d280",
+  "previewJob": "9c69cf2d8be74d21a91a4341fa615386",
+  "validationImages": 1,
+  "previewItems": 4,
+  "checks": [
+    "source mismatch blocked",
+    "finish mismatch blocked",
+    "arbitrary source rejected",
+    "unapproved final blocked",
+    "cross-origin rejected",
+    "idempotent requests",
+    "revoked approval blocked",
+    "real Cycles validation",
+    "real Eevee 3 images and continuous route",
+    "provenance after edit"
+  ],
+  "isolatedStorage": true,
+  "video": {
+    "frames": 144,
+    "fps": 24,
+    "duration": 6,
+    "width": 1280,
+    "height": 720,
+    "uniqueFrames": 144
+  },
+  "portalChecks": [
+    "import integrity",
+    "approval required",
+    "approval persists across reload",
+    "revocation",
+    "approved delivery export",
+    "request download",
+    "responsive 390px",
+    "no page errors"
+  ]
+}

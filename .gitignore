@@ -13,3 +13,4 @@ prepare-assets.cjs
 
 dist/
 *.tsbuildinfo
+__pycache__/
