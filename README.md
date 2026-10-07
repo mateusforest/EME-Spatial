@@ -47,3 +47,29 @@ O apartamento 14 reutiliza o pavimento completo da fachada (mApartment69). Perso
 
 ### Configurador independente de cozinha (65)
 Rota: /apresentar/cozinha. Modelo autorado no Blender a partir da área social do apartamento 14, com três módulos de layout e materiais independentes. Carrega apenas kitchen65.glb (~1 MB), cinco texturas locais e o decodificador Draco; não importa a torre ou o campus. Renderização por demanda com pausa em aba oculta, limite de densidade e sombras reduzidas em equipamentos modestos. Salva até quatro propostas localmente, compara A/B, exporta PNG e compartilha escolhas pelo link. Nenhuma chamada de IA ou gravação no servidor. Fonte Blender e exportação: conteudos/configurator65 (local, fora do Git). Validação de opções: tests/configurator65.test.mjs.
+## Portal pessoal · primeira etapa
+
+`/portal` abre o workspace independente. Rotas: `/portal/projetos`, `/portal/estudio`, `/portal/imagens`, `/portal/videos`, `/portal/orcamentos`, `/portal/contratos`, `/portal/notas`, `/portal/financeiro` e `/portal/configuracoes`.
+
+- Front-end de demonstração, **sem autenticação**. Não inserir dados reais de clientes ou dados financeiros confidenciais. `noindex` é uma orientação a buscadores, não controle de acesso.
+- Estúdio, oficina G400, estimador e proposta PDF reaproveitados de `EME-select` (base `6b0c3d6`), mantendo os modelos e o fluxo Three.js já presentes no Spatial. Nada foi removido ou alterado no repositório Select.
+- Rascunhos do estúdio, briefings e registros de gestão são salvos apenas no `localStorage` deste domínio/navegador. Não há sincronização com o Select, banco, autenticação, IA, assinatura, serviço fiscal ou instituição financeira.
+- O painel financeiro começa com exemplos identificados. A área de notas simula percentual de faturamento e reserva informada manualmente, sem emissão ou cálculo fiscal validado.
+- `Configurações → Exportar rascunhos` baixa um JSON. Limpar os dados do navegador apaga os rascunhos locais; importar/restaurar backups ainda não foi implementado.
+- `npm run test:portal` verifica persistência do estúdio, validação, conflito entre abas e falha de armazenamento. `npm run build` valida TypeScript e gera as três entradas separadas.
+
+Antes de usar em produção com dados reais: integrar autenticação e autorização, migrar armazenamento para o servidor e revisar a emissão fiscal e a assinatura de contratos. A remoção do módulo no Select deve acontecer só depois de migrar os dados e validar o novo fluxo.
+
+## Landing e soluções · direção visual aprovada
+
+A entrada pública usa `src/marketing` (React), separada do portal e dos motores 3D. O visual aprovado foi implementado com categorias, ferramentas, comparação Básico/Interativo/Pro, projetos autorais, acervo e processo de criação.
+
+- `/solucoes/edificios`, `/solucoes/mixed-use`, `/solucoes/casas`, `/solucoes/condominios`, `/solucoes/interiores`: páginas por categoria com escopo, entregáveis e seleção de modelo.
+- `/projetos/torre-m` e `/projetos/mixed-use`: páginas autorais. Mixed Use permanece em desenvolvimento, com referência visual identificada.
+- `/personalizar`: apresentação leve de materiais com preferências locais e ligação para a personalização real em `/apresentar/m?apartamento=14&personalizar=1`. Os seletores não alteram a fotografia de referência.
+- `/criar-projeto`: briefing em três etapas, recebendo categoria, nível e interesse pela URL. Rascunho local e download JSON; nenhum pedido é enviado automaticamente.
+- A landing não importa Three.js, não inicia vídeos e não baixa GLBs. As experiências são abertas sob demanda por links explícitos.
+- A imagem `public/assets/casa-conceito.webp` é uma referência conceitual gerada para esta landing, não uma obra construída ou modelo 3D concluído. As demais imagens são do acervo existente.
+- `app.js` e `style.css` permanecem como referência legada; não são carregados pela nova entrada pública.
+
+Validação da implementação: build/TypeScript, navegação das 11 rotas principais em desktop e larguras 390/768, seleção de categoria/nível, persistência de briefing, download JSON, preferências de materiais e ausência de modelos 3D no carregamento da landing.

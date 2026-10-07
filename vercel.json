@@ -1,10 +1,50 @@
 {
- "framework":"vite","buildCommand":"npm run build","outputDirectory":"dist",
- "redirects":[{"source":"/spatial","destination":"/","permanent":false}],
- "rewrites":[
- {"source":"/criar-projeto","destination":"/index.html"},
- {"source":"/criar-projeto/","destination":"/index.html"},
- {"source":"/apresentar/:path*","destination":"/experience.html"},
- {"source":"/api/public/developments/moradas-da-serra","destination":"https://www.emeselect.com/api/public/developments/moradas-da-serra"}
- ]
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/spatial",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/solucoes/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projetos/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/personalizar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/portal/:path*",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/criar-projeto",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/criar-projeto/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/apresentar/:path*",
+      "destination": "/experience.html"
+    },
+    {
+      "source": "/api/public/developments/moradas-da-serra",
+      "destination": "https://www.emeselect.com/api/public/developments/moradas-da-serra"
+    }
+  ]
 }
