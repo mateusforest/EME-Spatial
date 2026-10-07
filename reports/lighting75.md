@@ -20,6 +20,7 @@
 - Apartamento e galeria verificados a 390 px sem transbordamento horizontal. Vídeo público validado com duração de 6 s e sem download antes da interação.
 - Evidência local: `conteudos/light75/final/`. Contadores do interior incluem os passes de contato; exterior não recebeu passes adicionais.
 - Build de produção local: rooftop pronto em 43,3 s neste teste com navegador novo, zero requisições de carros detalhados na abertura; navegação pelo menu até a garagem carregou seus 22 veículos uma única vez, sem erros de JavaScript. A cena exterior continua exigente na primeira abertura.
+- Domínio público: revisão 75 confirmada no rooftop e no apartamento 14; primeira abertura no navegador de validação em 62,0 s / 18,2 s respectivamente. Carros detalhados ausentes no rooftop. As três prévias de 1600 px e o vídeo de 6 s carregaram na galeria. Corrigida a referência ausente ao ícone da galeria, única resposta 404 encontrada.
 
 ## Limites
 
