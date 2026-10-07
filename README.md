@@ -47,3 +47,15 @@ A unidade de estudo m-14 carrega sua sala e jantar diretamente do Blender 63 em 
 
 ### Configurador independente de cozinha (65)
 Rota: /apresentar/cozinha. Modelo autorado no Blender a partir da área social do apartamento 14, com três módulos de layout e materiais independentes. Carrega apenas kitchen65.glb (~1 MB), cinco texturas locais e o decodificador Draco; não importa a torre ou o campus. Renderização por demanda com pausa em aba oculta, limite de densidade e sombras reduzidas em equipamentos modestos. Salva até quatro propostas localmente, compara A/B, exporta PNG e compartilha escolhas pelo link. Nenhuma chamada de IA ou gravação no servidor. Fonte Blender e exportação: conteudos/configurator65 (local, fora do Git). Validação de opções: tests/configurator65.test.mjs.
+## Portal pessoal · primeira etapa
+
+`/portal` abre o workspace independente. Rotas: `/portal/projetos`, `/portal/estudio`, `/portal/imagens`, `/portal/videos`, `/portal/orcamentos`, `/portal/contratos`, `/portal/notas`, `/portal/financeiro` e `/portal/configuracoes`.
+
+- Front-end de demonstração, **sem autenticação**. Não inserir dados reais de clientes ou dados financeiros confidenciais. `noindex` é uma orientação a buscadores, não controle de acesso.
+- Estúdio, oficina G400, estimador e proposta PDF reaproveitados de `EME-select` (base `6b0c3d6`), mantendo os modelos e o fluxo Three.js já presentes no Spatial. Nada foi removido ou alterado no repositório Select.
+- Rascunhos do estúdio, briefings e registros de gestão são salvos apenas no `localStorage` deste domínio/navegador. Não há sincronização com o Select, banco, autenticação, IA, assinatura, serviço fiscal ou instituição financeira.
+- O painel financeiro começa com exemplos identificados. A área de notas simula percentual de faturamento e reserva informada manualmente, sem emissão ou cálculo fiscal validado.
+- `Configurações → Exportar rascunhos` baixa um JSON. Limpar os dados do navegador apaga os rascunhos locais; importar/restaurar backups ainda não foi implementado.
+- `npm run test:portal` verifica persistência do estúdio, validação, conflito entre abas e falha de armazenamento. `npm run build` valida TypeScript e gera as três entradas separadas.
+
+Antes de usar em produção com dados reais: integrar autenticação e autorização, migrar armazenamento para o servidor e revisar a emissão fiscal e a assinatura de contratos. A remoção do módulo no Select deve acontecer só depois de migrar os dados e validar o novo fluxo.
