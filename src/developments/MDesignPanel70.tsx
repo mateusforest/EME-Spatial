@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {finishes70,read70,save70,initial70,type Design70} from './mDesign70';
 import './m-design70.css';
+import {downloadProduction73} from './mProduction73';
 export default function MDesignPanel70({apply,onClose}:{apply:(d:Design70)=>void;onClose:()=>void}){
  const [saved,setSaved]=useState(()=>read70(localStorage)),[draft,setDraft]=useState(saved),[compare,setCompare]=useState(false),[message,setMessage]=useState('Explore os acabamentos no próprio pavimento.');
  useEffect(()=>{apply(compare?saved:draft);},[draft,compare,saved,apply]);
@@ -14,6 +15,7 @@ export default function MDesignPanel70({apply,onClose}:{apply:(d:Design70)=>void
   <label><input type="checkbox" checked={compare} onChange={e=>setCompare(e.target.checked)}/> Comparar com a versão salva</label>
   <p role="status">{message}</p><button className="m-design70-save" onClick={approve} disabled={compare}>Aprovar e salvar</button>
   <div className="m-design70-actions"><button onClick={()=>{setDraft(saved);setCompare(false);setMessage('Prévia descartada.');}}>Descartar prévia</button><button onClick={()=>{setDraft({...initial70});setCompare(false);}}>Acabamentos originais</button></div>
-  <small>Salvo somente neste navegador. Não publica alterações para outros visitantes. Fechar sem salvar descarta a prévia.</small>
+  <button onClick={()=>{try{const record=downloadProduction73(localStorage);setMessage(record.approval==='saved'?'Versão aprovada exportada para produção. A prévia não salva fica de fora.':'Acabamentos originais exportados. Ainda não há uma aprovação salva.');}catch{setMessage('Não foi possível exportar a versão salva. Revise e aprove os acabamentos antes de tentar novamente.');}}}>Exportar versão para produção</button>
+  <small>Salvo somente neste navegador. A exportação leva os acabamentos salvos para a produção no Blender. Não publica alterações para outros visitantes. Fechar sem salvar descarta a prévia.</small>
  </aside>;
 }
