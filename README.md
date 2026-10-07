@@ -44,3 +44,6 @@ Na Torre M, entre em uma residência ou escolha “Caminhar aqui” em uma área
 
 ### Apartamento refinado (64)
 A unidade de estudo m-14 carrega sua sala e jantar diretamente do Blender 63 em GLB, sob demanda. Acesse /apresentar/m?apartamento=14. Atlas PBR gravados no Cycles, Draco e iluminação interativa; renders e experiência não são pixel-identical. Teste de circulação: node --experimental-strip-types tests/apartment64.test.mjs.
+
+### Configurador independente de cozinha (65)
+Rota: /apresentar/cozinha. Modelo autorado no Blender a partir da área social do apartamento 14, com três módulos de layout e materiais independentes. Carrega apenas kitchen65.glb (~1 MB), cinco texturas locais e o decodificador Draco; não importa a torre ou o campus. Renderização por demanda com pausa em aba oculta, limite de densidade e sombras reduzidas em equipamentos modestos. Salva até quatro propostas localmente, compara A/B, exporta PNG e compartilha escolhas pelo link. Nenhuma chamada de IA ou gravação no servidor. Fonte Blender e exportação: conteudos/configurator65 (local, fora do Git). Validação de opções: tests/configurator65.test.mjs.

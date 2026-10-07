@@ -1,0 +1,7 @@
+Texturas do configurador 65
+Derivadas localmente dos mapas já presentes em public/assets/m/materials:
+- realism50/oak-color.webp e oak-normal.webp (oak_veneer_01, Poly Haven CC0; consultar realism50/sources.json).
+- refinement49/limestone-color.png e limestone-normal.png.
+- linen-normal.webp (consultar materials/SOURCES.md).
+Mapas de cor em sRGB; normais em dados lineares, com compressão sem perda. Redução para 1024 px (cor) / 512 px (normais).
+Modelo criado a partir do apartamento de estudo 14 no Blender, com módulos autorados para três disposições de cozinha. Não é uma planta executiva.
