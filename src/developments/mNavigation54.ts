@@ -8,7 +8,6 @@ export const NAV_GROUPS54:{title:string;destinations:MDestination[]}[]=[
  {title:'Torre M · 22 andares',destinations:['Edifício','Fachada','Varandas','Fundos','Lateral','Detalhe dos fundos','Rooftop','Salão panorâmico','Cobertura']},
  {title:'Lazer e natureza',destinations:['Jardim e lazer','Alameda iluminada','Quiosque','Parque e lago','Quadras','Kids e família','Espaço pet','Golfe']},
  {title:'Galeria e serviços',destinations:['Galeria e lobby','Entrada do lobby','Terraços da galeria','MGym','MCoffe','Interior da garagem','Elevadores do subsolo','Vagas e recarga','Garagem']},
- {title:'Condomínio de casas',destinations:['Condomínio Pátio','Casas e lotes','Clube do condomínio','Entrada do Pátio','Casa em detalhe']},
 ];
 export type CommonVisit54={eye:[number,number,number];look:[number,number,number];bounds:Obstacle;obstacles:Obstacle[];areas?:Obstacle[];exclusions?:WalkPoint[][]};
 const r=(minX:number,maxX:number,minZ:number,maxZ:number):Obstacle=>({minX,maxX,minZ,maxZ});

@@ -1,6 +1,4 @@
-import {patioPoint53} from './mPatioLayout53';
 import {context52} from './mContext52';
-import {buildMCondominium42} from './mCondominium42';
 import {grassSurface51} from './mGround51';
 import {canopy51} from './mCanopy51';
 import {enrichMNeighborhood} from './mNeighborhood37';
@@ -10,7 +8,7 @@ import type { Own,mSurfaces } from './mSurfaces';
 import { M_SITE } from './mSiteLayout';
 
 /** Park scenery is separate from the architectural model and never enters a floor cut. */
-export function buildMLandscape(scene:T.Scene,own:Own,surfaces:ReturnType<typeof mSurfaces>) {
+export function buildMLandscape(scene:T.Scene,own:Own,_surfaces:ReturnType<typeof mSurfaces>) {
  const group=new T.Group();group.name='M_Parque_e_lago';scene.add(group);
  let seed=260930;const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
  const material=(color:string,roughness=1,metalness=0)=>own(new T.MeshStandardMaterial({color,roughness,metalness}));
@@ -150,20 +148,11 @@ export function buildMLandscape(scene:T.Scene,own:Own,surfaces:ReturnType<typeof
  for(let i=0;i<14;i++)trees.push({x:202+random()*18,z:-12-i*10,h:8+random()*7});
  for(let i=0;i<13;i++)trees.push({x:-49-random()*6,z:-35-i*7.5,h:6+random()*8});
  for(const x of [-18,24,65,108])trees.push({x,z:47,h:6.5});
- // The front block now contains the Pátio housing community.
- polygon([[-235,70],[238,70],[238,205],[-235,205]].map(p=>new T.Vector2(...p)),meadow,terrainY,8);
- for(let x=-150;x<207;x+=24)for(const z of [76,201]){
-  if(z===76&&Math.abs(x)<20)continue;
-  trees.push({x,z,h:5.5});
- }
- for(const x of [-152,202])for(const z of [104,135,175])trees.push({x,z,h:7});
- for(const x of [-105,-70,-40,74,115,151,175])trees.push({x,z:137,h:5.5});
  // Irregular background groves soften the horizon without occupying the paths or golf holes.
  for(let i=0;i<150;i++){
   const a=i*2.39996,r=250+random()*60;
   trees.push({x:Math.cos(a)*r,z:Math.sin(a)*r-20,h:8+random()*10});
  }
- for(let i=trees.length-1;i>=0;i--){const t=trees[i];if(t.z>=73&&t.z<=205&&t.x>=-152&&t.x<=202){const p=patioPoint53(t.x,t.z);t.x=p.x;t.z=p.z;}else if(t.z>70&&t.z<330&&t.x>-205&&t.x<275)trees.splice(i,1);}
  for(let i=trees.length-1;i>=0;i--)if(trees[i].x>124&&trees[i].x<193&&trees[i].z>-42&&trees[i].z<39)trees.splice(i,1);
  const trunkGeometry=geometry(new T.CylinderGeometry(.52,1,1,7)),trunks=own(new T.InstancedMesh(trunkGeometry,bark,trees.length*4));
  const botanical=canopy51(own),canopies=own(new T.InstancedMesh(botanical.geometry,botanical.material,trees.length*10));
@@ -184,7 +173,7 @@ export function buildMLandscape(scene:T.Scene,own:Own,surfaces:ReturnType<typeof
  trunks.castShadow=true;trunks.receiveShadow=true;canopies.receiveShadow=true;group.add(trunks,canopies);
  context52(group,own);
  enrichMNeighborhood(group,own,terrainY);
- buildMCondominium42(group,own,surfaces);
+
  // Merge fixed deck, poles and flags by material; plants and skyline remain instanced.
  const batches=new Map<T.Material,T.Mesh[]>();
  for(const child of [...group.children])if(child instanceof T.Mesh&&!(child instanceof T.InstancedMesh)&&!Array.isArray(child.material)){

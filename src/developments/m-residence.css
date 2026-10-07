@@ -40,3 +40,4 @@
 
 
 .m-load64{position:absolute;inset:0;z-index:50;display:grid;place-items:center;background:#f5f0e8e8;color:#173e32;font-size:18px;}
+.m-header-actions{flex-wrap:wrap;justify-content:flex-end}@media(max-width:700px){.m-header{flex-wrap:wrap}.m-header-actions{width:100%;justify-content:flex-start}.m-header-actions .m-gallery62-link{font-size:10px;padding:9px 10px}}
