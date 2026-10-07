@@ -102,13 +102,22 @@ export default function MResidence(){
   function roomLighting(){if(!insideEnvironment){const pm=new T.PMREMGenerator(renderer),environment=new RoomEnvironment();insideEnvironment=own(pm.fromScene(environment));environment.dispose();pm.dispose();}return insideEnvironment.texture;}
   const interiors=new Map<string,Model>();
   let design70:ReturnType<typeof installDesign70>|undefined;
+  let garageDetailsRequested=false;
+  function ensureGarageDetails(){
+   if(standalone||garageDetailsRequested||disposed)return;garageDetailsRequested=true;
+   void garageAssets55(scene,own,()=>disposed).then(count=>{
+    if(disposed)return;mount.dataset.garageDetailedCars=String(count??0);parkedCars=scene.getObjectByName('Garage55 detailed vehicles');
+    parkedCars?.traverse(o=>{if(o instanceof T.Mesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(m instanceof T.MeshStandardMaterial&&garageFinish){m.envMap=garageFinish.environment;m.needsUpdate=true;}});
+    lighting?.refresh();renderer.shadowMap.needsUpdate=true;requestRender();
+   }).catch(error=>console.warn('Mantendo os veículos simplificados da garagem.',error));
+  }
   let unit=unitForFloor(PILOT_FLOOR),interior:Model|undefined,baseY=M_BASE+(unit.startFloor-1)*M_STEP,walkElevation=0;
   function modelFor(next:MUnit){
    const refined=next.id==='m-14';const key=(refined?'apartment69:':'')+next.kind+':'+(next.projection||'none')+':'+interiorStyle53(next).index;let model=interiors.get(key);
    if(!model){preparing=true;if(refined)setApartmentLoading(true);model=refined?buildMApartment69(own,next,floors[13]):buildMInterior(own,Math.min(renderer.capabilities.getMaxAnisotropy(),8),next,exterior.surfaces);const roomLights:T.Light[]=[];model.group.traverse(o=>{if(o instanceof T.Light)roomLights.push(o);});roomLights.forEach(o=>o.removeFromParent());model.group.visible=false;scene.add(model.group);interiors.set(key,model);apartmentLighting?.prepare(model.group);model.ready.then(async()=>{if(!disposed){lighting?.refresh();await renderer.compileAsync(model!.group,camera,scene);if(!disposed){preparing=false;setApartmentLoading(false);requestRender();}}}).catch(()=>{if(!disposed){setApartmentLoading(false);setError(true);}});}
    return model;
   }
-  exterior.ready.then(async()=>{await shadingReady;if(!disposed){design70=installDesign70(floors[13],own,exterior.surfaces,requestRender,apartmentScene?.designStone());let approved:Design70;try{approved=read70(localStorage);}catch{approved={wood:0,fabric:0,accent:0,stone:0,table:'round'};}design70.apply(approved);designApply.current=d=>{design70?.apply(d);for(const m of interiors.values())if(m.group.userData.apartment69Ready)design70?.apply(d,m.group);renderer.shadowMap.needsUpdate=true;requestRender();};if(!standalone){commonFinish53(scene,own,exterior.surfaces,landscape.deckY);promenade=promenade54(scene,own,exterior.surfaces);lightRig=lightRig53(scene,crown);const detailedCars=await garageAssets55(scene,own,()=>disposed);if(disposed)return;mount.dataset.garageDetailedCars=String(detailedCars??0);garageFinish=garageExperience55(scene,renderer,own);parkedCars=scene.getObjectByName('Garage55 detailed vehicles');lighting=installMLighting51(scene,floors,crown,own);}else{apartmentLighting?.prepare(floors[13]);lighting=apartmentLights71(scene);} renderer.shadowMap.needsUpdate=true;await renderer.compileAsync(scene,camera);if(!disposed){preparing=false;setReady(true);const requested=Number(new URLSearchParams(location.search).get('apartamento'));if(Number.isInteger(requested)&&requested>=1&&requested<=M_LEVELS)visit(new URLSearchParams(location.search).get('ambiente')||'Living',unitForFloor(requested));requestRender();}}}).catch(e=>{if(!disposed){console.error('EME scene loading',e);setError(true);}});
+  exterior.ready.then(async()=>{await shadingReady;if(!disposed){design70=installDesign70(floors[13],own,exterior.surfaces,requestRender,apartmentScene?.designStone());let approved:Design70;try{approved=read70(localStorage);}catch{approved={wood:0,fabric:0,accent:0,stone:0,table:'round'};}design70.apply(approved);designApply.current=d=>{design70?.apply(d);for(const m of interiors.values())if(m.group.userData.apartment69Ready)design70?.apply(d,m.group);renderer.shadowMap.needsUpdate=true;requestRender();};if(!standalone){commonFinish53(scene,own,exterior.surfaces,landscape.deckY);promenade=promenade54(scene,own,exterior.surfaces);lightRig=lightRig53(scene,crown);mount.dataset.garageDetailedCars='0';garageFinish=garageExperience55(scene,renderer,own);lighting=installMLighting51(scene,floors,crown,own);}else{apartmentLighting?.prepare(floors[13]);lighting=apartmentLights71(scene);} renderer.shadowMap.needsUpdate=true;await renderer.compileAsync(scene,camera);if(!disposed){preparing=false;setReady(true);const requested=Number(new URLSearchParams(location.search).get('apartamento'));if(Number.isInteger(requested)&&requested>=1&&requested<=M_LEVELS)visit(new URLSearchParams(location.search).get('ambiente')||'Living',unitForFloor(requested));requestRender();}}}).catch(e=>{if(!disposed){console.error('EME scene loading',e);setError(true);}});
   let booting=true,inside=false,yaw=0,pitch=0,desired:T.Vector3|null=null,target:T.Vector3|null=null,currentRoom:string|null=null,drone:DroneStudio56|undefined;
   const pressed=new Set<string>();let pointer:number|null=null,previousX=0,previousY=0;
   const clearMovement=()=>{pressed.clear();pointer=null;stopClick();};
@@ -173,7 +182,7 @@ export default function MResidence(){
     sun.target.position.set(0,4,8);sun.target.updateMatrixWorld();
     Object.assign(sun.shadow.camera,{left:-38,right:38,top:38,bottom:-38});sun.shadow.camera.updateProjectionMatrix();sun.shadow.normalBias=.012;
    }
-   if(['Interior da garagem','Elevadores do subsolo','Vagas e recarga'].includes(name)){controls.minDistance=1;controls.maxDistance=48;controls.maxPolarAngle=Math.PI;camera.fov=68;camera.updateProjectionMatrix();}
+   if(['Interior da garagem','Elevadores do subsolo','Vagas e recarga'].includes(name)){if(!preparing)ensureGarageDetails();controls.minDistance=1;controls.maxDistance=48;controls.maxPolarAngle=Math.PI;camera.fov=68;camera.updateProjectionMatrix();}
    if(['Condomínio Pátio','Casas e lotes','Clube do condomínio','Entrada do Pátio','Casa em detalhe'].includes(name)){
     const v=M_SITE_VIEWS[name],size=name==='Condomínio Pátio'?270:60;sun.target.position.set(v[3],0,v[5]);sun.target.updateMatrixWorld();
     Object.assign(sun.shadow.camera,{left:-size,right:size,top:size,bottom:-size,far:650});sun.shadow.camera.updateProjectionMatrix();sun.shadow.normalBias=name==='Condomínio Pátio'?.18:.035;
@@ -278,6 +287,7 @@ export default function MResidence(){
    const orbitChanged=!drone?.driving&&(!inside||drone?.isOpen)&&controls.enabled&&controls.update();
    focusShadow(camera,controls.target,inside,standalone,baseY);
    if(apartmentScene&&interior?.group.visible){if(apartmentScene.updateQuality(camera,qualityLevel,interior.group))renderer.shadowMap.needsUpdate=true;apartmentLighting?.update(cycle.night,qualityLevel,sun,ambient,apartmentBackdrop?.reflection()??null);}
+   if(camera.position.y<0)ensureGarageDetails();
    if(parkedCars)parkedCars.visible=camera.position.y<5;
    const inGarage=garageFinish?.update(camera,profiles58[qualityLevel].reflections)??false;scene.fog=inGarage?null:outdoorFog;
    if(inGarage){scene.environment=garageFinish!.environment;scene.environmentIntensity=.60;ambient.color.set('#e6d9c3');ambient.groundColor.set('#b5ac9b');ambient.intensity=1.4;sun.intensity=0;if(moonLight)moonLight.intensity=0;renderer.toneMappingExposure=1.02;}
