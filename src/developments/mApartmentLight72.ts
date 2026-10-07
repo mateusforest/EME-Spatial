@@ -21,10 +21,16 @@ export function apartmentLight72(scene:T.Scene,own:Own){
    }else if(m instanceof T.MeshPhysicalMaterial)physical.add(m);
   }});
  }
- return {prepare,update(night:number,level:Level72,sun:T.DirectionalLight,ambient:T.HemisphereLight,reflection:T.Texture|null){
-  lights.forEach((l,i)=>{l.intensity=(i<2?.07:.04)*(1-night)+(i<2?.72:.48)*night;});
-  ambient.intensity=.24*(1-night)+.16*night;scene.environmentIntensity=.29*(1-night)+.17*night;
-  if(sun.shadow.camera.left!==-23){Object.assign(sun.shadow.camera,{left:-23,right:23,top:23,bottom:-23});sun.shadow.camera.updateProjectionMatrix();}sun.shadow.normalBias=.009;sun.shadow.bias=-.00004;
+ return {prepare,update(night:number,level:Level72,_sun:T.DirectionalLight,ambient:T.HemisphereLight,reflection:T.Texture|null){
+  lights.forEach((l,i)=>{
+   if(i<2){l.intensity=.04*(1-night)+.72*night;return;}
+   // Reuse the two bedroom panels as broad window bounce by day. Four lights total.
+   const side=i===2?1:-1;l.position.set(side*T.MathUtils.lerp(11.8,7.6,night),T.MathUtils.lerp(64.45,65.6,night),T.MathUtils.lerp(-3,-8.2,night));
+   l.width=T.MathUtils.lerp(14,5,night);l.height=T.MathUtils.lerp(2.65,3.5,night);
+   l.lookAt(side*7.6,T.MathUtils.lerp(64.2,62.6,night),T.MathUtils.lerp(-3,-8.2,night));
+   l.color.set('#dce9f4').lerp(new T.Color('#ffe4bc'),night);l.intensity=.85*(1-night)+.48*night;
+  });
+  ambient.intensity=.12*(1-night)+.12*night;scene.environmentIntensity=.18*(1-night)+.13*night;
   for(const g of glass){if(reflection&&g.envMap!==reflection){g.envMap=reflection;g.needsUpdate=true;}g.envMapIntensity=.7*(1-night)+.12*night;}
   if(lastLevel!==level){lastLevel=level;for(const m of physical){m.clearcoat=m.name==='M14 wood'?(level==='light'?0:.16):m.clearcoat;m.sheen=m.name.match(/fabric|accent|green|rug/)?(level==='light'?.22:.5):m.sheen;m.needsUpdate=true;}}
  },dispose(){lights.forEach(l=>l.removeFromParent());glass.clear();physical.clear();}};

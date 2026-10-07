@@ -3,6 +3,7 @@ import type {Own} from './mSurfaces';
 import {decodeScene71} from './mSceneAsset71';
 import {materialBank72,apartmentQuality72,tier72,type Level72} from './mApartmentQuality72';
 import {apartmentContacts72} from './mApartmentLight72';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 /** Source snapshot a77ba09: full floor, not the retired cropped interior. */
 export function buildApartmentScene71(scene:T.Scene,_renderer:T.WebGLRenderer,own:Own,quality:Level72,request:()=>void){
@@ -19,6 +20,17 @@ export function buildApartmentScene71(scene:T.Scene,_renderer:T.WebGLRenderer,ow
   root.traverse(o=>{if(!(o instanceof T.Mesh))return;resources.add(o.geometry);if(o instanceof T.InstancedMesh)resources.add(o);for(const m of Array.isArray(o.material)?o.material:[o.material]){resources.add(m);for(const v of Object.values(m))if(v instanceof T.Texture)resources.add(v);}});
   if(closed){resources.forEach(r=>r.dispose());return;}resources.forEach(r=>own(r));
   bank=materialBank72(root);optimization=apartmentQuality72(scene,bank.textures,json.lods72,own,quality,request);
+  // Production foliage and seams are batched once, never replicated to other floors.
+  try{
+  const detailResponse=await fetch('/assets/m/apartment75/detail.glb',{signal:abort.signal});
+  if(!detailResponse.ok)throw new Error('Não foi possível carregar o acabamento do apartamento.');
+  const detail=await new GLTFLoader().parseAsync(await detailResponse.arrayBuffer(),'/assets/m/apartment75/');
+  const detailResources=new Set<{dispose:()=>void}>();
+  detail.scene.traverse(o=>{if(o instanceof T.Mesh){detailResources.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material]){detailResources.add(m);if(m.name.includes('Folha'))m.side=T.DoubleSide;}o.castShadow=true;o.receiveShadow=true;}});
+  if(closed){detailResources.forEach(r=>r.dispose());return;}detailResources.forEach(r=>own(r));
+  root.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)&&o.material.name==='M14 leaf')o.visible=false;});
+  detail.scene.name='M14 reviewed botanical and fabric details75';root.add(detail.scene);
+  }catch(error){if(closed)return;console.warn('Mantendo o paisagismo original: acabamento indisponível.',error);}
   apartmentContacts72(root,own);
   root.position.set(0,0,0);floors[13].add(root);floors[13].userData={...root.userData};
   // The next normal floor has exactly this slab/soffit footprint. Keep only its ceiling surfaces.
