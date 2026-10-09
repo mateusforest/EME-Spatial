@@ -64,7 +64,8 @@ Antes de usar em produção com dados reais: integrar autenticação e autoriza�
 
 A entrada pública usa `src/marketing` (React), separada do portal e dos motores 3D. A homepage em `HomeLanding.tsx` segue a direção M aprovada em 9 de outubro: verde profundo, marfim, uma casa conceitual em destaque, três etapas de criação e acesso aos projetos existentes. As páginas de soluções, modelos de contratação e briefing continuam disponíveis nas rotas abaixo.
 
-- As três imagens `public/assets/marketing/casa-m-{exterior,interior,aerea}.webp` foram geradas a partir da proposta visual aprovada. São vistas conceituais; não representam um modelo navegável já concluído. Os controles da Casa M alternam essas imagens e permitem ampliar a prévia.
+- As três imagens `public/assets/marketing/casa-m-{exterior,interior,aerea}.webp` foram geradas a partir da proposta visual aprovada. São vistas conceituais; não representam um modelo navegável já concluído. Os controles da Casa M alternam essas imagens com uma transição visual guiada e permitem ampliar a prévia.
+- `SceneImage.tsx` prepara e decodifica cada vista antes da passagem de 1,45 s. Cliques rápidos convergem para a última escolha; uma falha mantém a imagem anterior. A preferência por movimento reduzido elimina a animação. Não há reprodução automática, vídeo obrigatório ou carregamento do motor 3D na landing.
 - O botão principal identifica a Torre M como demonstração 3D real. “Começar meu projeto” abre o briefing existente, sem envio automático.
 - A nova homepage tem versões para desktop e celular, seleção de vistas por teclado, janela ampliada com fechamento por Escape e devolução de foco.
 

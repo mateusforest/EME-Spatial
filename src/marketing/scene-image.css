@@ -1,0 +1,44 @@
+.ms-transition {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  object-fit: cover;
+  object-position: center;
+}
+
+.ms-transition-layer {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: inherit;
+  object-position: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ms-transition-current { z-index: 2; }
+.ms-transition-incoming { z-index: 1; opacity: 0; }
+.ms-transition-contain { object-fit: contain; object-position: center; }
+
+.ms-transition-status {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 36px);
+  color: #f5f2e9;
+  background: #102f27ed;
+  border: 1px solid #f5f2e94d;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font: 12px/1.5 Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+.ms-transition-status:empty { padding: 0; border: 0; }

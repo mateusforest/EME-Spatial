@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent} from 'react';
 import {ArrowRight, ArrowUpRight, Maximize, Menu, X} from 'lucide-react';
+import SceneImage from './SceneImage';
 import './home-landing.css';
 
 type Scene = 'exterior' | 'interior' | 'aerea';
@@ -107,7 +108,7 @@ export default function HomeLanding() {
 
         <div className={`ms-scene ms-scene-${scene}`}>
           <div className="ms-scene-panel" id="hero-panel" role="tabpanel" aria-labelledby={`hero-tab-${scene}`} tabIndex={0}>
-            <img className="ms-scene-image" src={selectedScene.image} alt={selectedScene.alt} fetchPriority="high" decoding="async"/>
+            <SceneImage scene={scene} src={selectedScene.image} alt={selectedScene.alt} className="ms-scene-image" eager/>
           </div>
           <div className="ms-scene-shade" aria-hidden="true"/>
           <p className="ms-scene-eyebrow">CONHEÇA OUTRAS PERSPECTIVAS</p>
@@ -181,7 +182,7 @@ export default function HomeLanding() {
     <dialog className="ms-preview-dialog" ref={dialogRef} onClose={restorePreviewFocus} aria-labelledby="ms-preview-title" onClick={event => {if (event.target === event.currentTarget) closePreview();}}>
       <div className="ms-preview-inner">
         <div className="ms-preview-heading"><div><h2 id="ms-preview-title">Casa M</h2><p>Prévia visual conceitual</p></div><button className="ms-expand" type="button" aria-label="Fechar prévia ampliada" onClick={closePreview} autoFocus><X size={23}/></button></div>
-        <div className="ms-preview-image" id="preview-panel" role="tabpanel" aria-labelledby={`preview-tab-${scene}`} tabIndex={0}><img src={selectedScene.image} alt={selectedScene.alt}/></div>
+        <div className="ms-preview-image" id="preview-panel" role="tabpanel" aria-labelledby={`preview-tab-${scene}`} tabIndex={0}><SceneImage scene={scene} src={selectedScene.image} alt={selectedScene.alt} className="ms-transition-contain"/></div>
         <div className="ms-preview-controls"><SceneTabs scene={scene} onChange={setScene} prefix="preview"/><p>Escolha uma vista para conhecer o espaço.</p></div>
       </div>
     </dialog>
