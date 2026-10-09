@@ -15,13 +15,48 @@ export function botaniqueSun(hour:number){
 }
 export const formatSolarHour=(hour:number)=>`${Math.floor(hour).toString().padStart(2,'0')}:${Math.round((hour%1)*60).toString().padStart(2,'0')}`;
 
+/** Fog and the sky horizon share an output colour, including twilight.
+ * Three applies fog after the material tone map, so the sky must blend to
+ * this colour after its own colour-space conversion as well. */
+export function botaniqueAtmosphere(hour:number){
+ const sun=botaniqueSun(hour),twilight=1-T.MathUtils.smoothstep(sun.elevation,2,20);
+ const horizon=new T.Color('#849ba4').lerp(new T.Color('#998d81'),sun.gold*.42)
+  .lerp(new T.Color('#344451'),twilight*.64).lerp(new T.Color('#142333'),1-sun.day);
+ return {horizon,night:new T.Color('#101c2d'),day:sun.day,skyGain:.16+.025*sun.day};
+}
+
+function refineSky(sky:Sky){
+ const material=sky.material;
+ Object.assign(material.uniforms,{botaniqueHorizon:{value:new T.Color()},botaniqueNight:{value:new T.Color()},botaniqueDay:{value:1},botaniqueSkyGain:{value:.18}});
+ material.fragmentShader=material.fragmentShader
+  .replace('uniform float time;','uniform float time;\nuniform vec3 botaniqueHorizon;\nuniform vec3 botaniqueNight;\nuniform float botaniqueDay;\nuniform float botaniqueSkyGain;')
+  .replace('vec4( texColor, 1.0 )','vec4( mix( botaniqueNight, texColor * botaniqueSkyGain, botaniqueDay ), 1.0 )')
+  .replace('#include <colorspace_fragment>',`#include <colorspace_fragment>
+   // Continuous horizon and lower hemisphere: no bright below-ground sky,
+   // no hard dusk cutoff, and the same final colour as the terrain fog.
+   float horizonBlend = 1.0 - smoothstep( 0.0, 0.20, max( 0.0, direction.y ) );
+   vec3 horizonOutput = linearToOutputTexel( vec4( botaniqueHorizon, 1.0 ) ).rgb;
+   gl_FragColor.rgb = mix( gl_FragColor.rgb, horizonOutput, horizonBlend );`);
+ material.needsUpdate=true;
+}
+function updateSky(sky:Sky,hour:number){
+ const atmosphere=botaniqueAtmosphere(hour),u=sky.material.uniforms;
+ u.sunPosition.value.copy(botaniqueSun(hour).direction);
+ u.botaniqueHorizon.value.copy(atmosphere.horizon);u.botaniqueNight.value.copy(atmosphere.night);
+ u.botaniqueDay.value=atmosphere.day;u.botaniqueSkyGain.value=atmosphere.skyGain;
+ return atmosphere;
+}
+
 export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,apartment:boolean,draw:()=>void,modeledLights?:BotaniqueLightFixture[]){
- const dome=new Sky();dome.scale.setScalar(apartment?180:500);dome.material.uniforms.turbidity.value=2.8;dome.material.uniforms.rayleigh.value=1.6;dome.material.uniforms.mieCoefficient.value=.003;dome.material.uniforms.mieDirectionalG.value=.82;dome.material.uniforms.showSunDisc.value=true;dome.material.fragmentShader=dome.material.fragmentShader.replace('vec4( texColor, 1.0 )','vec4( texColor * 0.18, 1.0 )');dome.frustumCulled=false;scene.add(dome);
+ const dome=new Sky();dome.scale.setScalar(apartment?180:500);dome.material.uniforms.turbidity.value=2.8;dome.material.uniforms.rayleigh.value=1.6;dome.material.uniforms.mieCoefficient.value=.003;dome.material.uniforms.mieDirectionalG.value=.82;dome.material.uniforms.showSunDisc.value=true;refineSky(dome);dome.frustumCulled=false;
+ // Keep the viewer and the six reflection cameras inside the sky box.
+ // This runs before WebGLRenderer computes modelViewMatrix for the object.
+ dome.onBeforeRender=(_renderer,_scene,camera)=>{camera.getWorldPosition(dome.position);dome.updateMatrixWorld();};scene.add(dome);
  const moon=new T.DirectionalLight('#a9c9ed',0);moon.position.set(-35,70,70);scene.add(moon);
  const sun=new T.DirectionalLight('#fff0dc',3.5),sky=new T.HemisphereLight('#e4effb','#a69882',.65);
  sun.castShadow=true;sun.shadow.bias=-.00005;sun.shadow.normalBias=apartment?.008:.018;sun.shadow.radius=2;
  scene.add(sun,sun.target,sky);
- const environmentScene=new T.Scene(),environmentSky=new Sky(),pmrem=new T.PMREMGenerator(renderer);environmentSky.scale.setScalar(20);environmentScene.add(environmentSky);environmentSky.material.uniforms.showSunDisc.value=false;
+ const environmentScene=new T.Scene(),environmentSky=new Sky(),pmrem=new T.PMREMGenerator(renderer);environmentSky.scale.setScalar(20);environmentScene.add(environmentSky);environmentSky.material.uniforms.showSunDisc.value=false;refineSky(environmentSky);
  let environment:T.WebGLRenderTarget|undefined,timer:ReturnType<typeof setTimeout>|undefined,disposed=false,hour=16.5,indoor=.65,temperature:LightTemperature=3000;
  const center=apartment?new T.Vector3(3.6,1.5,-3.9):new T.Vector3(0,24,-16);
  const anchor=center.clone();let span=apartment?7:85,planMode=false;
@@ -130,18 +165,20 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
   sun.color.copy(neutral.lerp(warm,value.gold*.75));sun.intensity=3.65*value.day*(1-.34*value.gold);moon.intensity=apartment?0:.55*(1-value.day);
   sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(value.direction,180);
   Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:Math.max(.1,180-span*2),far:180+span*2});sun.shadow.camera.updateProjectionMatrix();
-  sky.color.set(apartment?'#f2eee3':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=apartment?((!planMode?.14:.42)+.24*value.day+(!planMode?.10*indoor*(1-value.day):0)):.34+.64*value.day;sky.groundColor.set(apartment&&!planMode?'#c2b096':'#a59b87');
+  sky.color.set(apartment?'#f2eee3':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=apartment?((!planMode?.14:.42)+.24*value.day+(!planMode?.10*indoor*(1-value.day):0)):.16+.82*value.day;sky.groundColor.set(apartment&&!planMode?'#c2b096':'#a59b87');if(!apartment)sky.groundColor.lerp(new T.Color('#233035'),1-value.day);
   if(apartment&&!planMode)sky.color.lerp(new T.Color(temperatureColor[temperature]),(1-value.day)*.85);
   useEnvironment();
   renderer.toneMappingExposure=apartment?.94:.92;
-  dome.material.uniforms.sunPosition.value.copy(value.direction);dome.visible=value.elevation>-3;
-  scene.background=new T.Color('#152635');
-  if(scene.fog instanceof T.Fog)scene.fog.color.set('#c7d6da').lerp(new T.Color('#d5af91'),value.gold*.4).lerp(new T.Color('#152635'),1-value.day);
+  const atmosphere=updateSky(dome,hour);dome.visible=true;
+  scene.background=atmosphere.horizon.clone();
+  if(scene.fog instanceof T.Fog){scene.fog.color.copy(atmosphere.horizon);scene.fog.near=apartment?75:165;scene.fog.far=apartment?155:480;}
+  renderer.domElement.dataset.horizonRevision='7';
+  renderer.domElement.dataset.horizonColor=atmosphere.horizon.getHexString();
   fixtures.forEach(l=>{l.intensity=planMode?0:l.userData.power*(apartment?indoor*(.65+.35*(1-value.day)):.015+1.05*(1-value.day));if(apartment)l.color.set(temperatureColor[temperature]);});
   windowFills.forEach(l=>{l.intensity=planMode?0:2.8*value.day;l.color.set('#fff3e1').lerp(new T.Color('#ffd5a8'),value.gold*.4);});
   renderer.shadowMap.needsUpdate=true;draw();
   if(timer)clearTimeout(timer);
-  timer=setTimeout(()=>{if(disposed)return;environmentSky.material.uniforms.sunPosition.value.copy(value.direction);environmentSky.material.uniforms.turbidity.value=2.8;environmentSky.material.uniforms.rayleigh.value=1.6;const next=pmrem.fromScene(environmentScene,.03,.1,100,{size:apartment?128:64});const old=environment;environment=next;useEnvironment();old?.dispose();refreshInterior();draw();},180);
+  timer=setTimeout(()=>{if(disposed)return;updateSky(environmentSky,hour);environmentSky.material.uniforms.turbidity.value=2.8;environmentSky.material.uniforms.rayleigh.value=1.6;const next=pmrem.fromScene(environmentScene,.03,.1,100,{size:apartment?128:64});const old=environment;environment=next;useEnvironment();old?.dispose();refreshInterior();draw();},180);
  }
  return {sun,fixtures,refreshInterior,setInteriorReady(){interiorReady=true;refreshInterior();},setQuality(low:boolean){probeEnabled=!low;if(low){probeRevision++;cancelQueuedProbe();}useEnvironment();if(!low)refreshInterior();},setHour(value:number){hour=value;apply();},setTemperature(value:LightTemperature){temperature=value;apply();},setIndoor(value:number){indoor=value;apply();},setPlanContext(value:{center:T.Vector3;span:number}|null){planMode=!!value;anchor.copy(value?.center||center);span=value?.span||(apartment?7:85);apply();},focus(position:T.Vector3,walking:boolean){if(apartment){if(!planMode&&walking){const nearest=shadowSpots.reduce<T.SpotLight|undefined>((best,lamp)=>!best||lamp.position.distanceToSquared(position)<best.position.distanceToSquared(position)?lamp:best,undefined);if(nearest!==activeShadow){if(activeShadow)activeShadow.castShadow=false;activeShadow=nearest;if(nearest)nearest.castShadow=true;renderer.shadowMap.needsUpdate=true;}if(probePosition.distanceTo(position)>2.4){probePosition.copy(position);refreshInterior();}}return;}const close=walking||position.y<12;const next=close?new T.Vector3(position.x,8,position.z):center;const nextSpan=close?32:85;if(anchor.distanceTo(next)>1.5||nextSpan!==span){anchor.copy(next);span=nextSpan;const d=botaniqueSun(hour).direction;sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(d,180);Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:180-span*2,far:180+span*2});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;}},dispose(){disposed=true;probeRevision++;if(timer)clearTimeout(timer);cancelQueuedProbe();document.removeEventListener('visibilitychange',probeVisibility);interiorEnvironment?.dispose();probeTarget?.dispose();shadowSpots.forEach(l=>l.shadow.dispose());environment?.dispose();pmrem.dispose();sun.shadow.dispose();dome.geometry.dispose();dome.material.dispose();environmentSky.geometry.dispose();environmentSky.material.dispose();scene.remove(dome,sun,sun.target,sky,moon,...fixtures,...windowFills,...lampTargets);}};
 }

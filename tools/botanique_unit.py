@@ -42,6 +42,10 @@ FURNITURE_VARIANTS = {
                                 ('organico', 'Carvalho canelado')]),
     'appliance': ('Eletrodomésticos', [('contemporaneo', 'Inox · comandos mecânicos'),
                                      ('organico', 'Grafite · vidro e toque')]),
+    'bed': ('Cama da suíte', [('contemporaneo', 'Linho e carvalho'),
+                            ('organico', 'Cabeceira arqueada · estofada')]),
+    'bathroom': ('Banheiro social', [('contemporaneo', 'Sálvia · espelho retangular'),
+                                   ('organico', 'Carvalho · espelho arqueado')]),
 }
 
 ROOMS = [
@@ -171,7 +175,7 @@ def base_contract():
                        'options': [{'id': key, 'label': title} for key, title in options]}
                for group, (label, options) in FURNITURE_VARIANTS.items()},
             'navigation': 'All options share the unchanged original furniture and fixture envelopes; no alternative creates a new collider.',
-            'revision': 6,
+            'revision': 7,
         },
     }
 
@@ -1235,6 +1239,42 @@ class UnitBuilder:
                         collider['rotation_z']=float(obj.rotation_euler.z)
 
 
+    def bedroom_variants(self):
+        # The catalogue shows one coherent suite composition. Twin beds and
+        # wardrobes stay fixed; no alternative duplicates their colliders.
+        original=[o for o in self.collection.all_objects if o.type=='MESH' and o.name.startswith(
+            ('B_UNIT_SUITE_BED','B_UNIT_SUITE_LAMP_','B_UNIT_SUITE_HEADBOARD_'))]
+        self.tag_variant(original,'bed','contemporaneo')
+        before=set(bpy.data.objects);x,y=2.03,1.50;width,length=1.48,1.88
+        self.box('SUITE_ORGANIC_BASE',(0,0,.255),(width+.06,length+.075,.30),'B_FABRIC',
+                 'suite','furniture',.06,self.furniture,True)
+        self.box('SUITE_ORGANIC_RECESS',(0,0,.095),(width-.16,length-.18,.08),'B_WOOD_dark','suite',bevel=.02)
+        self.box('SUITE_ORGANIC_MATTRESS',(0,0,.49),(width,length,.23),'B_FABRIC_cream','suite',bevel=.08)
+        self.arched_panel('SUITE_ORGANIC_HEADBOARD',width+.20,.10,.13,1.48,.24,
+                          length/2+.10,'B_FABRIC_olive','suite')
+        self.duvet('SUITE_ORGANIC_DUVET',0,-.14,width+.14,length-.28,.623,'suite')
+        self.box('SUITE_ORGANIC_THROW',(0,-.49,.645),(width+.06,.60,.026),'B_FABRIC','suite',bevel=.014)
+        for px in (-.36,.36):
+            cushion=self.soft_cushion('SUITE_ORGANIC_PILLOW',(px,.60,.704),(.65,.44,.17),'B_FABRIC_cream','suite')
+            cushion.rotation_euler.z=-.05 if px<0 else .045
+        self.soft_cushion('SUITE_ORGANIC_ACCENT',(0,.42,.798),(.56,.22,.10),'B_FABRIC_olive','suite')
+        for obj in set(bpy.data.objects)-before:
+            loc=obj.location.copy();obj.location.x=x+loc.y;obj.location.y=y-loc.x;obj.rotation_euler.z-=math.pi/2
+        for by in (.43,2.52):
+            self.cylinder('SUITE_ORGANIC_SIDE_BASE',(2.91,by,.31),.105,.51,'B_WOOD_dark','suite',vertices=32,radius_top=.135)
+            self.cylinder('SUITE_ORGANIC_SIDE_TOP',(2.91,by,.582),.16,.035,'B_STONE','suite',vertices=40)
+            self.cylinder('SUITE_ORGANIC_LAMP_BASE',(2.91,by,.635),.05,.065,'B_WOOD_dark','suite',vertices=24,radius_top=.035)
+            self.sphere('SUITE_ORGANIC_LAMP',(2.91,by,.770),(.19,.19,.20),'B_LAMP_OPAL','suite')
+        # The slim wall panel replaces the default battens and framed prints,
+        # staying in their shallow wall zone, outside the walkable floor.
+        self.box('SUITE_ORGANIC_WALL_PANEL',(3.084,1.47,1.73),(.019,2.41,1.94),'B_WOOD_dark','suite',bevel=.008)
+        for by in (.66,2.28):
+            self.cylinder('SUITE_ORGANIC_WALL_DISC',(3.065,by,2.11),.18,.017,'B_STONE',
+                                     'suite',vertices=48,rotation=(0,math.pi/2,0))
+        self.tag_variant(set(bpy.data.objects)-before,'bed','organico')
+        self.contract['furniture_variants']['bed']['room']='suite'
+        self.contract['furniture_variants']['bathroom']['room']='bathroom'
+
     def wardrobe(self, key, x, y, width, depth, height, room, axis='x', front_sign=1):
         dims = (width, depth, height) if axis == 'x' else (depth, width, height)
         self.box(key + '_BODY', (x, y, height / 2 + .04), dims, 'B_WOOD', room, 'furniture', .018, self.furniture, True, True)
@@ -1295,23 +1335,93 @@ class UnitBuilder:
 
         self.collider(bowl,(x,y,.415),(.39,.62,.83))
 
-    def vanity(self, key, x, y, width, room, angle=0):
-        before = set(bpy.data.objects)
-        base = self.box(key + '_BASE', (0, 0, .55), (width, .43, .46), 'B_ACCENT_green', room, 'furniture', .019, self.furniture, True)
-        self.box(key + '_COUNTER', (0, 0, .805), (width + .025, .455, .045), 'B_STONE', room, bevel=.012)
-        self.sphere(key + '_BASIN', (0, -.025, .872), (width * .70, .32, .15), 'B_CERAMIC', room)
-        self.sphere(key + '_BOWL_INNER', (0, -.025, .929), (width * .56, .245, .020), 'B_STONE', room)
-        self.rod(key + '_FAUCET', (0, .17, .83), (0, .17, 1.01), .015, 'B_METAL', room)
-        self.rod(key + '_FAUCET_SPOUT', (0, .17, 1.01), (0, .055, 1.01), .015, 'B_METAL', room)
-        self.box(key + '_MIRROR', (0, .249, 1.63), (width + .01, .02, .86), 'B_MIRROR', room, bevel=.06)
-        self.box(key + '_MIRROR_LED', (0, .225, 2.075), (width * .85, .025, .015), 'B_LED', room)
-        for obj in set(bpy.data.objects) - before:
-            loc = obj.location.copy()
-            obj.location.x = x + loc.x * math.cos(angle) - loc.y * math.sin(angle)
-            obj.location.y = y + loc.x * math.sin(angle) + loc.y * math.cos(angle)
-            obj.rotation_euler.z += angle
+    def arched_panel(self,key,width,depth,bottom,top,rise,y,mat,room):
+        """A shallow manufactured panel with a real curved upper silhouette."""
+        outline=[(-width/2,bottom),(width/2,bottom)]
+        for i in range(21):
+            a=math.pi*i/20
+            outline.append((width/2*math.cos(a),top-rise+rise*math.sin(a)))
+        n=len(outline);verts=[(x,y+side*depth/2,z) for side in (-1,1) for x,z in outline]
+        faces=[tuple(range(n)),tuple(reversed(range(n,2*n)))]
+        faces += [(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
+        panel=self.mesh(key,verts,faces,mat,room,'furniture')
+        bevel=panel.modifiers.new('Fine panel edge','BEVEL');bevel.width=.006;bevel.segments=2
+        panel.modifiers.new('Panel face normals','WEIGHTED_NORMAL')
+        return panel
 
-        self.collider(base,(x,y,.48),(width+.03,.49,.96))
+    def vessel_basin(self,key,width,depth,room,organic=False):
+        # Continuous outer wall, rim and recessed inner bowl. The previous
+        # sphere and flat disk made the basin look like a closed solid object.
+        profile=[(.08,.831),(.70,.833),(.91,.850),(1.0,.895),(1.01,.934),
+                 (.98,.945),(.88,.945),(.85,.928),(.69,.866),(.12,.853)]
+        segments=48 if self.fine else 32;verts=[];faces=[]
+        for radius,z in profile:
+            for i in range(segments):
+                a=math.tau*i/segments
+                variation=1+.025*math.cos(a*3) if organic else 1
+                verts.append((math.cos(a)*width*.5*radius*variation,
+                              -.025+math.sin(a)*depth*.5*radius,z))
+        for j in range(len(profile)-1):
+            for i in range(segments):
+                a=j*segments+i;b=j*segments+(i+1)%segments
+                faces.append((a,b,b+segments,a+segments))
+        faces.append(tuple(range((len(profile)-1)*segments,len(profile)*segments)))
+        basin=self.mesh(key,verts,faces,'B_CERAMIC',room,'furniture')
+        for face in basin.data.polygons:face.use_smooth=True
+        self.cylinder(key+'_DRAIN',(0,-.025,.854),.020,.004,'B_STEEL_brushed',room,vertices=24)
+        self.cylinder(key+'_DRAIN_GAP',(0,-.025,.857),.014,.002,'B_BLACK',room,vertices=24)
+        return basin
+
+    def vanity(self, key, x, y, width, room, angle=0):
+        variants=('contemporaneo','organico') if room=='bathroom' else ('contemporaneo',)
+        for variant in variants:
+            before=set(bpy.data.objects);organic=variant=='organico'
+            label=key+('_ORGANIC' if organic else '')
+            base=self.box(label+'_BASE',(0,0,.55),(width,.43,.46),
+                          'B_WOOD' if organic else 'B_ACCENT_green',room,'furniture',.019,self.furniture,True)
+            self.box(label+'_COUNTER',(0,0,.805),(width+.025,.455,.045),'B_STONE',room,bevel=.012)
+            # Drawer fronts and a recessed pull remain inside the existing
+            # .49 m plumbing envelope and add no navigation obstacle.
+            for z in (.445,.65):
+                self.box(label+'_DRAWER',(0,-.218,z),(width-.038,.012,.187),
+                         'B_WOOD' if organic else 'B_ACCENT_green',room,bevel=.007)
+                self.rod(label+'_PULL',(-width*.22,-.233,z+.052),(width*.22,-.233,z+.052),.004,
+                         'B_WOOD_dark' if organic else 'B_METAL_brass',room)
+            if organic:
+                for i in range(15):
+                    self.rod(label+'_REED',(-width*.43+i*width*.86/14,-.228,.36),
+                             (-width*.43+i*width*.86/14,-.228,.738),.003,'B_WOOD_dark',room)
+            self.vessel_basin(label+'_BASIN',width*.70,.31,room,organic)
+            self.cylinder(label+'_FAUCET_FOOT',(0,.17,.834),.025,.011,'B_STEEL_brushed',room)
+            self.rod(label+'_FAUCET',(0,.17,.84),(0,.17,1.01),.012,'B_STEEL_brushed',room)
+            self.rod(label+'_FAUCET_SPOUT',(0,.17,1.01),(0,.047,1.01),.012,'B_STEEL_brushed',room)
+            self.rod(label+'_FAUCET_LEVER',(.021,.17,.957),(.021,.107,.974),.004,'B_STEEL_brushed',room)
+            # Both old mirrors were behind their wall tile after rotation.
+            # Local +Y=.16 is in front of the finished wall in both bathrooms.
+            if organic:
+                self.arched_panel(label+'_MIRROR_FRAME',width+.030,.025,1.19,2.09,width*.38,.181,'B_WOOD_dark',room)
+                self.arched_panel(label+'_MIRROR',width-.004,.008,1.207,2.073,width*.38-.006,.160,'B_MIRROR',room)
+            else:
+                self.box(label+'_MIRROR_FRAME',(0,.181,1.63),(width+.040,.026,.89),'B_METAL_brass',room,bevel=.012)
+                self.box(label+'_MIRROR',(0,.160,1.63),(width+.010,.008,.856),'B_MIRROR',room,bevel=.015)
+            self.box(label+'_MIRROR_LED',(0,.146,2.085),(width*.85,.017,.010),'B_LED',room,bevel=.002)
+            self.cylinder(label+'_SOAP_BOTTLE',(-width*.36,-.025,.872),.022,.088,'B_CERAMIC',room,vertices=20)
+            self.rod(label+'_SOAP_PUMP',(-width*.36,-.025,.920),(-width*.36,-.025,.940),.007,'B_METAL_brass',room)
+            self.rod(label+'_SOAP_NOZZLE',(-width*.36,-.025,.940),(-width*.36,-.054,.940),.004,'B_METAL_brass',room)
+            created=set(bpy.data.objects)-before
+            for obj in created:
+                loc=obj.location.copy();obj.location.x=x+loc.x*math.cos(angle)-loc.y*math.sin(angle)
+                obj.location.y=y+loc.x*math.sin(angle)+loc.y*math.cos(angle);obj.rotation_euler.z+=angle
+            if not organic:self.collider(base,(x,y,.48),(width+.03,.49,.96))
+            if room=='bathroom':self.tag_variant(created,'bathroom',variant)
+        # One fixed low-power fixture serves both geometrical mirror options.
+        def world(u,v,z):return [x+u*math.cos(angle)-v*math.sin(angle),y+u*math.sin(angle)+v*math.cos(angle),z]
+        position=world(0,.123,1.88);target=world(0,-.65,1.25)
+        lamp=self.light(key+'_MIRROR_FILL',position,target,1.2,width*.75,(1,.87,.73),room)
+        lamp.data.shape='RECTANGLE';lamp.data.size=width*.75;lamp.data.size_y=.10
+        self.contract['modeled_lights'].append({'id':key.lower()+'-mirror','type':'area','position':position,
+            'target':target,'color':'#ffead1','power':.7,'width':width*.75,'height':.10,
+            'blender_watts':1.2,'fixture_role':'mirror-light','room':room})
 
     def shower(self, key, rect, room, screen_axis='x'):
         x0, y0, x1, y1 = rect
@@ -1330,6 +1440,18 @@ class UnitBuilder:
             for x in (x0, x1):
                 self.rod(key + '_GLASS_FRAME', (x, y1, .06), (x, y1, 2.17), .012, 'B_METAL', room)
         self.box(key + '_SOAP', (x0 + .10, y0 + .16, 1.12), (.10, .14, .045), 'B_STONE', room, bevel=.01)
+        self.cylinder(key+'_MIXER',(x0+.067,(y0+y1)/2,1.15),.042,.023,'B_STEEL_brushed',room,
+                      rotation=(0,math.pi/2,0))
+        self.rod(key+'_MIXER_LEVER',(x0+.09,(y0+y1)/2,1.15),(x0+.13,(y0+y1)/2,1.22),.008,'B_STEEL_brushed',room)
+        for row in range(4):
+            for column in range(4):
+                self.cylinder(key+'_HEAD_JET',(x0+.32+(column-1.5)*.039,(y0+y1)/2+(row-1.5)*.039,2.079),
+                              .0025,.003,'B_BLACK',room,vertices=8)
+        # Thin shelf and toiletries are entirely inside the shower footprint.
+        self.box(key+'_SHELF',(x0+.095,y0+.25,1.38),(.12,.30,.018),'B_STONE',room,bevel=.004)
+        for i in range(2):
+            self.cylinder(key+'_BOTTLE',(x0+.096,y0+.18+i*.12,1.451),.023,.123,'B_CERAMIC',room,vertices=16)
+            self.cylinder(key+'_BOTTLE_CAP',(x0+.096,y0+.18+i*.12,1.519),.015,.013,'B_WOOD_dark',room,vertices=16)
 
     def bathrooms(self):
         self.shower('SOCIAL_SHOWER',(.09,3.69,.91,4.77),'bathroom','y')
@@ -1567,8 +1689,9 @@ class UnitBuilder:
             self.box('BALCONY_POST_SHOE',(x,.028,.072),(.047,.046,.09),
                      'B_METAL','balcony','railing',.003)
         self.interior_refinements()
-        self.contract['finish_revision']=6
-        self.contract['finish_note']='Revision 6 adds six independent geometry configuration groups, sewn upholstery, moulded chair shells, stone dining table, real fixture housings, detailed appliance controls, framed/fluted joinery and decorative limestone. The Final 1 room distribution, cameras and validated navigation envelopes are unchanged.'
+        self.contract['finish_revision']=7
+        self.contract['geometry_revision']=7
+        self.contract['finish_note']='Revision 7 retains the six living/kitchen configuration groups and refines suite and wet-room geometry. The Final 1 room distribution, cameras and validated navigation envelopes are unchanged.'
 
     def interior_refinements(self):
         """Fitted details stay against walls and outside all walking envelopes."""
@@ -1930,7 +2053,7 @@ class UnitBuilder:
         if any(not count for variants in counts.values() for count in variants.values()):
             raise ValueError('Missing furniture geometry alternative: '+str(counts))
         self.contract['furniture_variant_mesh_counts']=counts
-        self.contract['furniture_variant_validation']='all-six-groups-complete; defaults-only-render-visible; every-option-exportable; shared-navigation'
+        self.contract['furniture_variant_validation']='all-eight-groups-complete; defaults-only-render-visible; every-option-exportable; shared-navigation'
 
     def make_cameras(self):
         for camera in CAMERAS:
@@ -1980,6 +2103,10 @@ def build_unit(detail='web'):
     builder.lighting()
     builder.cabinetry_variants()
     builder.appliance_variants()
+    builder.bedroom_variants()
+    builder.contract['finish_revision']=7
+    builder.contract['geometry_revision']=7
+    builder.contract['finish_note']='Revision 7 refines the suite and wet rooms, adds two suite-bed compositions and two social-bath vanity/mirror compositions, corrects mirrors hidden behind wall finishes, and creates recessed vessel basins. Existing architecture, cameras and colliders remain unchanged.'
     builder.validate_variant_contract()
     builder.make_cameras()
     builder.contract['detail'] = detail

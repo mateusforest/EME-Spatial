@@ -65,6 +65,8 @@ scenes={}
 if (project/'06-web/exterior-metadata.json').exists():
     data=json.loads((project/'06-web/exterior-metadata.json').read_text('utf-8'))
     views=[view(v['id'],v['label'],v['position'],v['target']) for v in data['views']]
+    # Keep the complete tower and its arrival visible in the opening composition.
+    views[0].update(position=[-57,49,103],target=[-1,29,-7])
     scenes['exterior']={'url':asset_url('exterior.glb'),'camera':{k:views[0][k] for k in ['position','target']},'views':views,'bounds':{'min':[-75,-5,-114],'max':[75,data.get('bounds',{}).get('max',[0,0,62])[2],35]}}
 if (project/'06-web/apartamento-metadata.json').exists():
     data=json.loads((project/'06-web/apartamento-metadata.json').read_text('utf-8'))
@@ -121,8 +123,8 @@ renders=[]
 for slug,title in [('botanique-apartamento-01','Estudo EME · estar e jantar'),('botanique-apartamento-02','Estudo EME · estar e sacada'),('botanique-apartamento-03','Estudo EME · suíte'),('botanique-apartamento-05','Estudo EME · churrasqueira da Final 1'),('botanique-exterior-01','Estudo volumétrico EME · torre e implantação'),('botanique-exterior-02','Estudo EME · implantação e natureza'),('botanique-exterior-04','Estudo EME · piscina e convivência'),('botanique-exterior-05','Estudo EME · quadra e quiosque'),('botanique-exterior-07','Estudo EME · salão junto à piscina')]:
     if (web/'renders'/(slug+'.webp')).exists():renders.append({'url':asset_url('renders/'+slug+'.webp'),'title':title,'credit':'EME Spatial · Reconstrução demonstrativa em 3D','kind':'render'})
 images=renders+images
-manifest={'project':'Botanique Home Resort','version':'demo-06','disclaimer':'Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.','scenes':scenes,'images':images}
+manifest={'project':'Botanique Home Resort','version':'demo-07','disclaimer':'Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.','scenes':scenes,'images':images}
 if (web/'botanique-experiencia.mp4').exists():manifest['video']={'url':asset_url('botanique-experiencia.mp4'),'poster':asset_url('renders/botanique-apartamento-01.webp')}
-if (web/'apresentacao-botanique.pdf').exists():manifest['presentation']={'url':'/assets/botanique/apresentacao-botanique.pdf','label':'Baixar apresentação'}
+if (web/'apresentacao-botanique.pdf').exists():manifest['presentation']={'url':asset_url('apresentacao-botanique.pdf'),'label':'Baixar apresentação'}
 (web/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
 print(json.dumps({'scenes':list(scenes),'images':len(images),'presentation':'presentation' in manifest}))

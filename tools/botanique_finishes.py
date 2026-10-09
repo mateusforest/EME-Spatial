@@ -49,12 +49,12 @@ FINISHES = {
                'span':(1.0,1.0),'kind':'plaster','normal_strength':.035,'average':(230,228,222),
                'source':'Original clean ivory albedo; Poly Haven CC0 white_plaster_02 normal/roughness, Rob Tuytel'},
     'B_FLOOR': {'base': 'porcelain-color.png', 'normal': 'porcelain-normal.png', 'rough': 'porcelain-roughness.png',
-                'span': (.80, .80), 'kind': 'stone', 'normal_strength': .16, 'average': (208, 205, 189)},
+                'span': (.80, .80), 'kind': 'stone', 'normal_strength': .045, 'average': (208, 205, 189)},
     'B_STONE': {'base':'porcelain-color.png','normal':'porcelain-normal.png','rough':'porcelain-roughness.png',
                 'span':(.80,.80),'kind':'stone','normal_strength':.045,'average':(208,205,189),
                 'source':'Original ivory porcelain maps, fine honed counter finish; packed and shared with the floor'},
     'B_PORCELAIN_warm': {'base':'porcelain-color.png','normal':'porcelain-normal.png','rough':'porcelain-roughness.png',
-                'span':(.80,.80),'kind':'stone','normal_strength':.07,'average':(208,205,189),
+                'span':(.80,.80),'kind':'stone','normal_strength':.035,'average':(208,205,189),
                 'source':'Original porcelain maps at measured scale, used for the kitchen backsplash and bathroom lining'},
 }
 
@@ -71,10 +71,10 @@ for _name in ('B_FABRIC', 'B_FABRIC_cream', 'B_FABRIC_olive'):
 FINISHES.update({
     'B_STONE': {'base':'v6/honed-limestone-color.png','normal':'v6/honed-limestone-normal.png',
                 'rough':'v6/honed-limestone-roughness.png','span':(1.60,1.60),'kind':'stone',
-                'normal_strength':.24,'average':(218,215,202),'source':'Original subtle honed limestone, mineral pores and independent roughness; illustrative finish'},
+                'normal_strength':.035,'average':(218,215,202),'source':'Original subtle honed limestone, mineral pores and independent roughness; illustrative finish'},
     'B_STONE_dark': {'base':'v6/charcoal-stone-color.png','normal':'v6/charcoal-stone-normal.png',
                 'rough':'v6/charcoal-stone-roughness.png','span':(.60,.60),'kind':'stone',
-                'normal_strength':.28,'average':(68,72,68),'source':'Original finely grained charcoal stone; illustrative finish'},
+                'normal_strength':.065,'average':(68,72,68),'source':'Original finely grained charcoal stone; illustrative finish'},
     'B_FABRIC_rug_cream': {'base':'v6/wool-cream-color.png','normal':'v6/wool-normal.png',
                 'rough':'v6/wool-roughness.png','span':(.32,.32),'kind':'linen',
                 'normal_strength':.62,'average':(216,211,196),'sheen':.32,'source':'Original loop-pile wool maps at 5 mm loop spacing'},
@@ -89,7 +89,7 @@ FINISHES.update({
                 'normal_strength':.09,'average':(180,145,88),'metallic':.94,'source':'Original satin champagne brass'},
     'B_STEEL_brushed': {'base':'v6/metal-steel-color.png','normal':'v6/brushed-metal-normal.png',
                 'rough':'v6/metal-steel-roughness.png','span':(.24,.65),'kind':'metal',
-                'normal_strength':.09,'average':(173,178,176),'metallic':.96,'source':'Original satin brushed stainless steel'},
+                'normal_strength':.035,'average':(173,178,176),'metallic':.96,'source':'Original satin brushed stainless steel'},
 })
 
 
@@ -538,11 +538,11 @@ def apply_web_finishes(asset_dir=None):
         p = mat.node_tree.nodes.get('Principled BSDF')
         if not p: continue
         p.inputs['IOR'].default_value = 1.48
-        p.inputs['Roughness'].default_value = .065 if name == 'B_GLASS' else .15
+        p.inputs['Roughness'].default_value = .025 if name == 'B_GLASS' else .095
         # Preserve transmission/alpha from the original model and avoid an
         # expensive extra coat/transmission layer in mobile WebGL.
         glass_refined.append(name)
-    report = {'schema': 'eme.botanique.finishes/6', 'materials': processed,
+    report = {'schema': 'eme.botanique.finishes/7', 'finish_revision': 7, 'materials': processed,
               'uv_objects': uv_objects, 'uv_faces': uv_faces, 'packed_images': len(cache),
               'resolutions': sorted({tuple(image.size) for image in cache.values()}), 'uv_layer': UV_NAME,
               'texture_bytes': sum((folder / n).stat().st_size for n in required),

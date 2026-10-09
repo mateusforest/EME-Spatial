@@ -1,0 +1,28 @@
+import {useEffect,useRef,useState} from 'react';
+import {ArrowRight,Armchair,Footprints,Home,Layers,Pause,Play,Settings2,Smartphone,Sun,X} from 'lucide-react';
+import type {BotaniqueView} from './BotaniquePage';
+import {formatSolarHour} from './botaniqueLighting';
+import './botaniqueMobile.css';
+type Props={ready:boolean;apartment:boolean;walking:boolean;blocked:boolean;full:boolean;view:string;views:BotaniqueView[];rooms:BotaniqueView[];hour:number;quality:string;tour:boolean;onView:(view:BotaniqueView)=>void;onPlan:()=>void;onCatalog:()=>void;onMaterials:()=>void;onHour:(hour:number)=>void;onQuality:(quality:'auto'|'light'|'high')=>void;onWalk:()=>void;onTour:()=>void;onApartment:()=>void;onMove:(x:number,y:number)=>void};
+export default function BotaniqueMobileControls(p:Props){
+ const [panel,setPanel]=useState<'places'|'style'|'settings'|null>(null),[rotateHint,setRotateHint]=useState(true),[stick,setStick]=useState({x:0,y:0});
+ const pointer=useRef<number|null>(null),base=useRef<HTMLButtonElement>(null),moveRef=useRef(p.onMove);moveRef.current=p.onMove;
+ const stop=()=>{pointer.current=null;setStick({x:0,y:0});moveRef.current(0,0);};
+ useEffect(()=>{const reset=()=>stop();window.addEventListener('blur',reset);document.addEventListener('visibilitychange',reset);return()=>{window.removeEventListener('blur',reset);document.removeEventListener('visibilitychange',reset);moveRef.current(0,0);};},[]);
+ useEffect(()=>{if(p.blocked||!p.walking||panel)stop();},[p.blocked,p.walking,panel]);
+ const positions=[...p.rooms,...p.views.filter(v=>!p.rooms.some(r=>r.label===v.label))];
+ const update=(event:React.PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==event.pointerId||!base.current)return;const r=base.current.getBoundingClientRect(),dx=(event.clientX-r.x-r.width/2)/35,dy=(event.clientY-r.y-r.height/2)/35,length=Math.max(1,Math.hypot(dx,dy)),next={x:dx/length,y:dy/length};setStick(next);moveRef.current(next.x,next.y);};
+ const choose=(action:()=>void)=>{setPanel(null);action();};
+ return <div className={'bm-controls '+(p.blocked?'is-obscured':'')}>
+  {p.full&&rotateHint&&<div className="bm-rotate"><Smartphone size={18}/><span>Vire o celular para ampliar a vista.</span><button aria-label="Ocultar orientação" onClick={()=>setRotateHint(false)}><X size={15}/></button></div>}
+  {p.walking&&p.ready&&!p.blocked&&!panel&&<div className="bm-walk"><button ref={base} className="bm-stick" aria-label="Controle de caminhada: arraste para mover" onPointerDown={e=>{if(pointer.current!==null)return;pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);update(e);}} onPointerMove={update} onPointerUp={e=>{if(pointer.current===e.pointerId){if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);stop();}}} onPointerCancel={stop} onLostPointerCapture={stop}><span style={{transform:`translate(${stick.x*28}px,${stick.y*28}px)`}}><Footprints size={20}/></span></button><small>Mover</small></div>}
+  {!panel&&!p.blocked&&p.ready&&<p className="bm-look-hint">Arraste a cena para olhar</p>}
+  {panel&&!p.blocked&&<section className="bm-panel" role="dialog" aria-label={panel==='places'?'Escolher ambiente':panel==='style'?'Personalizar ambiente':'Ajustes da visita'}>
+   <header><strong>{panel==='places'?'Onde vamos?':panel==='style'?'Seu ambiente':'Luz e navegação'}</strong><button aria-label="Fechar controles" onClick={()=>setPanel(null)}><X size={18}/></button></header>
+   {panel==='places'&&<div className="bm-places">{positions.map((v,i)=><button key={v.id+'-'+i} aria-pressed={p.view===v.label} onClick={()=>choose(()=>p.onView(v))}>{v.label}<ArrowRight size={15}/></button>)}{p.apartment?<button onClick={()=>choose(p.onPlan)}><Layers size={17}/>Planta 3D</button>:<button onClick={()=>choose(p.onApartment)}><Home size={17}/>Entrar no apartamento</button>}</div>}
+   {panel==='style'&&<div className="bm-options"><button onClick={()=>choose(p.onCatalog)}><Armchair size={20}/><span>Trocar móveis<small>Modelos 3D e fornecedores</small></span><ArrowRight size={16}/></button><button onClick={()=>choose(p.onMaterials)}><Sun size={20}/><span>Materiais e iluminação<small>Cores, tecidos e temperatura da luz</small></span><ArrowRight size={16}/></button></div>}
+   {panel==='settings'&&<div className="bm-settings"><label>Horário do sol<output>{formatSolarHour(p.hour)}</output><input aria-label="Horário do sol no celular" type="range" min="7" max="20" step=".25" value={p.hour} onChange={e=>p.onHour(Number(e.target.value))}/></label><label>Qualidade<select aria-label="Qualidade no celular" value={p.quality} onChange={e=>p.onQuality(e.target.value as 'auto'|'light'|'high')}><option value="auto">Automática</option><option value="light">Leve</option><option value="high">Alta</option></select></label><div><button onClick={()=>choose(p.onWalk)}><Footprints size={17}/>{p.walking?'Ver em órbita':'Caminhar'}</button><button onClick={()=>choose(p.onTour)}>{p.tour?<Pause size={17}/>:<Play size={17}/>} {p.tour?'Pausar passeio':'Passeio guiado'}</button></div></div>}
+  </section>}
+  {!p.blocked&&<nav className="bm-dock" aria-label="Controles da visita no celular"><button disabled={!p.ready} aria-pressed={panel==='places'} onClick={()=>setPanel(panel==='places'?null:'places')}><Home size={18}/><span>Ambientes</span></button>{p.apartment&&<button disabled={!p.ready} aria-pressed={panel==='style'} onClick={()=>setPanel(panel==='style'?null:'style')}><Armchair size={18}/><span>Personalizar</span></button>}<button disabled={!p.ready} aria-pressed={panel==='settings'} onClick={()=>setPanel(panel==='settings'?null:'settings')}><Settings2 size={18}/><span>Ajustes</span></button></nav>}
+ </div>;
+}

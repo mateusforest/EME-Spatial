@@ -1,7 +1,7 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react';
 import * as T from 'three';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {Armchair,ArrowLeft,ArrowRight,Check,LampCeiling,PanelsTopLeft,Refrigerator,RotateCcw,Sofa,Table2,X} from 'lucide-react';
+import {Armchair,ArrowLeft,ArrowRight,Bath,BedDouble,Check,LampCeiling,PanelsTopLeft,Refrigerator,RotateCcw,Sofa,Table2,X} from 'lucide-react';
 import {botaniqueCatalog,getCatalogGroup} from './botaniqueCatalog';
 import type {CatalogGroupId} from './botaniqueCatalog';
 import './botaniqueCatalog.css';
@@ -15,7 +15,7 @@ export type BotaniqueFurnitureCatalogProps={
  onClose:()=>void;
 };
 
-const icons={sofa:Sofa,chairs:Armchair,table:Table2,pendant:LampCeiling,cabinetry:PanelsTopLeft,appliance:Refrigerator};
+const icons={sofa:Sofa,chairs:Armchair,table:Table2,pendant:LampCeiling,cabinetry:PanelsTopLeft,appliance:Refrigerator,bed:BedDouble,bathroom:Bath};
 type PreviewRuntime={setModel:(objects:T.Object3D[])=>boolean;draw:()=>void;rotate:(amount:number)=>void;reset:()=>void;destroy:()=>void};
 
 /** Only independent copies of Object3D transforms are changed. Mesh resources remain borrowed. */
@@ -100,7 +100,9 @@ function createPreview(host:HTMLDivElement,onFailure:()=>void):PreviewRuntime{
    model=new T.Group();model.add(contents);model.scale.setScalar(scale);pivot.add(model);pivot.rotation.y=-.25;
    const height=size.y*scale;target.set(0,height*.46,0);
    // The apartment sofa faces -X. Kitchen fronts face +X/+Z after glTF conversion.
-   direction.set(objects[0].userData.variantGroup==='sofa'?-1:1,.42,.68).normalize();fitCamera();
+   const group=objects[0].userData.variantGroup;
+   // The social vanity faces -Z; show the basin and drawer fronts, not its back.
+   direction.set(group==='sofa'?-1:group==='bathroom'?.65:1,.42,group==='bathroom'?-1:.68).normalize();fitCamera();
    shadow.scale.set(Math.max(.3,size.x*scale*.64),Math.max(.3,size.z*scale*.64),1);shadow.visible=true;
    draw();return true;
   },

@@ -16,6 +16,8 @@ const expected={
  pendant:['contemporaneo','organico'],
  cabinetry:['contemporaneo','organico'],
  appliance:['contemporaneo','organico'],
+ bed:['contemporaneo','organico'],
+ bathroom:['contemporaneo','organico'],
 };
 const raw=readFileSync(new URL('../public/assets/botanique/apartamento.glb',import.meta.url));
 assert.equal(raw.readUInt32LE(0),0x46546c67,'GLB magic');
@@ -66,13 +68,13 @@ function geometrySignature(nodes){
  return hashes.sort().join(':');
 }
 
-test('GLB, embedded contract, manifest and runtime agree on six groups and fourteen choices',()=>{
+test('GLB, embedded contract, manifest and runtime agree on eight groups and eighteen choices',()=>{
  assert.deepEqual([...furnitureGroups].sort(),Object.keys(expected).sort());
- assert.equal(layout.furniture_variants.revision,6);
- assert.equal(layout.finish_revision,6);
+ assert.equal(layout.furniture_variants.revision,7);
+ assert.equal(layout.finish_revision,7);
  const actual=new Set(variantNodes.map(keyOf));
  const expectedKeys=Object.entries(expected).flatMap(([group,choices])=>choices.map(choice=>`${group}/${choice}`));
- assert.equal(expectedKeys.length,14);
+ assert.equal(expectedKeys.length,18);
  assert.deepEqual([...actual].sort(),expectedKeys.sort());
  for(const [group,choices] of Object.entries(expected)){
   for(const contract of [layout.furniture_variants,manifest.scenes.apartamento.furnitureVariants]){

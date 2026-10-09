@@ -1,4 +1,4 @@
-export type CatalogGroupId='sofa'|'chairs'|'table'|'pendant'|'cabinetry'|'appliance';
+export type CatalogGroupId='sofa'|'chairs'|'table'|'pendant'|'cabinetry'|'appliance'|'bed'|'bathroom';
 export type CatalogVariantId='contemporaneo'|'organico'|'modular'|'concha';
 export type CatalogSupplier={name:string;initials:string;note:string};
 export type CatalogVariant={id:CatalogVariantId;name:string;finish:string;description:string;details:readonly string[]};
@@ -9,6 +9,7 @@ const forma=supplier('Casa Forma Demo','CF');
 const luz=supplier('Atelier Luz Demo','AL');
 const planejada=supplier('Linha Planejada Demo','LP');
 const tecnica=supplier('Casa Técnica Demo','CT');
+const banho=supplier('Pedra & Forma Demo','PF');
 
 /** Describes the exported variants. Names are fictional; finishes describe appearance only. */
 export const botaniqueCatalog:readonly CatalogGroup[]=[
@@ -37,6 +38,14 @@ export const botaniqueCatalog:readonly CatalogGroup[]=[
  {id:'appliance',label:'Eletros',title:'Outra presença na cozinha.',eyebrow:'Equipamentos e acabamentos',supplier:tecnica,variants:[
   {id:'contemporaneo',name:'Técnica Inox',finish:'Inox · comandos mecânicos',description:'Aparência de inox e comandos marcados na composição da cozinha.',details:['Aparência de inox','Comandos mecânicos representados']},
   {id:'organico',name:'Técnica Grafite',finish:'Grafite · vidro e toque',description:'Superfícies escuras e vidro em uma proposta visual integrada.',details:['Aparência de grafite e vidro','Comandos de toque representados']},
+ ]},
+ {id:'bed',label:'Quarto',title:'Um quarto com a sua presença.',eyebrow:'Descanso e textura',supplier:forma,variants:[
+  {id:'contemporaneo',name:'Aconchego',finish:'Linho e madeira',description:'Uma composição de cama com cabeceira estofada e detalhes naturais.',details:['Cabeceira estofada','Composição para a suíte']},
+  {id:'organico',name:'Abraço',finish:'Volumes suaves',description:'Outra composição de cabeceira e apoio lateral para experimentar o quarto.',details:['Cabeceira de desenho orgânico','Apoio lateral coordenado']},
+ ]},
+ {id:'bathroom',label:'Banheiro',title:'O cuidado está nos detalhes.',eyebrow:'Pedra e marcenaria',supplier:banho,variants:[
+  {id:'contemporaneo',name:'Essência',finish:'Gabinete e pedra clara',description:'Bancada, gabinete e espelho em uma composição de linhas leves.',details:['Bancada de pedra clara','Marcenaria de apoio']},
+  {id:'organico',name:'Sereno',finish:'Espelho e madeira',description:'Uma segunda composição de bancada, gabinete e espelho para o banho.',details:['Espelho de desenho suave','Detalhes de madeira']},
  ]},
 ];
 

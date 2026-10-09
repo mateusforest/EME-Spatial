@@ -37,7 +37,7 @@ def apply_balcony_context(asset_root=None):
         obj['context_only'] = True
         obj['exclude_from_bounds'] = True
         obj['estimated_geometry'] = True
-        obj['context_revision'] = 6
+        obj['context_revision'] = 7
         objects.append(obj)
         return obj
 
@@ -198,6 +198,40 @@ def apply_balcony_context(asset_root=None):
             face(leaf.name,verts,[(0,1,2),(0,2,3),(0,3,4),(0,4,5),(0,5,6),(0,6,7)],leaf_uv)
             leaf_count+=1
 
+    # Low planted islands behind the far pavement break up the broad lawn.
+    # They remain below 1 m, leaving the third-floor sightline open. Reuse the
+    # verified leaf material/batch: no extra images or draw calls are introduced.
+    garden_islands=[(-28,-23,7.0,3.1),(-15,-22.5,6.0,2.8),
+                    (0,-27,8.0,3.7),(15,-24,6.5,3.0),(29,-24.5,7.5,3.0)]
+    shrub_count=0
+    for island,(x,y,sx,sy) in enumerate(garden_islands):
+        ring=[]
+        for i in range(24):
+            a=i*math.tau/24
+            r=1+.09*math.sin(a*3+island)
+            xx=x+math.cos(a)*sx*.5*r;yy=y+math.sin(a)*sy*.5*r
+            ring.append((xx,yy,ground_height(xx,yy)+.027))
+        face(soil.name,[(x,y,ground_height(x,y)+.027),*ring],
+             [(0,1+i,1+(i+1)%24) for i in range(24)])
+        for shrub in range(7):
+            a=shrub*2.399+island
+            cx=x+math.cos(a)*sx*.31;cy=y+math.sin(a)*sy*.25
+            z=ground_height(cx,cy);height=rng.uniform(.55,.86)
+            center=Vector((cx,cy,z+height*.5))
+            for i in range(82):
+                a=rng.random()*math.tau;v=rng.uniform(-1,1)
+                radial=rng.random()**(1/3);q=(1-v*v)**.5
+                point=center+Vector((math.cos(a)*q*.57*radial,
+                                      math.sin(a)*q*.49*radial,v*height*.40*radial))
+                az=rng.random()*math.tau
+                direction=Vector((math.cos(az),math.sin(az),rng.uniform(.15,.65))).normalized()
+                side=Vector((-math.sin(az),math.cos(az),rng.uniform(-.25,.25))).normalized()
+                length=rng.uniform(.23,.35)
+                verts=[point+side*(u*length*.68)+direction*(v*length) for u,v in outline]
+                face(leaf.name,verts,[(0,1,2),(0,2,3),(0,3,4),(0,4,5),(0,5,6),(0,6,7)],leaf_uv)
+                leaf_count+=1
+            shrub_count+=1
+
     # Three large distant bands share one RGBA image and one material. They
     # are diffuse surfaces (no emission), so the viewer's daylight/night
     # settings naturally change their brightness. The image is illustrative.
@@ -234,12 +268,13 @@ def apply_balcony_context(asset_root=None):
     triangles=0
     for obj in objects:
         obj.data.calc_loop_triangles();triangles+=len(obj.data.loop_triangles)
-    report={'schema':'eme.botanique.balcony-context/6','role':'context','measured_view':False,
+    report={'schema':'eme.botanique.balcony-context/7','role':'context','measured_view':False,
             'floor':'3rd floor, illustrative and unconfirmed','groundDatum':-8.70,'coordinateSystem':'BLENDER_Z_UP',
             'layers':['near garden','street and two pavements below unit','dense 3D broadleaf crowns','three distant photographic forest bands'],
             'foliage_revision':'Leaf-shaped geometry samples only verified green UV islands, excluding white atlas packing strips. No sampled/discarded source leaves or enlarged brown shrubs.',
             'sourceTreeTriangles':495533,'sourceLeafTriangles':386574,'sourceLeafIslands':63152,
-            'realTrees':0,'proceduralTrees':len(trees),'individualLeaves':leaf_count,'farTwigTrees':0,'shrubs':0,
+            'realTrees':0,'proceduralTrees':len(trees),'individualLeaves':leaf_count,'farTwigTrees':0,'shrubs':shrub_count,
+            'gardenIslands':len(garden_islands),'gardenLocation':'Beyond far sidewalk, y < -20 m; illustrative planting under 1 m high',
             'backdropPlanes':3,'backdropRangeMetres':[82,95],'backdropNoShadow':True,
             'backdropSource':'public/assets/botanique/materials/v6/woodland-backdrop-provenance.json',
             'objects':len(objects),'triangles':triangles,'previousContextRemoved':removed,
