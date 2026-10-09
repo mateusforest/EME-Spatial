@@ -36,9 +36,9 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
   sun.color.copy(neutral.lerp(warm,value.gold*.75));sun.intensity=3.65*value.day*(1-.34*value.gold);
   sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(value.direction,180);
   Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:Math.max(.1,180-span*2),far:180+span*2});sun.shadow.camera.updateProjectionMatrix();
-  sky.color.set(apartment?'#f2eee3':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=(apartment&&!planMode?.30:.42)+.32*value.day+(apartment&&!planMode?.20*indoor*(1-value.day):0);sky.groundColor.set(apartment&&!planMode?'#c2b096':'#938674');
-  scene.environmentIntensity=apartment?.032+.018*value.day:.045+.025*value.day;
-  renderer.toneMappingExposure=apartment?.94:.85;
+  sky.color.set(apartment?'#f2eee3':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=apartment?((!planMode?.30:.42)+.32*value.day+(!planMode?.20*indoor*(1-value.day):0)):.58+.40*value.day;sky.groundColor.set(apartment&&!planMode?'#c2b096':'#a59b87');
+  scene.environmentIntensity=apartment?.032+.018*value.day:.09+.05*value.day;
+  renderer.toneMappingExposure=apartment?.94:.92;
   dome.material.uniforms.sunPosition.value.copy(value.direction);dome.visible=value.elevation>-3;
   scene.background=new T.Color('#152635');
   if(scene.fog instanceof T.Fog)scene.fog.color.set('#c7d6da').lerp(new T.Color('#d5af91'),value.gold*.4).lerp(new T.Color('#152635'),1-value.day);
