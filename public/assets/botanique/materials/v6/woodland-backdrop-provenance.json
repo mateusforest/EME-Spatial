@@ -1,0 +1,7 @@
+{
+  "prompt": "Use case: photorealistic-natural. Production 3D architectural visualization texture: wide panoramic continuous belt of lush southern Brazilian subtropical woodland from third-floor height. Dense broadleaf trees and subtle araucaria crowns, neutral daylight, olive-green foliage, no buildings, roads or people, transparent alpha above canopy, dense bottom. Generic illustrative woodland.",
+  "created": "2026-10-09",
+  "scope": "Illustrative woodland backdrop, not a measured geographic view",
+  "asset": "woodland-backdrop.png",
+  "tool": "OpenAI image_gen built-in"
+}

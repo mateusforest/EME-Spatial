@@ -1,0 +1,236 @@
+{
+  "schema": "eme.botanique.pbr/6",
+  "finish_revision": 6,
+  "files": [
+    {
+      "file": "brushed-metal-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 9875,
+      "sha256": "befe9252966a99226f8de04d20b41ca58018569ec6114379e975757f93086b4a"
+    },
+    {
+      "file": "charcoal-stone-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 163429,
+      "sha256": "bbd6f887f9fecd65071f9f5e53df479cdcd025c344df2fc312c4c4b7b99a7a57"
+    },
+    {
+      "file": "charcoal-stone-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 242490,
+      "sha256": "80f9769e0813d7eec18d7aa266c5b023c7cfb544bd8548e862801768fec4441a"
+    },
+    {
+      "file": "charcoal-stone-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 159986,
+      "sha256": "1730bc2aea4b85a2a6080660733ef06481e0672b5a09205db802ab199a3a27c4"
+    },
+    {
+      "file": "context-asphalt-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 172067,
+      "sha256": "cf0cd3bb8973f28cd8aaef7b726b88a36a3c02b485b3ef15fb767f1a3ae0b998"
+    },
+    {
+      "file": "context-asphalt-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 349933,
+      "sha256": "578566b4172f8759b8a8a3dddbf2c7bc57bfc67ba4d7ed62970382b97348dc48"
+    },
+    {
+      "file": "context-grass-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 232873,
+      "sha256": "2bb7b2811b102d6fdc49455b8fd2fd80b15d75e0dcbaf8c3ffd00bc5ab3962aa"
+    },
+    {
+      "file": "context-grass-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 489209,
+      "sha256": "89a508e1c55ede9e02aa25d1d1264a762519cdfd61f0558999ec90b7cddac6d3"
+    },
+    {
+      "file": "context-paving-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 191341,
+      "sha256": "16a207cf1bc0470e7867fb1ac646b8f023441a5d25ca9123ace9e470766b60e2"
+    },
+    {
+      "file": "context-paving-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 242253,
+      "sha256": "150eaf91d776f538970b990371f5f7754b8d1ba15a98bc75698c658ee0fdaf84"
+    },
+    {
+      "file": "honed-limestone-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 136674,
+      "sha256": "042e61abfeda30153411c7f2301756a4dc1db786e24d549d6d460982bff43182"
+    },
+    {
+      "file": "honed-limestone-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 119909,
+      "sha256": "1e6073636ca1e49c13db94d7553adb5cad16236d900de81805a5c16199275562"
+    },
+    {
+      "file": "honed-limestone-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 99292,
+      "sha256": "e8ec05c7629b045061068644d4fdd678e7b6032d44a214c8fda239842429587c"
+    },
+    {
+      "file": "metal-brass-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 21020,
+      "sha256": "40cbc706e1bdcb2d47e237bd734510b6a951151e274faadc5bf0f611e767d0c1"
+    },
+    {
+      "file": "metal-brass-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 27202,
+      "sha256": "8ad3b23c43845ecd9c3ab2a7eb86500d9ed26771c0daaed819048af0988e79c1"
+    },
+    {
+      "file": "metal-graphite-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 8079,
+      "sha256": "3e58db4b7bb915b581c17f9d9dbeb4b396bf35c86c80c5cfe584cbeb8f437f79"
+    },
+    {
+      "file": "metal-graphite-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 27202,
+      "sha256": "f89218381bbf07df41c305da8c25a0d9e968ae940768d6fe7615b0cc62ba7606"
+    },
+    {
+      "file": "metal-steel-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 20200,
+      "sha256": "e3206e9edf21ef33c0a672ae3136594b2ba64860ede9d5ef1c813e0b228c78e3"
+    },
+    {
+      "file": "metal-steel-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 27190,
+      "sha256": "6506def4fdcf9c1759b4a2623480a982746609236f571deeb6d90e331048849c"
+    },
+    {
+      "file": "upholstery-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 224750,
+      "sha256": "f5494469c7a25920d27b5289cc3c3624f4a2637c4554c9536967fff65030c935"
+    },
+    {
+      "file": "upholstery-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 160307,
+      "sha256": "a6905b22d98ae9b337afb295a9c11bfa9030eea27ce77bccfe94bd3e8a28cf49"
+    },
+    {
+      "file": "wool-cream-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 137635,
+      "sha256": "0efd632ad7813aef0d711e03bc9b729e3de99550f003802a6a25977dc3d0ca27"
+    },
+    {
+      "file": "wool-natural-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 134895,
+      "sha256": "b253bab1626fddeab965847d5f758b3c101bc7f57581917e5b13063b95e01312"
+    },
+    {
+      "file": "wool-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 341388,
+      "sha256": "b9db10467fa364c5cba45dbbbfaf241dd3baa1bbf04e4cfb49c1c5d694f3b6eb"
+    },
+    {
+      "file": "wool-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 80468,
+      "sha256": "aa0ed18b66f919732fdd1c908a03a7f8d2afbf0211a5c89714d87925598cfe42"
+    }
+  ],
+  "total_bytes": 3819667,
+  "provenance": "Original deterministic physical material maps by EME Spatial. Existing photographed CC0 veneer remains unchanged in the parent folder.",
+  "color_space": "Albedo sRGB; normals and roughness linear, OpenGL +Y.",
+  "geometry_changed": false,
+  "configuration": "B_WOOD and B_FABRIC material prefixes retained."
+}

@@ -1,0 +1,821 @@
+{
+  "schema": "eme.botanique.unit/1",
+  "layout_revision": 2,
+  "unit_id": "final-1-demonstracao",
+  "title": "Botanique · Final 1 · Estudo de ambientação",
+  "source": {
+    "image": "codex-clipboard-2e772469-96e9-48a2-b30e-22ad300b3559.png",
+    "type": "humanized-floorplan-without-dimensions",
+    "source_marketed_private_area_m2": 55.55,
+    "tracing_region_pixels": [
+      62,
+      375,
+      294,
+      618
+    ],
+    "fidelity_status": "topology-and-visible-furnishing-retraced; dimensions-unconfirmed",
+    "measured_geometry": false,
+    "scale_status": "estimated",
+    "note": "Geometria em escala visual estimada. A área de 55,55 m² é a informação da planta comercial, não uma aferição desta malha. Pé-direito, paredes, vãos e mobiliário devem ser conferidos com projeto cotado.",
+    "interiors": "Proposta EME inspirada nas referências recebidas; correspondência dos renders comerciais com Final 1 não comprovada."
+  },
+  "coordinates": {
+    "system": "Blender right-handed Z-up",
+    "unit": "metre",
+    "origin": "lower-left of Final 1 in source image",
+    "x": "right in image",
+    "y": "towards top of image",
+    "z": "up",
+    "standard_gltf_export_transform": "[x, z, -y]"
+  },
+  "estimated_envelope": {
+    "width": 7.2,
+    "depth": 7.8,
+    "ceiling": 2.72,
+    "outer_wall_thickness": 0.14
+  },
+  "rooms": [
+    {
+      "id": "living",
+      "label": "Estar e jantar",
+      "bounds": [
+        4.53,
+        1.15,
+        7.2,
+        4.86
+      ],
+      "target": [
+        5.43,
+        2.91,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "kitchen",
+      "label": "Cozinha em L e serviço",
+      "bounds": [
+        3.4,
+        4.86,
+        7.2,
+        7.8
+      ],
+      "target": [
+        5.02,
+        6.39,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "hall",
+      "label": "Circulação íntima",
+      "bounds": [
+        2.65,
+        3.6,
+        4.53,
+        4.86
+      ],
+      "target": [
+        3.42,
+        4.1,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "suite",
+      "label": "Suíte e vestíbulo",
+      "bounds": [
+        0,
+        0,
+        4.53,
+        3.6
+      ],
+      "floor_regions": [
+        [
+          0,
+          0,
+          3.17,
+          3.6
+        ],
+        [
+          3.17,
+          2.66,
+          4.53,
+          3.6
+        ]
+      ],
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          3.17,
+          0
+        ],
+        [
+          3.17,
+          2.66
+        ],
+        [
+          4.53,
+          2.66
+        ],
+        [
+          4.53,
+          3.6
+        ],
+        [
+          0,
+          3.6
+        ]
+      ],
+      "target": [
+        2.44,
+        2.96,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "bedroom",
+      "label": "Dormitório com duas camas",
+      "bounds": [
+        0,
+        4.86,
+        3.4,
+        7.8
+      ],
+      "target": [
+        2.86,
+        5.45,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "bathroom",
+      "label": "Banheiro social",
+      "bounds": [
+        0,
+        3.6,
+        2.65,
+        4.86
+      ],
+      "target": [
+        2.28,
+        4.35,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "ensuite",
+      "label": "Banheiro da suíte",
+      "bounds": [
+        3.17,
+        0,
+        4.53,
+        2.66
+      ],
+      "target": [
+        3.66,
+        1.64,
+        1.55
+      ],
+      "floor_z": 0.035
+    },
+    {
+      "id": "balcony",
+      "label": "Sacada com churrasqueira",
+      "bounds": [
+        4.53,
+        0,
+        7.2,
+        1.15
+      ],
+      "target": [
+        6.1,
+        0.6,
+        1.55
+      ],
+      "floor_z": 0.015
+    }
+  ],
+  "cameras": [
+    {
+      "id": "living",
+      "name": "B_UNIT_CAMERA_LIVING",
+      "label": "Estar, jantar e cozinha",
+      "position": [
+        6.78,
+        1.57,
+        1.56
+      ],
+      "look_at": [
+        4.65,
+        5.65,
+        1.32
+      ],
+      "lens_mm": 25
+    },
+    {
+      "id": "kitchen",
+      "name": "B_UNIT_CAMERA_KITCHEN",
+      "label": "Da cozinha para a sacada",
+      "position": [
+        6.8,
+        7.25,
+        1.57
+      ],
+      "look_at": [
+        5.38,
+        2.18,
+        1.23
+      ],
+      "lens_mm": 26
+    },
+    {
+      "id": "suite",
+      "name": "B_UNIT_CAMERA_SUITE",
+      "label": "Suíte",
+      "position": [
+        0.83,
+        0.28,
+        1.55
+      ],
+      "look_at": [
+        2.66,
+        1.73,
+        1.06
+      ],
+      "lens_mm": 24
+    },
+    {
+      "id": "plan",
+      "name": "B_UNIT_CAMERA_PLAN",
+      "label": "Planta demonstrativa",
+      "position": [
+        3.6,
+        3.9,
+        14.0
+      ],
+      "look_at": [
+        3.6,
+        3.9,
+        0.0
+      ],
+      "projection": "ORTHO",
+      "ortho_scale": 16.0
+    }
+  ],
+  "room_cameras": [
+    {
+      "id": "living",
+      "label": "Estar e jantar",
+      "position": [
+        5.44,
+        2.94,
+        1.585
+      ],
+      "look_at": [
+        6.68,
+        2.62,
+        1.04
+      ]
+    },
+    {
+      "id": "kitchen",
+      "label": "Cozinha e serviço",
+      "position": [
+        5.02,
+        6.31,
+        1.585
+      ],
+      "look_at": [
+        3.81,
+        6.4,
+        1.24
+      ]
+    },
+    {
+      "id": "hall",
+      "label": "Circulação",
+      "position": [
+        3.43,
+        4.3,
+        1.585
+      ],
+      "look_at": [
+        3.56,
+        3.12,
+        1.33
+      ]
+    },
+    {
+      "id": "suite",
+      "label": "Suíte",
+      "position": [
+        2.44,
+        2.96,
+        1.585
+      ],
+      "look_at": [
+        2.6,
+        1.51,
+        1.02
+      ]
+    },
+    {
+      "id": "bedroom",
+      "label": "Dormitório",
+      "position": [
+        2.88,
+        5.45,
+        1.585
+      ],
+      "look_at": [
+        1.21,
+        6.4,
+        1.01
+      ]
+    },
+    {
+      "id": "bathroom",
+      "label": "Banheiro social",
+      "position": [
+        2.28,
+        4.35,
+        1.585
+      ],
+      "look_at": [
+        1.28,
+        3.98,
+        1.08
+      ]
+    },
+    {
+      "id": "ensuite",
+      "label": "Banheiro da suíte",
+      "position": [
+        3.68,
+        1.6,
+        1.585
+      ],
+      "look_at": [
+        4.22,
+        1.97,
+        1.2
+      ]
+    },
+    {
+      "id": "balcony",
+      "label": "Sacada",
+      "position": [
+        6.1,
+        0.6,
+        1.565
+      ],
+      "look_at": [
+        5.62,
+        2.47,
+        1.21
+      ]
+    }
+  ],
+  "navigation": {
+    "eye_height": 1.55,
+    "agent_radius": 0.22,
+    "start": [
+      5.02,
+      6.31,
+      1.585
+    ],
+    "surfaces": [
+      {
+        "id": "continuous-interior",
+        "height": 0.035,
+        "polygon": [
+          [
+            0.07,
+            0.07
+          ],
+          [
+            4.53,
+            0.07
+          ],
+          [
+            4.53,
+            1.15
+          ],
+          [
+            7.13,
+            1.15
+          ],
+          [
+            7.13,
+            7.73
+          ],
+          [
+            0.07,
+            7.73
+          ]
+        ]
+      },
+      {
+        "id": "balcony",
+        "height": 0.015,
+        "polygon": [
+          [
+            4.53,
+            0.07
+          ],
+          [
+            7.13,
+            0.07
+          ],
+          [
+            7.13,
+            1.2
+          ],
+          [
+            4.53,
+            1.2
+          ]
+        ]
+      }
+    ],
+    "entries": [
+      {
+        "id": "living",
+        "label": "Estar e jantar",
+        "position": [
+          5.44,
+          2.94,
+          0.035
+        ],
+        "target": [
+          6.68,
+          2.62,
+          1.04
+        ]
+      },
+      {
+        "id": "kitchen",
+        "label": "Cozinha e serviço",
+        "position": [
+          5.02,
+          6.31,
+          0.035
+        ],
+        "target": [
+          3.81,
+          6.4,
+          1.24
+        ]
+      },
+      {
+        "id": "hall",
+        "label": "Circulação",
+        "position": [
+          3.43,
+          4.3,
+          0.035
+        ],
+        "target": [
+          3.56,
+          3.12,
+          1.33
+        ]
+      },
+      {
+        "id": "suite",
+        "label": "Suíte",
+        "position": [
+          2.44,
+          2.96,
+          0.035
+        ],
+        "target": [
+          2.6,
+          1.51,
+          1.02
+        ]
+      },
+      {
+        "id": "bedroom",
+        "label": "Dormitório",
+        "position": [
+          2.88,
+          5.45,
+          0.035
+        ],
+        "target": [
+          1.21,
+          6.4,
+          1.01
+        ]
+      },
+      {
+        "id": "bathroom",
+        "label": "Banheiro social",
+        "position": [
+          2.28,
+          4.35,
+          0.035
+        ],
+        "target": [
+          1.28,
+          3.98,
+          1.08
+        ]
+      },
+      {
+        "id": "ensuite",
+        "label": "Banheiro da suíte",
+        "position": [
+          3.68,
+          1.6,
+          0.035
+        ],
+        "target": [
+          4.22,
+          1.97,
+          1.2
+        ]
+      },
+      {
+        "id": "balcony",
+        "label": "Sacada",
+        "position": [
+          6.1,
+          0.6,
+          0.015
+        ],
+        "target": [
+          5.62,
+          2.47,
+          1.21
+        ]
+      }
+    ],
+    "points": [
+      {
+        "id": "entrada",
+        "room": "kitchen",
+        "position": [
+          6.56,
+          7.11,
+          0.035
+        ]
+      },
+      {
+        "id": "cozinha",
+        "room": "kitchen",
+        "position": [
+          5.02,
+          6.31,
+          0.035
+        ]
+      },
+      {
+        "id": "jantar",
+        "room": "kitchen",
+        "position": [
+          4.96,
+          5.14,
+          0.035
+        ]
+      },
+      {
+        "id": "passagem-estar",
+        "room": "living",
+        "position": [
+          5.44,
+          4.38,
+          0.035
+        ]
+      },
+      {
+        "id": "estar",
+        "room": "living",
+        "position": [
+          5.44,
+          2.94,
+          0.035
+        ]
+      },
+      {
+        "id": "passagem-sacada",
+        "room": "living",
+        "position": [
+          5.76,
+          1.55,
+          0.035
+        ]
+      },
+      {
+        "id": "porta-sacada",
+        "room": "living",
+        "position": [
+          6.1,
+          1.43,
+          0.035
+        ]
+      },
+      {
+        "id": "sacada",
+        "room": "balcony",
+        "position": [
+          6.1,
+          0.6,
+          0.015
+        ]
+      },
+      {
+        "id": "circulacao",
+        "room": "hall",
+        "position": [
+          3.43,
+          4.3,
+          0.035
+        ]
+      },
+      {
+        "id": "entrada-suite",
+        "room": "suite",
+        "position": [
+          3.58,
+          3.14,
+          0.035
+        ]
+      },
+      {
+        "id": "suite",
+        "room": "suite",
+        "position": [
+          2.44,
+          2.96,
+          0.035
+        ]
+      },
+      {
+        "id": "entrada-banho-suite",
+        "room": "ensuite",
+        "position": [
+          3.67,
+          2.56,
+          0.035
+        ]
+      },
+      {
+        "id": "banho-suite",
+        "room": "ensuite",
+        "position": [
+          3.68,
+          1.6,
+          0.035
+        ]
+      },
+      {
+        "id": "entrada-quarto",
+        "room": "hall",
+        "position": [
+          2.98,
+          4.66,
+          0.035
+        ]
+      },
+      {
+        "id": "quarto",
+        "room": "bedroom",
+        "position": [
+          2.88,
+          5.45,
+          0.035
+        ]
+      },
+      {
+        "id": "banho-social",
+        "room": "bathroom",
+        "position": [
+          2.28,
+          4.35,
+          0.035
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "entrada",
+        "cozinha"
+      ],
+      [
+        "cozinha",
+        "jantar"
+      ],
+      [
+        "jantar",
+        "passagem-estar"
+      ],
+      [
+        "passagem-estar",
+        "estar"
+      ],
+      [
+        "estar",
+        "passagem-sacada"
+      ],
+      [
+        "passagem-sacada",
+        "porta-sacada"
+      ],
+      [
+        "porta-sacada",
+        "sacada"
+      ],
+      [
+        "jantar",
+        "circulacao"
+      ],
+      [
+        "circulacao",
+        "entrada-suite"
+      ],
+      [
+        "entrada-suite",
+        "suite"
+      ],
+      [
+        "entrada-suite",
+        "entrada-banho-suite"
+      ],
+      [
+        "entrada-banho-suite",
+        "banho-suite"
+      ],
+      [
+        "circulacao",
+        "entrada-quarto"
+      ],
+      [
+        "entrada-quarto",
+        "quarto"
+      ],
+      [
+        "circulacao",
+        "banho-social"
+      ]
+    ],
+    "note": "Continuous interior floor, with actual wall, furniture, glass and open-door colliders. Pathfinding must check clearance; route edges are hints, never permission to cross an obstacle."
+  },
+  "configurable_materials": {
+    "B_WOOD": {
+      "label": "Madeira do mobiliário",
+      "scope": "decorative"
+    },
+    "B_FABRIC": {
+      "label": "Tecidos do mobiliário",
+      "scope": "decorative"
+    },
+    "B_ACCENT_green": {
+      "label": "Cor da marcenaria",
+      "scope": "decorative"
+    },
+    "B_ACCENT_wall": {
+      "label": "Cor do painel decorativo",
+      "scope": "decorative"
+    }
+  },
+  "protected_materials": [
+    "B_WALL",
+    "B_FLOOR",
+    "B_METAL",
+    "B_GLASS"
+  ],
+  "visibility": {
+    "roof": "B_UNIT_ROOF",
+    "roof_collection": "B_UNIT_CEILING",
+    "plan_hide_roles": [
+      "roof",
+      "ceiling-light",
+      "hanging-light",
+      "curtain-high",
+      "context"
+    ],
+    "architecture_is_configurable": false
+  },
+  "doors": [],
+  "windows": [],
+  "colliders": [],
+  "runtime_derived_fields": [
+    "doors",
+    "windows",
+    "colliders",
+    "geometry_object_count",
+    "asset_sources",
+    "context"
+  ]
+}

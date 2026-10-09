@@ -1,6 +1,6 @@
 {
   "project": "Botanique Home Resort",
-  "version": "demo-05",
+  "version": "demo-06",
   "disclaimer": "Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.",
   "scenes": {
     "exterior": {
@@ -5446,7 +5446,7 @@
       ]
     },
     "apartamento": {
-      "url": "/assets/botanique/apartamento.glb?v=10f762447fd6",
+      "url": "/assets/botanique/apartamento.glb?v=9722873692df",
       "camera": {
         "position": [
           6.45,
@@ -5514,6 +5514,20 @@
             6.74,
             1.31,
             -0.65
+          ]
+        },
+        {
+          "id": "balcony-view",
+          "label": "Vista da sacada",
+          "position": [
+            5.84,
+            1.615,
+            -0.6
+          ],
+          "target": [
+            1.8,
+            0.9,
+            30
           ]
         }
       ],
@@ -6565,6 +6579,10 @@
             {
               "id": "organico",
               "label": "Orgânico · curvo"
+            },
+            {
+              "id": "modular",
+              "label": "Modular · costura marcada"
             }
           ]
         },
@@ -6574,15 +6592,76 @@
           "options": [
             {
               "id": "contemporaneo",
-              "label": "Madeira e tecido"
+              "label": "Madeira e linho"
             },
             {
               "id": "organico",
-              "label": "Concha estofada"
+              "label": "Envolvente · latão"
+            },
+            {
+              "id": "concha",
+              "label": "Concha · base contínua"
             }
           ]
         },
-        "navigation": "Both furniture alternatives use the unchanged original sofa and dining-chair collider envelopes."
+        "table": {
+          "label": "Mesa de jantar",
+          "default": "contemporaneo",
+          "options": [
+            {
+              "id": "contemporaneo",
+              "label": "Carvalho · bordas suaves"
+            },
+            {
+              "id": "organico",
+              "label": "Pedra clara · pedestal duplo"
+            }
+          ]
+        },
+        "pendant": {
+          "label": "Pendente",
+          "default": "contemporaneo",
+          "options": [
+            {
+              "id": "contemporaneo",
+              "label": "Duplo · vidro opalino"
+            },
+            {
+              "id": "organico",
+              "label": "Pétalas · cerâmica"
+            }
+          ]
+        },
+        "cabinetry": {
+          "label": "Marcenaria",
+          "default": "contemporaneo",
+          "options": [
+            {
+              "id": "contemporaneo",
+              "label": "Sálvia e carvalho"
+            },
+            {
+              "id": "organico",
+              "label": "Carvalho canelado"
+            }
+          ]
+        },
+        "appliance": {
+          "label": "Eletrodomésticos",
+          "default": "contemporaneo",
+          "options": [
+            {
+              "id": "contemporaneo",
+              "label": "Inox · comandos mecânicos"
+            },
+            {
+              "id": "organico",
+              "label": "Grafite · vidro e toque"
+            }
+          ]
+        },
+        "navigation": "All options share the unchanged original furniture and fixture envelopes; no alternative creates a new collider.",
+        "revision": 6
       },
       "modeledLights": [
         {
@@ -6980,25 +7059,25 @@
   },
   "images": [
     {
-      "url": "/assets/botanique/renders/botanique-apartamento-01.webp?v=547a9640b6df",
+      "url": "/assets/botanique/renders/botanique-apartamento-01.webp?v=194e080338f9",
       "title": "Estudo EME · estar e jantar",
       "credit": "EME Spatial · Reconstrução demonstrativa em 3D",
       "kind": "render"
     },
     {
-      "url": "/assets/botanique/renders/botanique-apartamento-02.webp?v=723175f974be",
+      "url": "/assets/botanique/renders/botanique-apartamento-02.webp?v=89d5d8d001ea",
       "title": "Estudo EME · estar e sacada",
       "credit": "EME Spatial · Reconstrução demonstrativa em 3D",
       "kind": "render"
     },
     {
-      "url": "/assets/botanique/renders/botanique-apartamento-03.webp?v=c0a019816b97",
+      "url": "/assets/botanique/renders/botanique-apartamento-03.webp?v=9bebc377f23a",
       "title": "Estudo EME · suíte",
       "credit": "EME Spatial · Reconstrução demonstrativa em 3D",
       "kind": "render"
     },
     {
-      "url": "/assets/botanique/renders/botanique-apartamento-05.webp?v=38812bcb543d",
+      "url": "/assets/botanique/renders/botanique-apartamento-05.webp?v=52ce35f84469",
       "title": "Estudo EME · churrasqueira da Final 1",
       "credit": "EME Spatial · Reconstrução demonstrativa em 3D",
       "kind": "render"
@@ -7072,7 +7151,7 @@
   ],
   "video": {
     "url": "/assets/botanique/botanique-experiencia.mp4?v=6604d28f4244",
-    "poster": "/assets/botanique/renders/botanique-apartamento-01.webp?v=547a9640b6df"
+    "poster": "/assets/botanique/renders/botanique-apartamento-01.webp?v=194e080338f9"
   },
   "presentation": {
     "url": "/assets/botanique/apresentacao-botanique.pdf",
