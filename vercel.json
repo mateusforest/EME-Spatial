@@ -11,6 +11,10 @@
   ],
   "rewrites": [
     {
+      "source": "/apresentar/botanique",
+      "destination": "/botanique.html"
+    },
+    {
       "source": "/solucoes/:path*",
       "destination": "/index.html"
     },

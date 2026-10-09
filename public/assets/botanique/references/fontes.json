@@ -1,0 +1,565 @@
+{
+  "projeto": "Botanique Home Resort",
+  "nota": "Referencias recebidas e publicas oficiais. Os originais permanecem inalterados. Nenhum recurso representa um render novo da EME. Modelagem dimensional depende de plantas cotadas e confirmacao tecnica.",
+  "fontes": [
+    {
+      "id": "O01",
+      "nome": "banner-fachada",
+      "tipo": "oficial",
+      "categoria": "fachada",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/BANNER-BOTANIQUE-03.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1600,
+        "altura": 658
+      },
+      "imagem": "/assets/botanique/references/o01-banner-fachada.webp"
+    },
+    {
+      "id": "O02",
+      "nome": "marca-botanique",
+      "tipo": "oficial",
+      "categoria": "marca",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/LOGOS-01.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 260,
+        "altura": 130
+      },
+      "imagem": "/assets/botanique/references/o02-marca-botanique.webp"
+    },
+    {
+      "id": "O03",
+      "nome": "planta-pavimento-tipo",
+      "tipo": "oficial",
+      "categoria": "planta",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/PLANTAS-BOTANIQUE_Prancheta-1-1.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o03-planta-pavimento-tipo.webp"
+    },
+    {
+      "id": "O04",
+      "nome": "piscina-deck-molhado",
+      "tipo": "oficial",
+      "categoria": "piscina",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-04.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o04-piscina-deck-molhado.webp"
+    },
+    {
+      "id": "O05",
+      "nome": "gourmet-piscina",
+      "tipo": "oficial",
+      "categoria": "lazer",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-05.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o05-gourmet-piscina.webp"
+    },
+    {
+      "id": "O06",
+      "nome": "miniquadra-quiosque",
+      "tipo": "oficial",
+      "categoria": "lazer",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-06.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o06-miniquadra-quiosque.webp"
+    },
+    {
+      "id": "O07",
+      "nome": "quiosque-pergolado",
+      "tipo": "oficial",
+      "categoria": "lazer",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-07.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o07-quiosque-pergolado.webp"
+    },
+    {
+      "id": "O08",
+      "nome": "redario",
+      "tipo": "oficial",
+      "categoria": "lazer",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-08.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o08-redario.webp"
+    },
+    {
+      "id": "O09",
+      "nome": "salao-festas-estar",
+      "tipo": "oficial",
+      "categoria": "interior-comum",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-09.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o09-salao-festas-estar.webp"
+    },
+    {
+      "id": "O10",
+      "nome": "brinquedoteca",
+      "tipo": "oficial",
+      "categoria": "interior-comum",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-10.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o10-brinquedoteca.webp"
+    },
+    {
+      "id": "O11",
+      "nome": "academia",
+      "tipo": "oficial",
+      "categoria": "interior-comum",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-11.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o11-academia.webp"
+    },
+    {
+      "id": "O12",
+      "nome": "lavanderia-oficina",
+      "tipo": "oficial",
+      "categoria": "interior-comum",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-12.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o12-lavanderia-oficina.webp"
+    },
+    {
+      "id": "O13",
+      "nome": "estar-na-mata",
+      "tipo": "oficial",
+      "categoria": "lazer",
+      "url": "https://bbdr.com.br/wp-content/uploads/2026/01/SOCIAL-BOTANIQUE-13.png",
+      "pagina_fonte": "https://bbdr.com.br/imovel/botanique-home-resort/",
+      "credito": "BBDR / Botanique Home Resort; autoria da imagem nao discriminada no site",
+      "observacao": "Material publico oficial de referencia; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/o13-estar-na-mata.webp"
+    },
+    {
+      "id": "R01",
+      "nome": "localizacao-mapa",
+      "tipo": "recebida",
+      "categoria": "localizacao",
+      "url": null,
+      "credito": "Google Maps / fornecedores indicados na imagem",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1180,
+        "altura": 571
+      },
+      "imagem": "/assets/botanique/references/r01-localizacao-mapa.webp"
+    },
+    {
+      "id": "R02",
+      "nome": "localizacao-satelite-entorno",
+      "tipo": "recebida",
+      "categoria": "localizacao",
+      "url": null,
+      "credito": "Google Maps / fornecedores indicados na imagem",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1211,
+        "altura": 577
+      },
+      "imagem": "/assets/botanique/references/r02-localizacao-satelite-entorno.webp"
+    },
+    {
+      "id": "R03",
+      "nome": "localizacao-satelite-terreno",
+      "tipo": "recebida",
+      "categoria": "localizacao",
+      "url": null,
+      "credito": "Google Maps / fornecedores indicados na imagem",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1227,
+        "altura": 582
+      },
+      "imagem": "/assets/botanique/references/r03-localizacao-satelite-terreno.webp"
+    },
+    {
+      "id": "R04",
+      "nome": "lista-lazer-servicos",
+      "tipo": "recebida",
+      "categoria": "programa",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 792,
+        "altura": 535
+      },
+      "imagem": "/assets/botanique/references/r04-lista-lazer-servicos.webp"
+    },
+    {
+      "id": "R05",
+      "nome": "streetview-aclive-descida",
+      "tipo": "recebida",
+      "categoria": "entorno",
+      "url": null,
+      "credito": "Google Maps / fornecedores indicados na imagem",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1910,
+        "altura": 948
+      },
+      "imagem": "/assets/botanique/references/r05-streetview-aclive-descida.webp"
+    },
+    {
+      "id": "R06",
+      "nome": "streetview-aclive-subida",
+      "tipo": "recebida",
+      "categoria": "entorno",
+      "url": null,
+      "credito": "Google Maps / fornecedores indicados na imagem",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1474,
+        "altura": 929
+      },
+      "imagem": "/assets/botanique/references/r06-streetview-aclive-subida.webp"
+    },
+    {
+      "id": "R07",
+      "nome": "planta-pavimento-tipo",
+      "tipo": "recebida",
+      "categoria": "planta",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r07-planta-pavimento-tipo.webp"
+    },
+    {
+      "id": "R08",
+      "nome": "estar-na-mata",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r08-estar-na-mata.webp"
+    },
+    {
+      "id": "R09",
+      "nome": "piscina-deck-molhado",
+      "tipo": "recebida",
+      "categoria": "piscina",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r09-piscina-deck-molhado.webp"
+    },
+    {
+      "id": "R10",
+      "nome": "gourmet-piscina",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r10-gourmet-piscina.webp"
+    },
+    {
+      "id": "R11",
+      "nome": "miniquadra-quiosque",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r11-miniquadra-quiosque.webp"
+    },
+    {
+      "id": "R12",
+      "nome": "quiosque-pergolado",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r12-quiosque-pergolado.webp"
+    },
+    {
+      "id": "R13",
+      "nome": "redario",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r13-redario.webp"
+    },
+    {
+      "id": "R14",
+      "nome": "salao-festas-estar",
+      "tipo": "recebida",
+      "categoria": "interior-comum",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1320,
+        "altura": 730
+      },
+      "imagem": "/assets/botanique/references/r14-salao-festas-estar.webp"
+    },
+    {
+      "id": "R15",
+      "nome": "fachada-torre-inteira",
+      "tipo": "recebida",
+      "categoria": "fachada",
+      "url": null,
+      "credito": "Imagem recebida do usuario; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 510,
+        "altura": 599
+      },
+      "imagem": "/assets/botanique/references/r15-fachada-torre-inteira.webp"
+    },
+    {
+      "id": "R16",
+      "nome": "aerea-torre-implantacao",
+      "tipo": "recebida",
+      "categoria": "implantacao",
+      "url": null,
+      "credito": "Imagem recebida do usuario com marca de imobiliaria visivel; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1397,
+        "altura": 1050
+      },
+      "imagem": "/assets/botanique/references/r16-aerea-torre-implantacao.webp"
+    },
+    {
+      "id": "R17",
+      "nome": "fachada-acesso-declive",
+      "tipo": "recebida",
+      "categoria": "fachada",
+      "url": null,
+      "credito": "Imagem recebida do usuario com marca de imobiliaria visivel; autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1900,
+        "altura": 950
+      },
+      "imagem": "/assets/botanique/references/r17-fachada-acesso-declive.webp"
+    },
+    {
+      "id": "R18",
+      "nome": "implantacao-geral",
+      "tipo": "recebida",
+      "categoria": "implantacao",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1050,
+        "altura": 1050
+      },
+      "imagem": "/assets/botanique/references/r18-implantacao-geral.webp"
+    },
+    {
+      "id": "R19",
+      "nome": "implantacao-terreo-lazer",
+      "tipo": "recebida",
+      "categoria": "implantacao",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1900,
+        "altura": 950
+      },
+      "imagem": "/assets/botanique/references/r19-implantacao-terreo-lazer.webp"
+    },
+    {
+      "id": "R20",
+      "nome": "playground-na-mata",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1574,
+        "altura": 1050
+      },
+      "imagem": "/assets/botanique/references/r20-playground-na-mata.webp"
+    },
+    {
+      "id": "R21",
+      "nome": "pet-place",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1574,
+        "altura": 1050
+      },
+      "imagem": "/assets/botanique/references/r21-pet-place.webp"
+    },
+    {
+      "id": "R22",
+      "nome": "quiosque-pergolado-ariotti",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1397,
+        "altura": 1050
+      },
+      "imagem": "/assets/botanique/references/r22-quiosque-pergolado-ariotti.webp"
+    },
+    {
+      "id": "R23",
+      "nome": "miniquadra-quiosque-ariotti",
+      "tipo": "recebida",
+      "categoria": "lazer",
+      "url": null,
+      "credito": "Ariotti Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1900,
+        "altura": 950
+      },
+      "imagem": "/assets/botanique/references/r23-miniquadra-quiosque-ariotti.webp"
+    },
+    {
+      "id": "R24",
+      "nome": "apartamento-cozinha-jantar",
+      "tipo": "recebida",
+      "categoria": "interior-apartamento",
+      "url": null,
+      "credito": "Verdi Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1920,
+        "altura": 1080
+      },
+      "imagem": "/assets/botanique/references/r24-apartamento-cozinha-jantar.webp"
+    },
+    {
+      "id": "R25",
+      "nome": "apartamento-living",
+      "tipo": "recebida",
+      "categoria": "interior-apartamento",
+      "url": null,
+      "credito": "Verdi Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1920,
+        "altura": 1080
+      },
+      "imagem": "/assets/botanique/references/r25-apartamento-living.webp"
+    },
+    {
+      "id": "R26",
+      "nome": "apartamento-dormitorio",
+      "tipo": "recebida",
+      "categoria": "interior-apartamento",
+      "url": null,
+      "credito": "Verdi Imoveis; imagem recebida do usuario, autoria original nao informada",
+      "observacao": "Referencia fornecida pelo usuario; nao apresentar como render produzido pela EME.",
+      "dimensoes": {
+        "largura": 1920,
+        "altura": 1080
+      },
+      "imagem": "/assets/botanique/references/r26-apartamento-dormitorio.webp"
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "schema": "eme.botanique.pbr/2",
+  "provenance": "Poly Haven CC0 wood veneer plus fabric/plaster normal and roughness; original clean ivory, cloth colours and mineral porcelain.",
+  "usage": "Reusable in the EME Spatial Botanique project, its renders and glTF exports.",
+  "base_color": "sRGB",
+  "roughness": "linear grayscale replicated to RGB",
+  "normal": "Linear OpenGL tangent-space +Y; CC0 source normals renormalized after reduction, original porcelain from physical height derivatives.",
+  "uv": "B_REAL_METRES. Metre-based box projection; cylindrical wood sides use arc length. No UV stretch to fit individual furniture objects.",
+  "families": {
+    "B_WOOD": {
+      "base": "oak-veneer-color.png",
+      "normal": "oak-veneer-normal.png",
+      "rough": "oak-veneer-roughness.png",
+      "span": [
+        1.83,
+        1.83
+      ],
+      "kind": "wood",
+      "normal_strength": 0.2,
+      "average": [
+        164,
+        130,
+        93
+      ],
+      "source": "Poly Haven CC0: oak_veneer_01, Jenelle van Heerden"
+    },
+    "B_WOOD_dark": {
+      "base": "oak-veneer-dark-color.png",
+      "normal": "oak-veneer-normal.png",
+      "rough": "oak-veneer-roughness.png",
+      "span": [
+        1.83,
+        1.83
+      ],
+      "kind": "wood",
+      "normal_strength": 0.18,
+      "average": [
+        108,
+        86,
+        61
+      ],
+      "source": "Poly Haven CC0: oak_veneer_01, stained colour derivative"
+    },
+    "B_FABRIC": {
+      "base": "linen-natural-color.png",
+      "normal": "linen-photo-normal.png",
+      "rough": "linen-photo-roughness.png",
+      "span": [
+        0.3,
+        0.3
+      ],
+      "kind": "linen",
+      "normal_strength": 0.16,
+      "source": "Poly Haven CC0 fabric_pattern_07 normal/roughness, Rob Tuytel; original coloured albedo",
+      "average": [
+        204,
+        197,
+        177
+      ]
+    },
+    "B_FABRIC_cream": {
+      "base": "linen-cream-color.png",
+      "normal": "linen-photo-normal.png",
+      "rough": "linen-photo-roughness.png",
+      "span": [
+        0.3,
+        0.3
+      ],
+      "kind": "linen",
+      "normal_strength": 0.16,
+      "source": "Poly Haven CC0 fabric_pattern_07 normal/roughness, Rob Tuytel; original coloured albedo",
+      "average": [
+        228,
+        223,
+        206
+      ]
+    },
+    "B_FABRIC_olive": {
+      "base": "linen-olive-color.png",
+      "normal": "linen-photo-normal.png",
+      "rough": "linen-photo-roughness.png",
+      "span": [
+        0.3,
+        0.3
+      ],
+      "kind": "linen",
+      "normal_strength": 0.16,
+      "source": "Poly Haven CC0 fabric_pattern_07 normal/roughness, Rob Tuytel; original coloured albedo",
+      "average": [
+        133,
+        150,
+        111
+      ]
+    },
+    "B_WALL": {
+      "base": "clean-ivory-color.png",
+      "normal": "plaster-normal.png",
+      "rough": "plaster-roughness.png",
+      "span": [
+        1.0,
+        1.0
+      ],
+      "kind": "plaster",
+      "normal_strength": 0.035,
+      "average": [
+        230,
+        228,
+        222
+      ],
+      "source": "Original clean ivory albedo; Poly Haven CC0 white_plaster_02 normal/roughness, Rob Tuytel"
+    },
+    "B_FLOOR": {
+      "base": "porcelain-color.png",
+      "normal": "porcelain-normal.png",
+      "rough": "porcelain-roughness.png",
+      "span": [
+        0.8,
+        0.8
+      ],
+      "kind": "stone",
+      "normal_strength": 0.16,
+      "average": [
+        208,
+        205,
+        189
+      ]
+    }
+  },
+  "files": [
+    {
+      "file": "clean-ivory-color.png",
+      "size": [
+        32,
+        32
+      ],
+      "bytes": 116,
+      "sha256": "1c67bed1ad42ce288ea8e424c9200b40e1142d1ae013da3d97530067f1253ad6"
+    },
+    {
+      "file": "linen-cream-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 239353,
+      "sha256": "57ca0acef60112b4e6f378d7b49f774a78764c7fb2e5a571669863410f226572"
+    },
+    {
+      "file": "linen-natural-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 238478,
+      "sha256": "2ff8c67ff005e79c0139f3bf66c5876f6c95adc3f5fcc5f05bd27002e939dfe5"
+    },
+    {
+      "file": "linen-olive-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 228056,
+      "sha256": "41b54d8a1a6aaa25c1b379a81ad3c4e2f91210792520f700fe607b8fcb77baee"
+    },
+    {
+      "file": "linen-photo-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 512389,
+      "sha256": "b955c01ca3521e6a55e28f538870e6cadb8a19751bc4d6df7536a8e868c72fdd"
+    },
+    {
+      "file": "linen-photo-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 283775,
+      "sha256": "daaa8442368e132a311d7286a12794bd6f172b958b494794b9d959348835a821"
+    },
+    {
+      "file": "oak-veneer-color.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "bytes": 1072466,
+      "sha256": "bf68b7ee063b9f748bf7b467d3bf0688df61b1027696f3e12d5a6cfb8515f3d4"
+    },
+    {
+      "file": "oak-veneer-dark-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 224563,
+      "sha256": "415d4bd9b22e19798821bce4174ff9cd2e3a3660505326ca184974ea6b91f70e"
+    },
+    {
+      "file": "oak-veneer-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 175944,
+      "sha256": "b8b6d3e17434b797d63d949ad8c4f8b264e4dc6e12b736cd0f696ce51d058f65"
+    },
+    {
+      "file": "oak-veneer-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 267873,
+      "sha256": "071244573e8211fe6c0837eefd838c0796894729d19a2e11a67cd62cc5c08f07"
+    },
+    {
+      "file": "plaster-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 392109,
+      "sha256": "86e87c5b446b2bcfcf7b3a823901cf7c3cb41e3776a8793c4de34646f42c9a1b"
+    },
+    {
+      "file": "plaster-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 171854,
+      "sha256": "a4eac0b1d6ad3ddad37a987d3385ded4990ea0ee337ee3700ab717c364a2ac22"
+    },
+    {
+      "file": "porcelain-color.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 131621,
+      "sha256": "1f7787ef5fc47d2e5c07f4fdb799e683503382027cf88b921a978ca589383440"
+    },
+    {
+      "file": "porcelain-normal.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 122047,
+      "sha256": "d9f6fb57185704c181bd879a98f9790d31271d17dcea24492164d825fde4dc1d"
+    },
+    {
+      "file": "porcelain-roughness.png",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 119338,
+      "sha256": "0f06b294a574e969a7fb9349a9175e964a0c010e0d94b2864d273803cb072a2f"
+    }
+  ],
+  "total_bytes": 4179982,
+  "license_url": "https://polyhaven.com/license",
+  "derivatives": [
+    {
+      "file": "oak-veneer-color.png",
+      "source_file": "oak_veneer_01-color.webp",
+      "source_sha256": "a767e3a3c1a5318b76b7f989d93a0f352e105c8dc0fa5c634891ca4e3f03a4d5",
+      "asset": "oak_veneer_01",
+      "url": "https://polyhaven.com/a/oak_veneer_01",
+      "license": "CC0",
+      "processing": "base; resized to 1024 px",
+      "sha256": "bf68b7ee063b9f748bf7b467d3bf0688df61b1027696f3e12d5a6cfb8515f3d4"
+    },
+    {
+      "file": "oak-veneer-dark-color.png",
+      "source_file": "oak_veneer_01-color.webp",
+      "source_sha256": "a767e3a3c1a5318b76b7f989d93a0f352e105c8dc0fa5c634891ca4e3f03a4d5",
+      "asset": "oak_veneer_01",
+      "url": "https://polyhaven.com/a/oak_veneer_01",
+      "license": "CC0",
+      "processing": "dark; resized to 512 px",
+      "sha256": "415d4bd9b22e19798821bce4174ff9cd2e3a3660505326ca184974ea6b91f70e"
+    },
+    {
+      "file": "oak-veneer-normal.png",
+      "source_file": "oak_veneer_01-normal.webp",
+      "source_sha256": "70301895d18c5a626cac2dd1afbc45759aff0119e0968b8aa36944bca6304351",
+      "asset": "oak_veneer_01",
+      "url": "https://polyhaven.com/a/oak_veneer_01",
+      "license": "CC0",
+      "processing": "normal; resized to 512 px",
+      "sha256": "b8b6d3e17434b797d63d949ad8c4f8b264e4dc6e12b736cd0f696ce51d058f65"
+    },
+    {
+      "file": "oak-veneer-roughness.png",
+      "source_file": "oak_veneer_01-rough.webp",
+      "source_sha256": "91516ecd0bacda76cf2f88e2291209917b7b84e19b274c9b5902c2a0944fec32",
+      "asset": "oak_veneer_01",
+      "url": "https://polyhaven.com/a/oak_veneer_01",
+      "license": "CC0",
+      "processing": "linear; resized to 512 px",
+      "sha256": "071244573e8211fe6c0837eefd838c0796894729d19a2e11a67cd62cc5c08f07"
+    },
+    {
+      "file": "linen-photo-normal.png",
+      "source_file": "fabric_pattern_07-normal.jpg",
+      "source_sha256": "f6955bbdead9f023f2357f6f8808ed49627d10882cd2a3cb6b5a5ace155abc45",
+      "asset": "fabric_pattern_07",
+      "url": "https://polyhaven.com/a/fabric_pattern_07",
+      "license": "CC0",
+      "processing": "normal; resized to 512 px",
+      "sha256": "b955c01ca3521e6a55e28f538870e6cadb8a19751bc4d6df7536a8e868c72fdd"
+    },
+    {
+      "file": "linen-photo-roughness.png",
+      "source_file": "fabric_pattern_07-rough.jpg",
+      "source_sha256": "3d90ac40b5c32a15649cc8525b7eeed133ea46b63a0e3eae5e34911d5c967e3a",
+      "asset": "fabric_pattern_07",
+      "url": "https://polyhaven.com/a/fabric_pattern_07",
+      "license": "CC0",
+      "processing": "linear; resized to 512 px",
+      "sha256": "daaa8442368e132a311d7286a12794bd6f172b958b494794b9d959348835a821"
+    },
+    {
+      "file": "plaster-normal.png",
+      "source_file": "white_plaster_02_nor_gl_1k.jpg",
+      "source_sha256": "eb572ca3630d5bfde72e2601b1f02412da23ca005cd19384dced8690be4cb783",
+      "asset": "white_plaster_02",
+      "url": "https://polyhaven.com/a/white_plaster_02",
+      "license": "CC0",
+      "processing": "normal; resized to 512 px",
+      "sha256": "86e87c5b446b2bcfcf7b3a823901cf7c3cb41e3776a8793c4de34646f42c9a1b"
+    },
+    {
+      "file": "plaster-roughness.png",
+      "source_file": "white_plaster_02_rough_1k.jpg",
+      "source_sha256": "4ff1fe957cd161b07f721fe6c28a9459c8c2e8ec65627a26c16e483a07c80d85",
+      "asset": "white_plaster_02",
+      "url": "https://polyhaven.com/a/white_plaster_02",
+      "license": "CC0",
+      "processing": "linear; resized to 512 px",
+      "sha256": "a4eac0b1d6ad3ddad37a987d3385ded4990ea0ee337ee3700ab717c364a2ac22"
+    }
+  ],
+  "resolutions": [
+    [
+      32,
+      32
+    ],
+    [
+      512,
+      512
+    ],
+    [
+      1024,
+      1024
+    ]
+  ],
+  "scale_note": "Oak veneer 1.83 m from published physical size; fabric .30 m from asset scale; plaster 1 m. Decorative proposal, not a finish specified by the developer.",
+  "finish_revision": 2,
+  "art_direction": "Clean ivory walls; plaster normal at .035 strength, photographic oak contrast reduced 40% in linear light; no geometry, lighting or client image alteration."
+}
