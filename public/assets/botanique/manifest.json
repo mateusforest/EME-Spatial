@@ -5687,10 +5687,10 @@
         }
       ],
       "floorContext": {
-        "id": "pavimento-tipo",
-        "label": "Pavimento-tipo · Final 1",
+        "id": "terceiro-andar-ilustrativo",
+        "label": "3º andar · Final 1",
         "levelsBelow": 2,
-        "note": "Distribuição conforme a planta comercial. Altura e corte ilustrativos; numeração do andar não confirmada."
+        "note": "Exemplo ilustrativo; numeração do andar não confirmada. Planta-tipo recebida, dimensões e entorno estimados."
       }
     }
   },
