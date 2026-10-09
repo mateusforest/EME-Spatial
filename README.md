@@ -62,7 +62,11 @@ Antes de usar em produção com dados reais: integrar autenticação e autoriza�
 
 ## Landing e soluções · direção visual aprovada
 
-A entrada pública usa `src/marketing` (React), separada do portal e dos motores 3D. O visual aprovado foi implementado com categorias, ferramentas, comparação Básico/Interativo/Pro, projetos autorais, acervo e processo de criação.
+A entrada pública usa `src/marketing` (React), separada do portal e dos motores 3D. A homepage em `HomeLanding.tsx` segue a direção M aprovada em 9 de outubro: verde profundo, marfim, uma casa conceitual em destaque, três etapas de criação e acesso aos projetos existentes. As páginas de soluções, modelos de contratação e briefing continuam disponíveis nas rotas abaixo.
+
+- As três imagens `public/assets/marketing/casa-m-{exterior,interior,aerea}.webp` foram geradas a partir da proposta visual aprovada. São vistas conceituais; não representam um modelo navegável já concluído. Os controles da Casa M alternam essas imagens e permitem ampliar a prévia.
+- O botão principal identifica a Torre M como demonstração 3D real. “Começar meu projeto” abre o briefing existente, sem envio automático.
+- A nova homepage tem versões para desktop e celular, seleção de vistas por teclado, janela ampliada com fechamento por Escape e devolução de foco.
 
 - `/solucoes/edificios`, `/solucoes/mixed-use`, `/solucoes/casas`, `/solucoes/condominios`, `/solucoes/interiores`: páginas por categoria com escopo, entregáveis e seleção de modelo.
 - `/projetos/torre-m` e `/projetos/mixed-use`: páginas autorais. Mixed Use permanece em desenvolvimento, com referência visual identificada.
