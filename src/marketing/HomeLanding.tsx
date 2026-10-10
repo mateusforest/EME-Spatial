@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
-import type {KeyboardEvent} from 'react';
-import {ArrowRight, ArrowUpRight, Maximize, Menu, X} from 'lucide-react';
+import type {KeyboardEvent, MouseEvent} from 'react';
+import {ArrowRight, ArrowUpRight, Box, Footprints, Maximize, Menu, SlidersHorizontal, X} from 'lucide-react';
+import DemoDialog from './DemoDialog';
 import SceneImage from './SceneImage';
 import './home-landing.css';
 
@@ -45,6 +46,8 @@ function SceneTabs({scene, onChange, prefix}: {scene: Scene; onChange: (scene: S
 export default function HomeLanding() {
   const [scene, setScene] = useState<Scene>('exterior');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const demoTriggerRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const selectedScene = scenes.find(view => view.id === scene)!;
@@ -58,6 +61,11 @@ export default function HomeLanding() {
     if (!dialog) return;
     dialog.showModal();
     document.body.style.overflow = 'hidden';
+  }
+
+  function openDemo(event: MouseEvent<HTMLButtonElement>) {
+    demoTriggerRef.current = event.currentTarget;
+    setDemoOpen(true);
   }
 
   function closePreview() {
@@ -100,10 +108,10 @@ export default function HomeLanding() {
           <p className="ms-hero-description">Criação e visualização imersiva para projetos de arquitetura e interiores.</p>
           <p className="ms-hero-categories"><a href="/solucoes/casas">Casas</a><span>·</span><a href="/solucoes/interiores">Interiores</a><span>·</span><a href="/solucoes/edificios">Empreendimentos</a></p>
           <div className="ms-hero-actions">
-            <a className="ms-button" href="/apresentar/m" title="Explorar a Torre M em 3D">Explorar um projeto <ArrowRight size={19}/></a>
+            <button className="ms-button" type="button" onClick={openDemo} aria-haspopup="dialog">Experimentar em 3D <ArrowRight size={19}/></button>
             <a className="ms-text-link ms-light-link" href="#como-funciona">Como funciona</a>
           </div>
-          <p className="ms-hero-demo-note">Explore a experiência 3D da Torre M.</p>
+          <p className="ms-hero-demo-note">Demonstração interativa · Torre M, Apartamento 14.</p>
         </div>
 
         <div className={`ms-scene ms-scene-${scene}`}>
@@ -117,11 +125,21 @@ export default function HomeLanding() {
             <span className="ms-hotspot-label">{scene === 'interior' ? 'Ir para a varanda' : 'Sala de estar'} <ArrowRight size={14}/></span>
           </button>
           <div className="ms-scene-bottom">
-            <p className="ms-scene-caption"><strong>Casa M</strong><span>Prévia visual</span></p>
+            <p className="ms-scene-caption"><strong>Casa M</strong><span>Prévia conceitual</span></p>
             <SceneTabs scene={scene} onChange={setScene} prefix="hero"/>
             <button className="ms-expand" type="button" aria-label="Ampliar a prévia visual da Casa M" onClick={openPreview} ref={expandButtonRef}><Maximize size={20}/></button>
           </div>
         </div>
+      </section>
+
+      <section className="ms-live-demo ms-container" id="experimentar" aria-labelledby="ms-live-demo-title">
+        <div className="ms-live-demo-heading"><div><p className="ms-eyebrow">EXPERIMENTE O M SPATIAL</p><h2 id="ms-live-demo-title">Entre no projeto.</h2></div><p>Conheça o Apartamento 14 da Torre M em uma experiência 3D que responde às suas escolhas.</p></div>
+        <div className="ms-live-demo-features">
+          <article><Box size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Planta 3D</h3><p>Veja a distribuição dos ambientes e escolha por onde começar.</p></div></article>
+          <article><Footprints size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Percorrer</h3><p>Entre nos espaços e mova a câmera pelo apartamento.</p></div></article>
+          <article><SlidersHorizontal size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Personalizar e iluminar</h3><p>Experimente materiais e cenários de luz no mesmo ambiente.</p></div></article>
+        </div>
+        <div className="ms-live-demo-actions"><button className="ms-button ms-button-forest" type="button" onClick={openDemo} aria-haspopup="dialog">Experimentar em 3D <ArrowRight size={19}/></button><a className="ms-text-link" href="/apresentar/m">Explorar o edifício completo <ArrowUpRight size={16}/></a></div>
       </section>
 
       <section className="ms-process ms-container" id="como-funciona" aria-labelledby="ms-process-title">
@@ -178,6 +196,8 @@ export default function HomeLanding() {
         <div className="ms-footer-bottom"><p>Arquitetura, visualização e novas possibilidades.</p><nav aria-label="Links complementares"><a href="/projetos/torre-m">Projetos autorais</a><a href="/personalizar">Personalização</a><a href="/portal">Workspace <ArrowUpRight size={12}/></a></nav></div>
       </div>
     </footer>
+
+    {demoOpen && <DemoDialog onClose={() => setDemoOpen(false)} returnFocusTo={demoTriggerRef.current}/>}
 
     <dialog className="ms-preview-dialog" ref={dialogRef} onClose={restorePreviewFocus} aria-labelledby="ms-preview-title" onClick={event => {if (event.target === event.currentTarget) closePreview();}}>
       <div className="ms-preview-inner">

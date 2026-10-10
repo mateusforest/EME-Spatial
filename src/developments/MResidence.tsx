@@ -3,7 +3,8 @@ import {shadowFocus75} from './mSun75';
 import {buildApartmentScene71,apartmentView71,apartmentLights71} from './mApartmentScene71';
 import {switchMScene71} from './mSceneNavigation71';
 import MDesignPanel70 from './MDesignPanel70';
-import {installDesign70,read70,type Design70} from './mDesign70';
+import {installDesign70,read70,initial70,type Design70} from './mDesign70';
+import MInlineDemo from './MInlineDemo';
 import {facadeFloor68,facadeRequest68} from './mFacade68';
 import {buildMApartment69} from './mApartment69';
 import {profiles58,initialQuality58,pixelRatio58,governor58,type Quality58} from './mPerformance58';
@@ -42,6 +43,7 @@ type ExperienceApi={quality:(mode:Quality58)=>void;time:(n:number)=>void;go:(nam
 
 export default function MResidence(){
  const standalone=new URLSearchParams(location.search).get('apartamento')==='14';
+ const demo=standalone&&new URLSearchParams(location.search).get('demo')==='1';
  const host=useRef<HTMLDivElement>(null),api=useRef<ExperienceApi|undefined>(undefined);
  const droneApi=useRef<DroneStudio56|undefined>(undefined),[droneState,setDroneState]=useState<DroneState56|null>(null);
  const designApply=useRef<((d:Design70)=>void)|undefined>(undefined),[designOpen,setDesignOpen]=useState(new URLSearchParams(location.search).get('personalizar')==='1');
@@ -55,13 +57,13 @@ export default function MResidence(){
  const [floor,setFloor]=useState(0),[reference,setReference]=useState(false),[activeUnit,setActiveUnit]=useState(unitForFloor(PILOT_FLOOR));
  const [inspected,setInspected]=useState<MUnit|null>(null),[information,setInformation]=useState<MUnit|null>(null);
  const [siteGuide,setSiteGuide]=useState(false),[direction,setDirection]=useState('');
- const [quality,setQuality]=useState<Quality58>('auto'),[effectiveQuality,setEffectiveQuality]=useState('Equilibrada');
+ const [quality,setQuality]=useState<Quality58>(demo?'light':'auto'),[effectiveQuality,setEffectiveQuality]=useState('Equilibrada');
  const [panelOpen,setPanelOpen]=useState(false);
  const [dayTime,setDayTime]=useState(0);const period=timeOfDay51(dayTime);
  useEffect(()=>{
   const mount=host.current!;let renderer:T.WebGLRenderer;
   try{renderer=new T.WebGLRenderer({antialias:true});}catch{setError(true);return;}
-  let qualityMode:Quality58='auto',qualityLevel=initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory);
+  let qualityMode:Quality58=demo?'light':'auto',qualityLevel=demo?'light' as const:initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory);
   const governor=governor58(qualityLevel);
   let preparing=true,disposed=false,pendingFrame=0,offscreen=false,lastDraw=0,drawFrame:(now:number)=>void=()=>{};
   const requestRender=()=>{if(disposed||offscreen||document.hidden||pendingFrame)return;
@@ -76,7 +78,8 @@ export default function MResidence(){
   renderer.setPixelRatio(pixelRatio58(qualityLevel,mount.clientWidth,mount.clientHeight,devicePixelRatio));renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   mount.appendChild(renderer.domElement);const canvas=renderer.domElement;canvas.tabIndex=0;
-  canvas.setAttribute('aria-label','Empreendimento M. Arraste para girar. Passe o mouse ou toque em um andar para conhecer a residência.');
+  canvas.setAttribute('aria-label',demo?'Apartamento 14 da Torre M em 3D. Arraste para girar ou olhar. No interior, clique ou toque no piso para caminhar; use também WASD ou as setas.':'Empreendimento M. Arraste para girar. Passe o mouse ou toque em um andar para conhecer a residência.');
+  if(demo)canvas.setAttribute('aria-describedby','m-demo-help');
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(40,1,.2,3000),controls=new OrbitControls(camera,canvas);
   controls.enableDamping=true;controls.minDistance=5;controls.maxDistance=700;controls.maxPolarAngle=Math.PI*.49;
   const ambient=new T.HemisphereLight(0xf3f6ff,0x797c65,.8);scene.add(ambient);
@@ -85,19 +88,20 @@ export default function MResidence(){
   Object.assign(sun.shadow.camera,{left:-90,right:90,top:110,bottom:-90,far:320});scene.add(sun);
   const focusShadow=shadowFocus75(sun,renderer);
   let interiorShading:ReturnType<typeof import('./mInteriorShading75').interiorShading75>|undefined;
-  const shadingReady=standalone?import('./mInteriorShading75').then(module=>{if(!disposed)interiorShading=module.interiorShading75(renderer,scene,camera);}).catch(error=>console.warn('Sombras de contato indisponíveis; mantendo iluminação principal.',error)):Promise.resolve();
+  const shadingReady=standalone&&!demo?import('./mInteriorShading75').then(module=>{if(!disposed)interiorShading=module.interiorShading75(renderer,scene,camera);}).catch(error=>console.warn('Sombras de contato indisponíveis; mantendo iluminação principal.',error)):Promise.resolve();
   const apartmentScene=standalone?buildApartmentScene71(scene,renderer,own,qualityLevel,requestRender):undefined;
   const apartmentLighting=standalone?apartmentLight72(scene,own):undefined;
   const exterior=apartmentScene??buildMExterior(scene,renderer,own),{floors,crown}=exterior;const landscape=standalone?{deckY:0}:buildMLandscape(scene,own,exterior.surfaces);
   const apartmentBackdrop=standalone?apartmentView71(scene,renderer,own,requestRender):undefined;
   let towerB:ReturnType<typeof buildTower54>|undefined,promenade:ReturnType<typeof promenade54>|undefined,selectedTower:'m'|'b'='m',currentPlace:Destination='Duas torres',common:CommonVisit54|undefined;
-  let flight:{from:T.Vector3;to:T.Vector3;q0:T.Quaternion;q1:T.Quaternion;t:number;duration:number}|null=null;
+  let flight:{from:T.Vector3;to:T.Vector3;q0:T.Quaternion;q1:T.Quaternion;t:number;duration:number;path?:T.Curve<T.Vector3>;restoreCeiling?:boolean}|null=null;
   const towerSpec=()=>selectedTower==='b'?TOWER_B54:{x:0,z:0,base:M_BASE,step:M_STEP,levels:M_LEVELS,width:M_REFERENCE.width,depth:M_REFERENCE.depth};
   const currentUnit=(n:number)=>selectedTower==='b'?towerBUnit54(n):unitForFloor(n);
   const waterReflections=standalone?{update:()=>{}}:waterReflections53(scene,own);
   const atmosphere=createMAtmosphere51(scene,renderer,sun,ambient,own,requestRender);
   const outdoorFog=scene.fog,moonLight=scene.children.find(o=>o instanceof T.DirectionalLight&&o!==sun) as T.DirectionalLight|undefined;let garageFinish:ReturnType<typeof garageExperience55>,parkedCars:T.Object3D|undefined;
   let lighting:ReturnType<typeof installMLighting51>|undefined,lightRig:ReturnType<typeof lightRig53>|undefined,timeValue=0;
+  let demoTimeTransition:{from:number;to:number;t:number}|null=null;
   let insideEnvironment:T.WebGLRenderTarget|undefined;
   function roomLighting(){if(!insideEnvironment){const pm=new T.PMREMGenerator(renderer),environment=new RoomEnvironment();insideEnvironment=own(pm.fromScene(environment));environment.dispose();pm.dispose();}return insideEnvironment.texture;}
   const interiors=new Map<string,Model>();
@@ -117,7 +121,7 @@ export default function MResidence(){
    if(!model){preparing=true;if(refined)setApartmentLoading(true);model=refined?buildMApartment69(own,next,floors[13]):buildMInterior(own,Math.min(renderer.capabilities.getMaxAnisotropy(),8),next,exterior.surfaces);const roomLights:T.Light[]=[];model.group.traverse(o=>{if(o instanceof T.Light)roomLights.push(o);});roomLights.forEach(o=>o.removeFromParent());model.group.visible=false;scene.add(model.group);interiors.set(key,model);apartmentLighting?.prepare(model.group);model.ready.then(async()=>{if(!disposed){lighting?.refresh();await renderer.compileAsync(model!.group,camera,scene);if(!disposed){preparing=false;setApartmentLoading(false);requestRender();}}}).catch(()=>{if(!disposed){setApartmentLoading(false);setError(true);}});}
    return model;
   }
-  exterior.ready.then(async()=>{await shadingReady;if(!disposed){design70=installDesign70(floors[13],own,exterior.surfaces,requestRender,apartmentScene?.designStone());let approved:Design70;try{approved=read70(localStorage);}catch{approved={wood:0,fabric:0,accent:0,stone:0,table:'round'};}design70.apply(approved);designApply.current=d=>{design70?.apply(d);for(const m of interiors.values())if(m.group.userData.apartment69Ready)design70?.apply(d,m.group);renderer.shadowMap.needsUpdate=true;requestRender();};if(!standalone){commonFinish53(scene,own,exterior.surfaces,landscape.deckY);promenade=promenade54(scene,own,exterior.surfaces);lightRig=lightRig53(scene,crown);mount.dataset.garageDetailedCars='0';garageFinish=garageExperience55(scene,renderer,own);lighting=installMLighting51(scene,floors,crown,own);}else{apartmentLighting?.prepare(floors[13]);lighting=apartmentLights71(scene);} renderer.shadowMap.needsUpdate=true;await renderer.compileAsync(scene,camera);if(!disposed){preparing=false;setReady(true);const requested=Number(new URLSearchParams(location.search).get('apartamento'));if(Number.isInteger(requested)&&requested>=1&&requested<=M_LEVELS)visit(new URLSearchParams(location.search).get('ambiente')||'Living',unitForFloor(requested));requestRender();}}}).catch(e=>{if(!disposed){console.error('EME scene loading',e);setError(true);}});
+  exterior.ready.then(async()=>{await shadingReady;if(!disposed){design70=installDesign70(floors[13],own,exterior.surfaces,requestRender,apartmentScene?.designStone());let approved:Design70={...initial70};if(!demo){try{approved=read70(localStorage);}catch{}}design70.apply(approved);mount.dataset.design=JSON.stringify(approved);designApply.current=d=>{mount.dataset.design=JSON.stringify(d);design70?.apply(d);for(const m of interiors.values())if(m.group.userData.apartment69Ready)design70?.apply(d,m.group);renderer.shadowMap.needsUpdate=true;requestRender();};if(!standalone){commonFinish53(scene,own,exterior.surfaces,landscape.deckY);promenade=promenade54(scene,own,exterior.surfaces);lightRig=lightRig53(scene,crown);mount.dataset.garageDetailedCars='0';garageFinish=garageExperience55(scene,renderer,own);lighting=installMLighting51(scene,floors,crown,own);}else{apartmentLighting?.prepare(floors[13]);lighting=apartmentLights71(scene);} renderer.shadowMap.needsUpdate=true;await renderer.compileAsync(scene,camera);if(!disposed){preparing=false;setReady(true);const requested=Number(new URLSearchParams(location.search).get('apartamento'));if(Number.isInteger(requested)&&requested>=1&&requested<=M_LEVELS)visit(demo?'Planta':new URLSearchParams(location.search).get('ambiente')||'Living',unitForFloor(requested));requestRender();}}}).catch(e=>{if(!disposed){console.error('EME scene loading',e);setError(true);}});
   let booting=true,inside=false,yaw=0,pitch=0,desired:T.Vector3|null=null,target:T.Vector3|null=null,currentRoom:string|null=null,drone:DroneStudio56|undefined;
   const pressed=new Set<string>();let pointer:number|null=null,previousX=0,previousY=0;
   const clearMovement=()=>{pressed.clear();pointer=null;stopClick();};
@@ -169,6 +173,7 @@ export default function MResidence(){
    controls.minDistance=5;controls.maxDistance=850;controls.minPolarAngle=0;controls.maxPolarAngle=Math.PI*.49;controls.enablePan=true;controls.screenSpacePanning=true;controls.enableZoom=true;interiors.forEach(m=>m.group.visible=false);floors.forEach(f=>f.visible=true);crown.visible=true;towerB?.floors.forEach(f=>f.visible=true);if(towerB)towerB.crown.visible=true;
   };
   const go=(name:Destination)=>{
+   if(demo&&!booting){visit('Planta',unitForFloor(14));return;}
    if(standalone&&!booting){switchMScene71('/apresentar/m?retorno=1');return;}
    if(name==='Duas torres'||name.includes('Torre Lago'))name='Edifício';
    setPanelOpen(false);currentPlace=name;selectedTower=name.includes('Lago')&&name!=='Parque e lago'?'b':'m';setTower(selectedTower);setCardOpen(false);inspectedUnit=null;
@@ -196,6 +201,7 @@ export default function MResidence(){
    requestRender();
   };
   const visit=(name:string,next=unit)=>{
+   if(demo&&(next.id!=='m-14'||!['Planta','Living','Cozinha e jantar','Sacada'].includes(name)))return;
    if(standalone&&next.id!=='m-14'){switchMScene71('/apresentar/m?apartamento='+next.startFloor+'&ambiente='+encodeURIComponent(name));return;}
    if(next.id==='m-14'&&!standalone){
     try{sessionStorage.setItem('m-return71',JSON.stringify({position:camera.position.toArray(),target:controls.target.toArray(),place:currentPlace,time:timeValue,quality:qualityMode,savedAt:Date.now()}));}catch{}
@@ -203,23 +209,46 @@ export default function MResidence(){
     switchMScene71('/apresentar/m?apartamento=14'+(designOpen?'&personalizar=1':'')+'&ambiente='+encodeURIComponent(name),{mEnvironment71:{time:timeValue,quality:qualityMode}});return;
    }
    requestRender();
-   const from=camera.position.clone(),q0=camera.quaternion.clone(),wasInside=inside;
+   const from=camera.position.clone(),q0=camera.quaternion.clone(),wasInside=inside,previousRoom=currentRoom;
+   // Stay within the apartment's existing walkable space, including the balcony doors.
+   // A straight flight between room anchors would cross furniture and partitions.
+   let roomPath:T.CurvePath<T.Vector3>|undefined;
+   if(demo&&wasInside&&name!=='Planta'&&interior){
+    const view=interior.views[name as keyof typeof interior.views],level=interior.levels[0],origin=towerSpec();
+    if(!view)return;
+    const route=walkingPath63({x:from.x-origin.x,z:from.z-origin.z},{x:view.eye[0],z:view.eye[2]},{obstacles:level.obstacles,bounds:level.bounds,areas:level.walkAreas});
+    if(!route.length&&Math.hypot(from.x-origin.x-view.eye[0],from.z-origin.z-view.eye[2])>.08){setWalkMessage('Não há passagem livre até esse ambiente. Volte à planta para entrar novamente.');return;}
+    roomPath=new T.CurvePath<T.Vector3>();let point=from.clone();
+    for(const step of route){const nextPoint=new T.Vector3(step.x+origin.x,baseY+view.eye[1],step.z+origin.z);roomPath.add(new T.LineCurve3(point,nextPoint));point=nextPoint;}
+    if(!roomPath.curves.length)roomPath.add(new T.LineCurve3(from,from.clone()));
+   }
    exteriorControls();selectedTower=next.id.startsWith('b-')?'b':'m';setTower(selectedTower);const s=towerSpec();unit=next;interior=modelFor(unit);baseY=s.base+(unit.startFloor-1)*s.step;walkElevation=0;setCardOpen(false);inspectedUnit=null;
    currentRoom=name;setActiveUnit(unit);setFloor(unit.startFloor);setRoom(name);setRooms(Object.keys(interior.views));setInspected(null);cardPinned=false;
    const activeFloors=selectedTower==='b'?towerB!.floors:floors,activeCrown=selectedTower==='b'?towerB!.crown:crown;
    activeFloors.forEach((f,i)=>f.visible=name==='Planta'?i<unit.startFloor-1:i<unit.startFloor-1||i>=unit.endFloor);activeCrown.visible=name!=='Planta';highlight.visible=false;interior.group.position.set(s.x,baseY,s.z);interior.group.visible=true;interior.ceiling.visible=name!=='Planta';controls.enablePan=false;renderer.shadowMap.needsUpdate=true;
-   if(name==='Planta'){const full=unit.id==='m-14',height=full?Math.max(52,42/camera.aspect):(camera.aspect<1?56:38),centreZ=s.z+(full?-2.3:0);desired=new T.Vector3(s.x,baseY+height+(unit.endFloor-unit.startFloor)*s.step,centreZ+.1);target=new T.Vector3(s.x,baseY,centreZ);return;}
+   if(name==='Planta'){const full=unit.id==='m-14',height=full?Math.max(52,42/camera.aspect):(camera.aspect<1?56:38),centreZ=s.z+(full?-2.3:0);desired=new T.Vector3(s.x,baseY+height+(unit.endFloor-unit.startFloor)*s.step,centreZ+.1);target=new T.Vector3(s.x,baseY,centreZ);if(demo&&!previousRoom){camera.position.copy(desired);controls.target.copy(target);camera.lookAt(target);stop();}return;}
    sun.position.set(s.x-35,baseY+18,s.z+45);sun.target.position.set(s.x,baseY,s.z);sun.target.updateMatrixWorld();Object.assign(sun.shadow.camera,{left:-28,right:28,top:28,bottom:-28});sun.shadow.camera.updateProjectionMatrix();sun.shadow.normalBias=.015;sun.intensity=1.8;
    inside=true;controls.enabled=false;ambient.intensity=.45;scene.environment=roomLighting();scene.environmentIntensity=.32;controls.enableZoom=false;camera.fov=68;camera.updateProjectionMatrix();
    const view=interior.views[name as keyof typeof interior.views]||interior.views.Living;
    if(!view)return;
    const eye=new T.Vector3(...view.eye),lookAt=new T.Vector3(...view.look);walkElevation=Math.max(0,eye.y-EYE_HEIGHT);eye.add(new T.Vector3(s.x,baseY,s.z));lookAt.add(new T.Vector3(s.x,baseY,s.z));
-   stop();camera.position.copy(eye);controls.target.copy(lookAt);camera.lookAt(lookAt);const angles=new T.Euler().setFromQuaternion(camera.quaternion,'YXZ');yaw=angles.y;pitch=angles.x;flight={from,to:eye.clone(),q0,q1:camera.quaternion.clone(),t:0,duration:wasInside?1.1:2.4};camera.position.copy(from);camera.quaternion.copy(q0);setJourney(true);setPanelOpen(false);canvas.focus();
+   stop();camera.position.copy(eye);controls.target.copy(lookAt);camera.lookAt(lookAt);const angles=new T.Euler().setFromQuaternion(camera.quaternion,'YXZ');yaw=angles.y;pitch=angles.x;flight={from,to:eye.clone(),q0,q1:camera.quaternion.clone(),t:0,duration:wasInside?1.1:2.4};
+   if(demo){
+    if(roomPath){flight.path=roomPath;flight.duration=T.MathUtils.clamp(roomPath.getLength()/4,1.25,4);}
+    else{
+     // Descend over the open balcony and enter through its actual door opening.
+     // Floor 15 supplies M14's ceiling; keep it cut away until below the slab.
+     const portalX=s.x+(name==='Living'?3.6:name==='Cozinha e jantar'?-3.6:0),portalZ=s.z+(name==='Sacada'?7:5.8);
+     flight.path=new T.CubicBezierCurve3(from.clone(),new T.Vector3(portalX,baseY+16,portalZ),new T.Vector3(portalX,eye.y,portalZ),eye.clone());
+     flight.duration=2.8;flight.restoreCeiling=true;if(floors[14])floors[14].visible=false;
+    }
+   }
+   camera.position.copy(from);camera.quaternion.copy(q0);setJourney(true);setPanelOpen(false);canvas.focus();
   };
   function scan(n:number){if(inside)return;const s=towerSpec();n=facadeRequest68(n,s.levels);const next=facadeShift54(camera.position.y,controls.target.y,s.base+(n-.5)*s.step-controls.target.y,s.base,s.levels,s.step);desired=camera.position.clone();desired.y=next.eyeY;target=controls.target.clone();target.y=next.targetY;cardPinned=false;setCardOpen(false);inspect(next.floor);requestRender();}
   function walkCommon(){const view=COMMON_VISITS54[currentPlace];if(!view)return;const from=camera.position.clone(),q0=camera.quaternion.clone();exteriorControls();setRoom(null);setCommonWalk(true);common=view;inside=true;controls.enabled=false;setInspected(null);inspectedUnit=null;highlight.visible=false;setPanelOpen(false);setCardOpen(false);camera.fov=68;camera.updateProjectionMatrix();const to=new T.Vector3(...view.eye),lookAt=new T.Vector3(...view.look);camera.position.copy(to);camera.lookAt(lookAt);const e=new T.Euler().setFromQuaternion(camera.quaternion,'YXZ');yaw=e.y;pitch=e.x;controls.target.copy(lookAt);flight={from,to,q0,q1:camera.quaternion.clone(),t:0,duration:1.8};camera.position.copy(from);camera.quaternion.copy(q0);stop();setJourney(true);canvas.focus();requestRender();}
-  api.current={quality:mode=>{setQuality(mode);qualityMode=mode;qualityLevel=mode==='auto'?initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory):mode;governor.reset(qualityLevel);applyQuality();requestRender();},time:n=>{timeValue=n;requestRender();},go,visit,scan,walk:walkCommon,pinSelection:()=>{if(inspectedUnit)inspect(inspectedFloor,true);},clearSelection:()=>{setInspected(null);inspectedUnit=null;setCardOpen(false);cardPinned=false;highlight.visible=false;requestRender();},floor:n=>{if(!n){go(selectedTower==='b'?'Torre Lago':'Edifício');return;}visit('Planta',currentUnit(n));},move:(direction,active)=>{if(!inside||flight)return;if(active){stopClick();pressed.add(direction)}else pressed.delete(direction);requestRender();},zoom:n=>{stop();if(inside){camera.fov=T.MathUtils.clamp(camera.fov*n,40,85);camera.updateProjectionMatrix();}else camera.position.sub(controls.target).multiplyScalar(n).add(controls.target);requestRender();}};
-  drone=createDroneStudio56({scene,camera,renderer,controls,mount,request:requestRender,emit:setDroneState,
+  api.current={quality:mode=>{setQuality(mode);qualityMode=mode;qualityLevel=mode==='auto'?initialQuality58(navigator.hardwareConcurrency||4,(navigator as Navigator&{deviceMemory?:number}).deviceMemory):mode;governor.reset(qualityLevel);applyQuality();requestRender();},time:n=>{if(demo)demoTimeTransition={from:timeValue,to:n,t:0};else timeValue=n;requestRender();},go,visit,scan,walk:walkCommon,pinSelection:()=>{if(inspectedUnit)inspect(inspectedFloor,true);},clearSelection:()=>{setInspected(null);inspectedUnit=null;setCardOpen(false);cardPinned=false;highlight.visible=false;requestRender();},floor:n=>{if(!n){go(selectedTower==='b'?'Torre Lago':'Edifício');return;}visit('Planta',currentUnit(n));},move:(direction,active)=>{if(!inside||flight)return;if(active){stopClick();pressed.add(direction)}else pressed.delete(direction);requestRender();},zoom:n=>{stop();if(inside){camera.fov=T.MathUtils.clamp(camera.fov*n,40,85);camera.updateProjectionMatrix();}else camera.position.sub(controls.target).multiplyScalar(n).add(controls.target);requestRender();}};
+  if(!demo){drone=createDroneStudio56({scene,camera,renderer,controls,mount,request:requestRender,emit:setDroneState,
    focus:()=>{const s={x:0,z:0,base:M_BASE,levels:M_LEVELS,step:M_STEP};return[s.x,s.base+s.levels*s.step*.5,s.z];},
    context:()=>({place:currentPlace,room:currentRoom,floor:unit.startFloor,tower:selectedTower}),getTime:()=>timeValue,time:n=>{timeValue=n;setDayTime(n);requestRender();},
    suspend:()=>{stop();flight=null;setJourney(false);clearMovement();highlight.visible=false;},
@@ -234,14 +263,14 @@ export default function MResidence(){
     else if(desired&&target){camera.position.copy(desired);controls.target.copy(target);camera.lookAt(target);}
     stop();
    },
-  });droneApi.current=drone;
-  const key=(e:KeyboardEvent)=>{if(drone?.isOpen)return;if(e.key==='Home'){e.preventDefault();go('Duas torres');return;}const direction=keyMap[e.key]||keyMap[e.key.toLowerCase()];if(inside&&e.key==='Escape'){stopClick('Caminhada interrompida.');requestRender();return;}if(inside&&direction&&!flight){e.preventDefault();stopClick();pressed.add(direction);requestRender();return;}if(!inside&&facadeDestination54(currentPlace)&&['ArrowUp','ArrowDown','PageUp','PageDown'].includes(e.key)){e.preventDefault();const s=towerSpec();scan((inspectedFloor||facadeFloor68(controls.target.y,s.base,s.step,s.levels))+(['ArrowUp','PageUp'].includes(e.key)?1:-1));return;}if(!['ArrowLeft','ArrowRight','+','-'].includes(e.key))return;e.preventDefault();stop();if(e.key==='+'||e.key==='-')api.current?.zoom(e.key==='+'?.85:1.15);else{const p=camera.position.clone().sub(controls.target);p.applyAxisAngle(new T.Vector3(0,1,0),e.key==='ArrowLeft'?.15:-.15);camera.position.copy(controls.target).add(p);}requestRender();};canvas.addEventListener('keydown',key);
-  let wheelFloorDelta=0;const wheelHeight=(e:WheelEvent)=>{if(drone?.isOpen||!e.shiftKey||inside||!facadeDestination54(currentPlace))return;e.preventDefault();e.stopImmediatePropagation();wheelFloorDelta-=e.deltaY*.008;const steps=Math.trunc(wheelFloorDelta);if(steps){wheelFloorDelta-=steps;scan(inspectedFloor+steps)};};canvas.addEventListener('wheel',wheelHeight,{capture:true,passive:false});
+  });droneApi.current=drone;}
+  const key=(e:KeyboardEvent)=>{if(drone?.isOpen)return;if(e.key==='Home'){e.preventDefault();go('Duas torres');return;}const direction=keyMap[e.key]||keyMap[e.key.toLowerCase()];if(inside&&e.key==='Escape'){stopClick('Caminhada interrompida.');requestRender();return;}if(inside&&direction&&!flight){e.preventDefault();stopClick();pressed.add(direction);requestRender();return;}if(!demo&&!inside&&facadeDestination54(currentPlace)&&['ArrowUp','ArrowDown','PageUp','PageDown'].includes(e.key)){e.preventDefault();const s=towerSpec();scan((inspectedFloor||facadeFloor68(controls.target.y,s.base,s.step,s.levels))+(['ArrowUp','PageUp'].includes(e.key)?1:-1));return;}if(!['ArrowLeft','ArrowRight','+','-'].includes(e.key))return;e.preventDefault();stop();if(e.key==='+'||e.key==='-')api.current?.zoom(e.key==='+'?.85:1.15);else{const p=camera.position.clone().sub(controls.target);p.applyAxisAngle(new T.Vector3(0,1,0),e.key==='ArrowLeft'?.15:-.15);camera.position.copy(controls.target).add(p);}requestRender();};canvas.addEventListener('keydown',key);
+  let wheelFloorDelta=0;const wheelHeight=(e:WheelEvent)=>{if(demo||drone?.isOpen||!e.shiftKey||inside||!facadeDestination54(currentPlace))return;e.preventDefault();e.stopImmediatePropagation();wheelFloorDelta-=e.deltaY*.008;const steps=Math.trunc(wheelFloorDelta);if(steps){wheelFloorDelta-=steps;scan(inspectedFloor+steps)};};canvas.addEventListener('wheel',wheelHeight,{capture:true,passive:false});
   function applyQuality(){if(drone?.driving)return;const profile=profiles58[qualityLevel];renderer.setPixelRatio(pixelRatio58(qualityLevel,mount.clientWidth,mount.clientHeight,devicePixelRatio));renderer.setSize(mount.clientWidth,mount.clientHeight);if(sun.shadow.mapSize.x!==profile.shadow){sun.shadow.mapSize.setScalar(profile.shadow);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;}setEffectiveQuality(qualityLevel==='light'?'Leve':qualityLevel==='high'?'Alta':'Equilibrada');mount.dataset.quality=qualityLevel;}
   applyQuality();
   const resize=()=>{if(!drone?.driving){applyQuality();renderer.setSize(mount.clientWidth,mount.clientHeight);camera.aspect=mount.clientWidth/mount.clientHeight;camera.updateProjectionMatrix();}requestRender();};const ro=new ResizeObserver(resize);ro.observe(mount);resize();
   const requestedView=new URLSearchParams(location.search).get('vista');go(requestedView==='duas-torres'?'Duas torres':requestedView==='torre-lago'?'Torre Lago':requestedView==='alameda'?'Alameda iluminada':requestedView==='entrada-patio'?'Entrada do Pátio':requestedView==='casa-detalhe'?'Casa em detalhe':requestedView==='subsolo'?'Interior da garagem':requestedView==='condominio'?'Condomínio Pátio':requestedView==='casas'?'Casas e lotes':requestedView==='clube'?'Clube do condomínio':requestedView==='kids'?'Kids e família':requestedView==='pet'?'Espaço pet':requestedView==='terracos'?'Terraços da galeria':requestedView==='academia'?'MGym':requestedView==='cafe'?'MCoffe':requestedView==='lago'?'Parque e lago':requestedView==='golfe'?'Golfe':requestedView==='rua'?'Rua e chegada':requestedView==='cobertura'?'Cobertura':requestedView==='salao'?'Salão panorâmico':requestedView==='varandas'?'Varandas':requestedView==='lazer'?'Jardim e lazer':requestedView==='quiosque'?'Quiosque':requestedView==='quadras'?'Quadras':requestedView==='garagem'?'Garagem':requestedView==='fachada'?'Fachada':requestedView==='rooftop'?'Rooftop':requestedView==='fundos'?'Fundos':requestedView==='lateral'?'Lateral':requestedView==='fachada-posterior'?'Detalhe dos fundos':requestedView==='implantacao'?'Implantação':requestedView==='galeria'?'Galeria e lobby':requestedView==='lobby'?'Entrada do lobby':'Duas torres');camera.position.copy(desired!);controls.target.copy(target!);stop();booting=false;
-  if(standalone&&history.state?.mEnvironment71){const saved=history.state.mEnvironment71;timeValue=T.MathUtils.clamp(Number(saved.time)||0,0,100);setDayTime(timeValue);if(['auto','light','balanced','high'].includes(saved.quality))api.current?.quality(saved.quality);}
+  if(standalone&&!demo&&history.state?.mEnvironment71){const saved=history.state.mEnvironment71;timeValue=T.MathUtils.clamp(Number(saved.time)||0,0,100);setDayTime(timeValue);if(['auto','light','balanced','high'].includes(saved.quality))api.current?.quality(saved.quality);}
   if(!standalone&&(new URLSearchParams(location.search).has('retorno')||history.state?.mReturn71)){
    try{const saved=JSON.parse(sessionStorage.getItem('m-return71')||'null');
     const vector=(v:unknown)=>Array.isArray(v)&&v.length===3&&v.every(n=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<3000);
@@ -255,11 +284,12 @@ export default function MResidence(){
   drawFrame=now=>{
    const started=performance.now();
    const dt=Math.min((now-last)/1000,.1);last=now;if(preparing)return;
+   if(demoTimeTransition){demoTimeTransition.t+=dt;const p=reduced?1:Math.min(1,demoTimeTransition.t/.7),e=p*p*(3-2*p);timeValue=T.MathUtils.lerp(demoTimeTransition.from,demoTimeTransition.to,e);if(p>=1){timeValue=demoTimeTransition.to;demoTimeTransition=null;}}
    const cycle=atmosphere.update(timeValue,inside&&!common,inside&&!common?roomLighting():null);lighting?.update(cycle.lights);promenade?.update(cycle.lights);apartmentBackdrop?.update(cycle.night);
    mount.dataset.timeOfDay=cycle.hour.toFixed(2);mount.dataset.night=cycle.night.toFixed(3);mount.dataset.lights=cycle.lights.toFixed(3);mount.dataset.atmosphereRevision='75';
    if(!drone?.isOpen){
    if(desired&&target){const blend=reduced?1:1-Math.exp(-dt*5);camera.position.lerp(desired,blend);controls.target.lerp(target,blend);if(camera.position.distanceTo(desired)<.03){camera.position.copy(desired);controls.target.copy(target);stop();}}
-   if(flight){flight.t+=dt;const p=reduced?1:Math.min(1,flight.t/flight.duration),e=p*p*p*(p*(p*6-15)+10);camera.position.lerpVectors(flight.from,flight.to,e);camera.quaternion.slerpQuaternions(flight.q0,flight.q1,e);if(p>=1){flight=null;setJourney(false);}}
+   if(flight){flight.t+=dt;const p=reduced?1:Math.min(1,flight.t/flight.duration),e=p*p*p*(p*(p*6-15)+10);if(flight.path)flight.path.getPoint(e,camera.position);else camera.position.lerpVectors(flight.from,flight.to,e);camera.quaternion.slerpQuaternions(flight.q0,flight.q1,e);if(flight.restoreCeiling&&(camera.position.y<baseY+2.7||p>=1)){if(floors[14])floors[14].visible=true;flight.restoreCeiling=false;renderer.shadowMap.needsUpdate=true;}if(p>=1){flight=null;setJourney(false);}}
    else if(inside&&common){
     const forward=Number(pressed.has('forward'))-Number(pressed.has('back')),side=Number(pressed.has('right'))-Number(pressed.has('left'));
     if(forward||side){const speed=3.0*dt/Math.max(1,Math.hypot(forward,side)),next=walkStep({x:camera.position.x,z:camera.position.z},(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed,common.obstacles,common.bounds,common.areas,common.exclusions);camera.position.set(next.x,common.eye[1],next.z);}look();controls.target.copy(camera.position).add(camera.getWorldDirection(new T.Vector3()).multiplyScalar(8));
@@ -298,19 +328,24 @@ export default function MResidence(){
    // Keep centimetre finish layers distinct in the enlarged site's aerial views.
    const near=drone?.isOpen?.06:inside?.08:T.MathUtils.clamp(camera.position.distanceTo(controls.target)*.006,.15,2.5);
    if(Math.abs(camera.near-near)>.005){camera.near=near;camera.updateProjectionMatrix();}
+   if(demo){mount.dataset.demoCeiling=String(floors[14]?.visible??false);mount.dataset.demoRoom=currentRoom||'loading';mount.dataset.demoTime=String(timeValue);}
    mount.dataset.apartment64=String(interior?.group.userData.apartment64Ready??false);mount.dataset.apartment69=String(interior?.group.userData.apartment69Ready??false);mount.dataset.walking=String(inside);mount.dataset.camera=camera.position.toArray().map(v=>v.toFixed(2)).join(',');mount.dataset.interior=String(interior?.group.visible??false);mount.dataset.ceiling=String(interior?.ceiling.visible??false);
    mount.dataset.visualRevision='54';mount.dataset.towers='1';mount.dataset.tower=selectedTower;mount.dataset.commonWalk=String(!!common);mount.dataset.transition=String(!!flight);mount.dataset.focusHeight=controls.target.y.toFixed(2);mount.dataset.ledMetres=String(promenade?.root.userData.ledMetres??0);mount.dataset.architectureRevision=String(M_REFERENCE.revision);mount.dataset.interiorStyle=interior?.group.userData.interiorStyle??'';mount.dataset.interiorStatus=unit.id==='m-14'?'floor-14-envelope-69':'previous-study';mount.dataset.unit=unit.id;mount.dataset.level=String(Math.round(walkElevation/M_STEP));mount.dataset.visibleFloors=(selectedTower==='b'?towerB?.floors??[]:floors).filter(f=>f.visible).length.toString();mount.dataset.crown=String(selectedTower==='b'?towerB?.crown.visible:crown.visible);mount.dataset.loadedInteriors=String(interiors.size);mount.dataset.siteVersion=M_SITE.version;mount.dataset.referenceFinish=String(scene.userData.referenceFinish?.revision??0);mount.dataset.realismFinish=String(scene.userData.realismFinish?.revision??0);mount.dataset.blenderFinish=String(scene.userData.blenderFinish?.revision??0);mount.dataset.arrivalBlender=String(scene.userData.arrivalBlender??0);mount.dataset.frame=String(++frame);lightRig?.update(camera,inside&&!common,baseY+walkElevation,cycle.lights,unit.width,controls.target,new T.Vector3(towerSpec().x,0,towerSpec().z));waterReflections.update(camera,inside&&!common,controls.target,profiles58[qualityLevel].reflections);const contactShading=!!interiorShading&&inside&&qualityLevel!=='light'&&!drone?.driving;mount.dataset.contactShading75=String(contactShading);if(contactShading)interiorShading!.render();else renderer.render(scene,camera);
    drone?.afterRender();
    mount.dataset.textureTier72=String(scene.userData.textureTier72??'');mount.dataset.lodCount72=String(scene.userData.lodCount72??0);mount.dataset.lighting72=String(!!apartmentLighting);mount.dataset.scene71=standalone?'apartment14':'exterior';mount.dataset.geometryCount=String(renderer.info.memory.geometries);mount.dataset.textureCount=String(renderer.info.memory.textures);mount.dataset.drawCalls=String(renderer.info.render.calls);mount.dataset.triangles=String(renderer.info.render.triangles);
    if(qualityMode==='auto'&&!drone?.driving){const next=governor.sample(performance.now()-started);if(next){qualityLevel=next;applyQuality();requestRender();}}
 
-   if(drone?.needsFrame||flight||desired||orbitChanged||clickRoute.length||(inside&&pressed.size))requestRender();
+   if(drone?.needsFrame||flight||desired||demoTimeTransition||orbitChanged||clickRoute.length||(inside&&pressed.size))requestRender();
   };
   if(import.meta.env.DEV)(window as any).__mAudit71={scene,renderer,camera,controls,floors,interiors};
   const visibility=()=>{clearMovement();last=performance.now();if(document.hidden)suspendRender();else requestRender();};document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',suspendRender);window.addEventListener('pageshow',visibility);
   const visibleObserver=new IntersectionObserver(([entry])=>{offscreen=!entry.isIntersecting;if(offscreen){clearMovement();suspendRender();}else{last=performance.now();requestRender();}});visibleObserver.observe(mount);
   return()=>{disposed=true;designApply.current=undefined;window.removeEventListener('pagehide',suspendRender);window.removeEventListener('pageshow',visibility);drone?.dispose();droneApi.current=undefined;atmosphere.dispose();interiorShading?.dispose();apartmentBackdrop?.dispose();apartmentLighting?.dispose();suspendRender();visibleObserver.disconnect();document.removeEventListener('visibilitychange',visibility);exterior.dispose();api.current=undefined;ro.disconnect();window.removeEventListener('blur',clearMovement);document.removeEventListener('visibilitychange',clearMovement);canvas.removeEventListener('blur',clearMovement);window.removeEventListener('keyup',up);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',drag);canvas.removeEventListener('pointermove',pickMove);canvas.removeEventListener('pointerup',release);canvas.removeEventListener('pointercancel',cancel);canvas.removeEventListener('lostpointercapture',cancel);canvas.removeEventListener('keydown',key);canvas.removeEventListener('wheel',wheelHeight,true);controls.removeEventListener('change',requestRender);controls.removeEventListener('start',stop);controls.dispose();scene.traverse(o=>{if(o instanceof T.DirectionalLight||o instanceof T.SpotLight||o instanceof T.PointLight)o.shadow.dispose();});resources.forEach(r=>r.dispose());renderer.dispose();renderer.forceContextLoss();resources.clear();scene.clear();if(import.meta.env.DEV)delete (window as any).__mAudit71;canvas.remove();};
  },[]);
+ if(demo)return <MInlineDemo host={host} ready={ready&&!apartmentLoading} error={error} journey={journey} room={room} time={dayTime} message={walkMessage}
+  visit={name=>api.current?.visit(name,unitForFloor(14))}
+  setTime={value=>{setDayTime(value);api.current?.time(value);}}
+  design={applyDesign} move={(direction,active)=>api.current?.move(direction,active)} zoom={amount=>api.current?.zoom(amount)}/>;
  const navigate=(name:Destination)=>api.current?.go(name),closeInformation=()=>setInformation(null);
  const levels=tower==='b'?TOWER_B54.levels:M_LEVELS,unitAt=(n:number)=>tower==='b'?towerBUnit54(n):unitForFloor(n);
  const facadeMode=!room&&!commonWalk&&facadeDestination54(place),canWalk=!room&&!!COMMON_VISITS54[place];

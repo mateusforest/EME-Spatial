@@ -30,7 +30,7 @@
 .ms-menu-button { display: none; border: 0; background: transparent; padding: 10px; color: inherit; }
 .ms-hero { position: relative; min-height: 680px; height: min(770px, 54vw); isolation: isolate; background: var(--ms-forest); color: var(--ms-ivory); overflow: hidden; }
 .ms-hero-copy { position: relative; z-index: 2; pointer-events: none; width: min(100%, 1540px); margin-inline: auto; padding: 94px 5% 86px; }
-.ms-hero-copy a { pointer-events: auto; }
+.ms-hero-copy a, .ms-hero-copy button { pointer-events: auto; }
 .ms-home .ms-eyebrow { font-size: 10px; line-height: 1.5; letter-spacing: .25em; font-weight: 400; color: inherit; margin-bottom: 26px; }
 .ms-hero h1 { font-size: clamp(50px, 4.2vw, 67px); line-height: 1.08; max-width: 560px; margin: 0 0 31px; text-wrap: balance; }
 .ms-home .ms-hero-description { max-width: 414px; font-size: 18px; line-height: 1.5; color: var(--ms-ivory); }
@@ -38,7 +38,7 @@
 .ms-hero-categories a:hover { text-decoration: underline; text-underline-offset: 5px; }
 .ms-hero-categories > span { opacity: .6; }
 .ms-hero-actions { display: flex; gap: 26px; align-items: center; margin-top: 31px; }
-.ms-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; min-height: 60px; padding: 17px 27px; background: var(--ms-ivory); color: #172a24; border: 1px solid var(--ms-ivory); font-size: 14px; line-height: 1.35; font-weight: 600; white-space: nowrap; transition: background .2s ease; }
+.ms-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; min-height: 60px; padding: 17px 27px; background: var(--ms-ivory); color: #172a24; border: 1px solid var(--ms-ivory); border-radius: 0; font-size: 14px; line-height: 1.35; font-weight: 600; white-space: nowrap; transition: background .2s ease; }
 .ms-button:hover { background: #fffdf6; }
 .ms-button svg, .ms-text-link svg { flex-shrink: 0; }
 .ms-text-link { display: inline-flex; align-items: center; justify-content: space-between; gap: 28px; padding: 8px 0; border-bottom: 1px solid #66796e; font-size: 15px; font-weight: 600; line-height: 1.4; }
@@ -308,4 +308,81 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ms-home *, .ms-home *::before, .ms-home *::after { scroll-behavior: auto!important; animation: none!important; transition: none!important; }
+}
+
+/* The live demo is deliberately separate from the Casa M visual study. */
+.ms-live-demo { padding-block: 49px 43px; border-bottom: 1px solid var(--ms-line); }
+.ms-live-demo-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 45px; }
+.ms-live-demo-heading .ms-eyebrow { font-size: 9px; margin-bottom: 17px; }
+.ms-live-demo-heading h2 { font-size: clamp(37px, 3.1vw, 47px); }
+.ms-home .ms-live-demo-heading > p { max-width: 375px; font-size: 14px; line-height: 1.65; color: var(--ms-muted); }
+.ms-live-demo-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 35px; margin-top: 33px; }
+.ms-live-demo-features article { display: flex; align-items: flex-start; gap: 17px; }
+.ms-live-demo-features article > svg { flex-shrink: 0; margin-top: 4px; }
+.ms-live-demo-features h3 { font-size: 25px; line-height: 1.25; letter-spacing: -.04em; }
+.ms-home .ms-live-demo-features p { margin-top: 9px; color: var(--ms-muted); font-size: 13px; line-height: 1.6; max-width: 295px; }
+.ms-live-demo-actions { display: flex; align-items: center; gap: 30px; margin-top: 30px; }
+.ms-button.ms-button-forest { background: var(--ms-forest); border-color: var(--ms-forest); color: var(--ms-ivory); min-height: 53px; font-size: 13px; }
+.ms-button.ms-button-forest:hover { background: #204638; }
+.ms-live-demo-actions .ms-text-link { font-size: 12px; font-weight: 400; gap: 18px; }
+.ms-demo-dialog { padding: 0; border: 1px solid #ffffff42; border-radius: 3px; background: var(--ms-forest); color: var(--ms-ivory); width: min(1560px, calc(100vw - 48px)); height: min(1000px, calc(100dvh - 48px)); max-width: none; max-height: none; overflow: hidden; }
+.ms-demo-dialog::backdrop { background: #061b16e8; backdrop-filter: blur(10px); }
+.ms-demo-shell { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+.ms-demo-header { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding: 19px 27px; border-bottom: 1px solid #ffffff20; }
+.ms-demo-heading .ms-eyebrow { font-size: 8px; letter-spacing: .22em; margin-bottom: 6px; color: #d3ded3; }
+.ms-home .ms-demo-heading h2 { font-size: 29px; line-height: 1.2; }
+.ms-demo-heading h2 span { font-size: 21px; color: #e0e8dd; letter-spacing: -.03em; }
+.ms-demo-header-actions { display: flex; align-items: center; gap: 25px; }
+.ms-demo-header-actions > a { display: inline-flex; align-items: center; gap: 10px; font-size: 11px; border-bottom: 1px solid #ffffff63; padding-block: 7px; }
+.ms-demo-header-actions > a:hover { border-bottom-color: currentColor; }
+.ms-demo-close { display: inline-grid; place-items: center; flex-shrink: 0; border-radius: 50%; width: 42px; height: 42px; border: 1px solid #ffffff5c; background: transparent; color: var(--ms-ivory); }
+.ms-demo-close:hover { background: #ffffff0e; }
+.ms-demo-stage { position: relative; min-height: 0; background: #e4e5db; }
+.ms-demo-stage > iframe { display: block; border: 0; width: 100%; height: 100%; }
+.ms-demo-loading { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 19px; background: var(--ms-ivory); color: var(--ms-forest); }
+.ms-demo-loading > span { display: block; width: 25px; height: 25px; border: 1px solid #b3c2b5; border-top-color: var(--ms-forest); border-radius: 50%; animation: ms-demo-loading 1s linear infinite; }
+.ms-home .ms-demo-loading > p { font-size: 14px; color: var(--ms-forest); }
+.ms-demo-footer { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding: 13px 27px; }
+.ms-home .ms-demo-footer p { color: #e0e8dd; font-size: 11px; line-height: 1.45; }
+.ms-demo-footer > span { font-size: 9px; letter-spacing: .1em; color: #cbd9cc; white-space: nowrap; }
+@keyframes ms-demo-loading { to { transform: rotate(360deg); } }
+@media (max-width: 900px) {
+  .ms-live-demo { padding-block: 40px 37px; }
+  .ms-live-demo-heading { gap: 30px; }
+  .ms-home .ms-live-demo-heading > p { max-width: 315px; font-size: 13px; }
+  .ms-live-demo-features { gap: 24px; }
+  .ms-live-demo-features article { gap: 13px; }
+  .ms-live-demo-features h3 { font-size: 22px; }
+  .ms-home .ms-live-demo-features p { font-size: 12px; }
+  .ms-demo-header { padding: 17px 20px; }
+  .ms-home .ms-demo-heading h2 { font-size: 25px; }
+  .ms-demo-heading h2 span { font-size: 18px; }
+  .ms-demo-header-actions { gap: 18px; }
+  .ms-demo-header-actions > a { font-size: 10px; }
+}
+@media (max-width: 700px) {
+  .ms-live-demo { padding-block: 38px 36px; }
+  .ms-live-demo-heading { display: block; }
+  .ms-live-demo-heading .ms-eyebrow { font-size: 8px; margin-bottom: 17px; }
+  .ms-live-demo-heading h2 { font-size: 36px; }
+  .ms-home .ms-live-demo-heading > p { margin-top: 16px; max-width: 390px; font-size: 14px; }
+  .ms-live-demo-features { grid-template-columns: 1fr; gap: 24px; margin-top: 29px; }
+  .ms-live-demo-features article { gap: 18px; }
+  .ms-live-demo-features article > svg { margin-top: 2px; }
+  .ms-live-demo-features h3 { font-size: 23px; }
+  .ms-home .ms-live-demo-features p { font-size: 13px; max-width: 370px; margin-top: 6px; }
+  .ms-live-demo-actions { flex-direction: column; align-items: flex-start; gap: 17px; margin-top: 28px; }
+  .ms-live-demo-actions .ms-button { font-size: 12px; gap: 22px; padding-inline: 22px; }
+  .ms-live-demo-actions .ms-text-link { font-size: 12px; }
+  .ms-demo-dialog { width: 100vw; height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+  .ms-demo-header { position: relative; align-items: flex-start; flex-direction: column; gap: 8px; padding: max(15px, env(safe-area-inset-top)) 20px 13px; }
+  .ms-demo-heading { padding-right: 50px; }
+  .ms-demo-heading .ms-eyebrow { font-size: 7px; margin-bottom: 7px; }
+  .ms-home .ms-demo-heading h2 { font-size: 24px; }
+  .ms-demo-heading h2 span { font-size: 17px; }
+  .ms-demo-header-actions > a { font-size: 10px; padding-block: 4px; }
+  .ms-demo-close { position: absolute; top: max(16px, env(safe-area-inset-top)); right: 17px; width: 40px; height: 40px; }
+  .ms-demo-footer { padding: 11px 20px max(12px, env(safe-area-inset-bottom)); }
+  .ms-home .ms-demo-footer p { font-size: 10px; max-width: 350px; }
+  .ms-demo-footer > span { display: none; }
 }
