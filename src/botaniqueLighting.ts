@@ -66,13 +66,13 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
  let interiorEnvironment:T.WebGLRenderTarget|undefined,interiorReady=false,probeEnabled=true,probeTimer:ReturnType<typeof setTimeout>|undefined;
  let probeIdle:number|undefined,probeRevision=0,probeRunning=false,probeYieldResolve:(()=>void)|undefined;
  const shadowSpots:T.SpotLight[]=[];let activeShadow:T.SpotLight|undefined;
- const fixtures:T.Light[]=[],windowFills:T.RectAreaLight[]=[],lampTargets:T.Object3D[]=[];
+ const fixtures:T.Light[]=[],windowFills:T.RectAreaLight[]=[],dayBounces:T.RectAreaLight[]=[],lampTargets:T.Object3D[]=[];
  if(!areaLightsReady){RectAreaLightUniformsLib.init();areaLightsReady=true;}
  const fallback:BotaniqueLightFixture[]=apartment?[[5.65,2.42,-4.35,13,4],[5.7,2.4,-6.3,10,3.5],[1.7,2.3,-2,8,3.5],[1.7,2.3,-6.3,8,3.5]].map(([x,y,z,power,range],i)=>({id:'fallback-'+i,type:'spot',position:[x,y,z],target:[x,.2,z],color:'#ffdfbb',power,range,angle:1.18,penumbra:1})):[[0,2.4,18.5,120,22],[-27,2.8,10,90,22],[20,3,-78,100,24]].map(([x,y,z,power,range],i)=>({id:'site-'+i,type:'point',position:[x,y,z],target:[x,0,z],color:'#ffdab0',power,range}));
  const practicals=modeledLights?.length?modeledLights:fallback;
  for(const f of practicals){
   const lamp=f.type==='area'?new T.RectAreaLight(f.color,f.power,f.width||.6,f.height||.08):f.type==='point'?new T.PointLight(f.color,f.power,f.range||8,2):new T.SpotLight(f.color,f.power,f.range||4,f.angle||1.12,f.penumbra??1,2);
-  lamp.name=f.id;lamp.position.fromArray(f.position);lamp.userData.power=f.power*(apartment?(f.type==='area'?7:1.65):1);
+  lamp.name=f.id;lamp.position.fromArray(f.position);lamp.userData.power=f.power*(apartment?(f.type==='area'?5.8:1.5):1);
   if(lamp instanceof T.SpotLight){if(apartment&&f.id.startsWith('downlight-')){lamp.shadow.mapSize.set(1024,1024);lamp.shadow.bias=-.00015;lamp.shadow.normalBias=.008;lamp.shadow.radius=2;shadowSpots.push(lamp);}lamp.target.position.fromArray(f.target);lampTargets.push(lamp.target);scene.add(lamp.target);}else if(lamp instanceof T.RectAreaLight){lamp.up.set(0,0,-1);lamp.lookAt(...f.target);}
   fixtures.push(lamp);scene.add(lamp);
  }
@@ -82,6 +82,12 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
   for(const [x,z,w,h] of [[5.7,-3.7,1.5,3.4],[1.7,-1.8,1.8,2.2],[1.7,-6.2,1.8,1.8]]){const bounce=new T.RectAreaLight(temperatureColor[temperature],1.9,w,h);bounce.position.set(x,1.2,z);bounce.up.set(0,0,-1);bounce.lookAt(x,2.7,z);bounce.userData.power=1.9;fixtures.push(bounce);scene.add(bounce);}
   // Broad, local window fills soften daylight without adding a second sun.
   for(const [x,y,z,tx,tz,w,h] of [[5.75,1.5,-1.23,5.75,-4.5,2.15,2.15],[.08,1.5,-1.6,2.5,-1.6,1.25,1.2],[.08,1.5,-6.2,2.5,-6.2,1.25,1.2]]){const light=new T.RectAreaLight('#f1f5ff',4.2,w,h);light.position.set(x,y,z);light.lookAt(tx,1.25,tz);windowFills.push(light);scene.add(light);}
+  // Local daylight bounce from the pale floor. Unlike a global ambient lift,
+  // this keeps recesses darker and still works when electric lights are off.
+  for(const [x,z,w,h] of [[5.65,-2.9,1.8,2.5],[1.7,-1.65,1.4,1.8]]){
+   const light=new T.RectAreaLight('#f1e9d8',.7,w,h);light.position.set(x,.12,z);
+   light.up.set(0,0,-1);light.lookAt(x,2.7,z);dayBounces.push(light);scene.add(light);
+  }
  }
  function useEnvironment(){
   const interior=apartment&&interiorReady&&!planMode&&probeEnabled&&interiorEnvironment;
@@ -162,10 +168,10 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
  if(apartment)document.addEventListener('visibilitychange',probeVisibility);
  function apply(){
   const value=botaniqueSun(hour),warm=new T.Color('#ffc58f'),neutral=new T.Color('#fff3df');
-  sun.color.copy(neutral.lerp(warm,value.gold*.75));sun.intensity=3.65*value.day*(1-.34*value.gold);moon.intensity=apartment?0:.55*(1-value.day);
+  sun.color.copy(neutral.lerp(warm,value.gold*(apartment?.48:.75)));sun.intensity=(apartment?3.2:3.65)*value.day*(1-.34*value.gold);moon.intensity=apartment?0:.55*(1-value.day);
   sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(value.direction,180);
   Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:Math.max(.1,180-span*2),far:180+span*2});sun.shadow.camera.updateProjectionMatrix();
-  sky.color.set(apartment?'#eaf1f7':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=apartment?((!planMode?.14:.42)+.24*value.day+(!planMode?.10*indoor*(1-value.day):0)):.16+.82*value.day;sky.groundColor.set(apartment&&!planMode?'#beb9aa':'#a59b87');if(!apartment)sky.groundColor.lerp(new T.Color('#233035'),1-value.day);
+  sky.color.set(apartment?'#eaf1f7':'#d4e3f0').lerp(new T.Color('#dcae92'),value.gold*.38);sky.intensity=apartment?((!planMode?.09:.42)+.19*value.day+(!planMode?.10*indoor*(1-value.day):0)):.16+.82*value.day;sky.groundColor.set(apartment&&!planMode?'#beb9aa':'#a59b87');if(!apartment)sky.groundColor.lerp(new T.Color('#233035'),1-value.day);
   if(apartment&&!planMode)sky.color.lerp(new T.Color(temperatureColor[temperature]),(1-value.day)*.85);
   useEnvironment();
   renderer.toneMappingExposure=apartment?1.04:.92;
@@ -175,10 +181,11 @@ export function createBotaniqueLighting(scene:T.Scene,renderer:T.WebGLRenderer,a
   renderer.domElement.dataset.horizonRevision='7';
   renderer.domElement.dataset.horizonColor=atmosphere.horizon.getHexString();
   fixtures.forEach(l=>{l.intensity=planMode?0:l.userData.power*(apartment?indoor*(.65+.35*(1-value.day)):.015+1.05*(1-value.day));if(apartment)l.color.set(temperatureColor[temperature]);});
-  windowFills.forEach(l=>{l.intensity=planMode?0:4.2*value.day;l.color.set('#f1f5ff').lerp(new T.Color('#ffdda9'),value.gold*.65);});
+  windowFills.forEach(l=>{l.intensity=planMode?0:5.6*value.day;l.color.set('#f1f5ff').lerp(new T.Color('#ffdda9'),value.gold*.45);});
+  dayBounces.forEach(l=>{l.intensity=planMode?0:.7*value.day;});
   renderer.shadowMap.needsUpdate=true;draw();
   if(timer)clearTimeout(timer);
   timer=setTimeout(()=>{if(disposed)return;updateSky(environmentSky,hour);environmentSky.material.uniforms.turbidity.value=2.8;environmentSky.material.uniforms.rayleigh.value=1.6;const next=pmrem.fromScene(environmentScene,.03,.1,100,{size:apartment?128:64});const old=environment;environment=next;useEnvironment();old?.dispose();refreshInterior();draw();},180);
  }
- return {sun,fixtures,refreshInterior,setInteriorReady(){interiorReady=true;refreshInterior();},setQuality(low:boolean){probeEnabled=!low;if(low){probeRevision++;cancelQueuedProbe();}useEnvironment();if(!low)refreshInterior();},setHour(value:number){hour=value;apply();},setTemperature(value:LightTemperature){temperature=value;apply();},setIndoor(value:number){indoor=value;apply();},setPlanContext(value:{center:T.Vector3;span:number}|null){planMode=!!value;anchor.copy(value?.center||center);span=value?.span||(apartment?7:85);apply();},focus(position:T.Vector3,walking:boolean){if(apartment){if(!planMode&&walking){const nearest=shadowSpots.reduce<T.SpotLight|undefined>((best,lamp)=>!best||lamp.position.distanceToSquared(position)<best.position.distanceToSquared(position)?lamp:best,undefined);if(nearest!==activeShadow){if(activeShadow)activeShadow.castShadow=false;activeShadow=nearest;if(nearest)nearest.castShadow=true;renderer.shadowMap.needsUpdate=true;}if(probePosition.distanceTo(position)>2.4){probePosition.copy(position);refreshInterior();}}return;}const close=walking||position.y<12;const next=close?new T.Vector3(position.x,8,position.z):center;const nextSpan=close?32:85;if(anchor.distanceTo(next)>1.5||nextSpan!==span){anchor.copy(next);span=nextSpan;const d=botaniqueSun(hour).direction;sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(d,180);Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:180-span*2,far:180+span*2});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;}},dispose(){disposed=true;probeRevision++;if(timer)clearTimeout(timer);cancelQueuedProbe();document.removeEventListener('visibilitychange',probeVisibility);interiorEnvironment?.dispose();probeTarget?.dispose();shadowSpots.forEach(l=>l.shadow.dispose());environment?.dispose();pmrem.dispose();sun.shadow.dispose();dome.geometry.dispose();dome.material.dispose();environmentSky.geometry.dispose();environmentSky.material.dispose();scene.remove(dome,sun,sun.target,sky,moon,...fixtures,...windowFills,...lampTargets);}};
+ return {sun,fixtures,refreshInterior,setInteriorReady(){interiorReady=true;refreshInterior();},setQuality(low:boolean){probeEnabled=!low;if(low){probeRevision++;cancelQueuedProbe();}useEnvironment();if(!low)refreshInterior();},setHour(value:number){hour=value;apply();},setTemperature(value:LightTemperature){temperature=value;apply();},setIndoor(value:number){indoor=value;apply();},setPlanContext(value:{center:T.Vector3;span:number}|null){planMode=!!value;anchor.copy(value?.center||center);span=value?.span||(apartment?7:85);apply();},focus(position:T.Vector3,walking:boolean){if(apartment){if(!planMode&&walking){const nearest=shadowSpots.reduce<T.SpotLight|undefined>((best,lamp)=>!best||lamp.position.distanceToSquared(position)<best.position.distanceToSquared(position)?lamp:best,undefined);if(nearest!==activeShadow){if(activeShadow)activeShadow.castShadow=false;activeShadow=nearest;if(nearest)nearest.castShadow=true;renderer.shadowMap.needsUpdate=true;}if(probePosition.distanceTo(position)>2.4){probePosition.copy(position);refreshInterior();}}return;}const close=walking||position.y<12;const next=close?new T.Vector3(position.x,8,position.z):center;const nextSpan=close?32:85;if(anchor.distanceTo(next)>1.5||nextSpan!==span){anchor.copy(next);span=nextSpan;const d=botaniqueSun(hour).direction;sun.target.position.copy(anchor);sun.target.updateMatrixWorld();sun.position.copy(anchor).addScaledVector(d,180);Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span,near:180-span*2,far:180+span*2});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;}},dispose(){disposed=true;probeRevision++;if(timer)clearTimeout(timer);cancelQueuedProbe();document.removeEventListener('visibilitychange',probeVisibility);interiorEnvironment?.dispose();probeTarget?.dispose();shadowSpots.forEach(l=>l.shadow.dispose());environment?.dispose();pmrem.dispose();sun.shadow.dispose();dome.geometry.dispose();dome.material.dispose();environmentSky.geometry.dispose();environmentSky.material.dispose();scene.remove(dome,sun,sun.target,sky,moon,...fixtures,...windowFills,...dayBounces,...lampTargets);}};
 }

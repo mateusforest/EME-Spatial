@@ -1,8 +1,33 @@
 import * as T from 'three';
+import {createInteriorSurfaces} from './botaniqueInteriorSurfaces';
 
 export type BotaniqueVisualRefinementOptions={apartment:boolean;maxAnisotropy?:number};
 export type BotaniqueVisualRefinement={stats:{revision:number;materials:number;lawns:number;roads:number;stone:number;glass:number};dispose:()=>void};
 const installed=new WeakMap<T.Object3D,BotaniqueVisualRefinement>();
+
+function textileRelief(material:T.MeshStandardMaterial){
+ const before=material.onBeforeCompile,key=material.customProgramCacheKey();
+ material.onBeforeCompile=(shader,renderer)=>{
+  before.call(material,shader,renderer);
+  shader.vertexShader='varying vec3 vTextilePosition;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>',
+   '#include <project_vertex>\nvTextilePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
+  shader.fragmentShader='varying vec3 vTextilePosition;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+   // Millimetre-scale fabric tension, separate from the finer woven normal map.
+   // Screen derivatives let the same relief follow every upholstered surface.
+   vec3 clothP=vTextilePosition;
+   float clothFade=1.0-smoothstep(.006,.025,length(fwidth(clothP)));
+   float clothHeight=clothFade*(.0014*sin(clothP.x*47.0+clothP.z*21.0+2.0*sin(clothP.y*3.1))
+    *(.5+.5*sin(clothP.y*17.0+clothP.z*13.0))+.0006*sin(dot(clothP,vec3(31.0,63.0,27.0))));
+   vec3 clothDx=dFdx(-vViewPosition),clothDy=dFdy(-vViewPosition);
+   vec3 clothR1=cross(clothDy,normal),clothR2=cross(normal,clothDx);
+   float clothDet=dot(clothDx,clothR1);
+   if(abs(clothDet)>1e-10)normal=normalize(abs(clothDet)*normal-sign(clothDet)
+    *(dFdx(clothHeight)*clothR1+dFdy(clothHeight)*clothR2));`);
+ };
+ material.customProgramCacheKey=()=>key+'|botanique-textile-tension-v10';
+}
 
 // World-space, non-periodic variation. The GLB's former 3 m bitmap tile and
 // normal map amplified a grid/wave pattern; adding more texture repeats only
@@ -51,7 +76,8 @@ function lawnShader(material:T.MeshStandardMaterial){
  */
 export function createBotaniqueVisualRefinement(root:T.Object3D,options:BotaniqueVisualRefinementOptions):BotaniqueVisualRefinement{
  const existing=installed.get(root);if(existing)return existing;
- const stats={revision:8,materials:0,lawns:0,roads:0,stone:0,glass:0};
+ const surfaces=options.apartment?createInteriorSurfaces(root):undefined;
+ const stats={revision:10,materials:0,lawns:0,roads:0,stone:0,glass:0};
  const originals=new Map<T.MeshStandardMaterial,{copy:T.MeshStandardMaterial;compile:T.Material['onBeforeCompile'];key:T.Material['customProgramCacheKey']}>();
  const textures=new Map<T.Texture,number>();let disposed=false;
  const materials=new Set<T.MeshStandardMaterial>();
@@ -88,7 +114,7 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
    material.normalScale.setScalar(name==='B_FLOOR'?.045:dark?.065:.035);
    material.metalness=0;material.envMapIntensity=.7;
    if(name==='B_CERAMIC')material.roughness=.19;
-   else if(name==='B_FLOOR')material.roughness=options.apartment?.70:.91;
+   else if(name==='B_FLOOR')material.roughness=options.apartment?.82:.91;
    else material.roughness=material.roughnessMap?.88:.38;
    stats.stone++;
   }else if(glass){
@@ -109,15 +135,16 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
   }else if(fabric){
    const rug=name.includes('rug'),sheer=name.includes('sheer');
    material.roughness=1;material.metalness=0;material.envMapIntensity=.45;
-   material.normalScale.setScalar(rug?.48:sheer?.08:.31);
+   material.normalScale.setScalar(rug?.5:sheer?.08:.52);
    if(material instanceof T.MeshPhysicalMaterial){
-    material.sheen=rug?.38:sheer?.12:.42;material.sheenColor.set('#eee8df');material.sheenRoughness=.82;
+    material.sheen=rug?.48:sheer?.12:.62;material.sheenColor.set('#eee8df');material.sheenRoughness=.88;
    }
+   if(!rug&&!sheer&&!name.includes('seam'))textileRelief(material);
   }else if(wood){
    // Satin sealed oak: restrained grain relief and a broad window highlight.
-   material.roughness=.82;material.normalScale.setScalar(.085);material.envMapIntensity=.85;
+   material.roughness=.94;material.normalScale.setScalar(.045);material.envMapIntensity=.72;
   }else if(lacquer){
-   material.roughness=.39;material.metalness=0;material.envMapIntensity=.65;
+   material.roughness=.48;material.metalness=0;material.envMapIntensity=.65;
   }
   for(const texture of [material.map,material.normalMap,material.roughnessMap]){
    if(!texture||textures.has(texture))continue;
@@ -129,7 +156,7 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
   if(disposed)return;disposed=true;
   for(const [material,previous]of originals){material.copy(previous.copy);material.onBeforeCompile=previous.compile;material.customProgramCacheKey=previous.key;material.needsUpdate=true;previous.copy.dispose();}
   for(const [texture,anisotropy]of textures){texture.anisotropy=anisotropy;texture.needsUpdate=true;}
-  originals.clear();textures.clear();installed.delete(root);
+  surfaces?.dispose();originals.clear();textures.clear();installed.delete(root);
  }};
  installed.set(root,refinement);return refinement;
 }

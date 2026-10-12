@@ -53,13 +53,16 @@ export function materialPixels(id:string,size=256){
  const colors:Record<string,number[]>={limestone:[223,217,200],travertine:[212,192,159],marble:[238,236,228],basalt:[75,79,75],plaster:[237,232,220],limewash:[221,211,193],cement:[192,189,182]};
  const base=colors[id]||[242,240,234];
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const u=x/size,v=y/size,n=noise(u,v),grain=noise(u*8,v*8),a=Math.sin(tau*u*48),b=Math.cos(tau*v*48);
+  const u=x/size,v=y/size,n=noise(u,v),grain=noise(u*8,v*8);
+  // Small yarn deviations break the synthetic, perfectly straight grid. The
+  // deformation is periodic, so tiles remain seamless at their measured scale.
+  const a=Math.sin(tau*u*48+n*.72),b=Math.cos(tau*v*48+grain*.35);
   let h=.5,shade=0,r=.9;
-  if(id==='linen'){h=.5+.18*a+.18*b+.07*a*b;shade=(h-.5)*28;r=.95;}
-  else if(id==='boucle'){const loop=Math.sin(tau*u*26+Math.sin(tau*v*24)) * Math.cos(tau*v*24+Math.sin(tau*u*26));h=.45+.32*loop+.12*grain;shade=(h-.5)*42;r=.98;}
-  else if(id==='velvet'){h=.5+grain*.055;shade=n*5+grain*3;r=.57+n*.07;}
-  else if(id==='chenille'){h=.5+.24*Math.sin(tau*u*30)+.10*Math.sin(tau*v*60)+grain*.08;shade=(h-.5)*35;r=.93;}
-  else if(id==='twill'){h=.5+.23*Math.sin(tau*(u-v)*42)+grain*.05;shade=(h-.5)*26;r=.89;}
+  if(id==='linen'){h=.5+.18*a+.15*b+.07*a*b+grain*.035;shade=(h-.5)*22+n*5;r=.95;}
+  else if(id==='boucle'){const loop=Math.sin(tau*u*26+Math.sin(tau*v*24)+n*.9) * Math.cos(tau*v*24+Math.sin(tau*u*26)+grain*.55);h=.45+.32*loop+.12*grain;shade=(h-.5)*32+n*6;r=.98;}
+  else if(id==='velvet'){h=.5+grain*.055;shade=n*7+grain*3;r=.69+n*.06;}
+  else if(id==='chenille'){h=.5+.24*Math.sin(tau*u*30+n*.8)+.10*Math.sin(tau*v*60+grain*.5)+grain*.08;shade=(h-.5)*26+n*5;r=.93;}
+  else if(id==='twill'){h=.5+.23*Math.sin(tau*(u-v)*42+n*.8)+grain*.05;shade=(h-.5)*22+n*4;r=.89;}
   else if(id==='travertine'){const layers=Math.sin(tau*v*13+n*1.6);h=.5+layers*.05+grain*.018;shade=layers*9+n*7+grain*3;r=.78;}
   else if(id==='marble'){const veins=Math.pow(Math.max(0,1-Math.abs(Math.sin(tau*(u+v*2)+n*2.3))*9),2);h=.5+grain*.008;shade=n*4-veins*72;r=.24+grain*.03;}
   else if(id==='basalt'){h=.5+grain*.09;shade=n*5+grain*18;r=.91;}
@@ -70,8 +73,8 @@ export function materialPixels(id:string,size=256){
   color[p+3]=rough[p+3]=255;
  }
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const dx=(heights[y*size+(x+1)%size]-heights[y*size+(x+size-1)%size])*(fabric?1.2:.8);
-  const dy=(heights[((y+1)%size)*size+x]-heights[((y+size-1)%size)*size+x])*(fabric?1.2:.8);
+  const dx=(heights[y*size+(x+1)%size]-heights[y*size+(x+size-1)%size])*(fabric?1.2:.8)*size/256;
+  const dy=(heights[((y+1)%size)*size+x]-heights[((y+size-1)%size)*size+x])*(fabric?1.2:.8)*size/256;
   const d=Math.hypot(dx,dy,1),p=(y*size+x)*4;
   normal[p]=(-dx/d*.5+.5)*255;normal[p+1]=(-dy/d*.5+.5)*255;normal[p+2]=(1/d*.5+.5)*255;normal[p+3]=255;
  }
@@ -98,7 +101,7 @@ export function createMaterialStudio(root:T.Object3D,maxAnisotropy=4){
   const span=material.name==='B_STONE_dark'?.6:material.name==='B_STONE'?1.6:material.name==='B_WALL'?1:.256;
   const target=categoryOf(material.name)==='upholstery'?.256:1.6,key=id+':'+span;
   if(cache.has(key))return cache.get(key)!;
-  const pixels=materialPixels(id,categoryOf(material.name)==='upholstery'?256:512);
+  const pixels=materialPixels(id,512);
   function texture(bytes:Uint8Array,srgb=false){
    const t=new T.DataTexture(bytes,pixels.size,pixels.size,T.RGBAFormat);t.colorSpace=srgb?T.SRGBColorSpace:T.NoColorSpace;
    t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.setScalar(span/target);t.generateMipmaps=true;t.minFilter=T.LinearMipmapLinearFilter;t.magFilter=T.LinearFilter;t.anisotropy=Math.min(8,maxAnisotropy);t.needsUpdate=true;return t;
@@ -112,14 +115,18 @@ export function createMaterialStudio(root:T.Object3D,maxAnisotropy=4){
    const original=originals.get(m)!;
    // Preserve the independent upholstery/wood tint when changing its surface.
    m.map=original.map;m.normalMap=original.normalMap;m.roughnessMap=original.roughnessMap;m.roughness=original.roughness;m.normalScale.copy(original.normalScale);
-   if(m instanceof T.MeshPhysicalMaterial&&original instanceof T.MeshPhysicalMaterial){m.sheen=original.sheen;m.sheenRoughness=original.sheenRoughness;}
+   if(m instanceof T.MeshPhysicalMaterial&&original instanceof T.MeshPhysicalMaterial){m.sheen=original.sheen;m.sheenRoughness=original.sheenRoughness;m.clearcoat=original.clearcoat;m.clearcoatRoughness=original.clearcoatRoughness;}
    if(category==='stone'||category==='wall')m.color.copy(original.color);
    if(id!=='original'){
-    if(category==='wood')m.roughness=id==='matte'?1:id==='satin'?.62:.32;
+    if(category==='wood'){
+     m.roughness=id==='matte'?1:id==='satin'?.88:.64;
+     if(m instanceof T.MeshPhysicalMaterial){m.clearcoat=id==='matte'?.03:id==='satin'?.18:.48;m.clearcoatRoughness=id==='matte'?.6:id==='satin'?.42:.22;}
+    }
     else{
      Object.assign(m,maps(id as string,m));m.roughness=1;
      m.normalScale.setScalar(category==='upholstery'?(id==='boucle'?.85:id==='velvet'?.22:.65):category==='wall'?.28:.22);
      if(category==='stone'||category==='wall')m.color.set('#ffffff');
+     if(category==='stone'&&m instanceof T.MeshPhysicalMaterial){m.clearcoat=id==='marble'?.28:id==='basalt'?.025:.07;m.clearcoatRoughness=id==='marble'?.2:.45;}
      if(category==='upholstery'&&m instanceof T.MeshPhysicalMaterial){m.sheen=id==='velvet'?1:id==='boucle'?.65:.4;m.sheenRoughness=id==='velvet'?.4:.85;}
     }
    }
