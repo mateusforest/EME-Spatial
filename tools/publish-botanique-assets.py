@@ -123,7 +123,7 @@ renders=[]
 for slug,title in [('botanique-apartamento-01','Estudo EME · estar e jantar'),('botanique-apartamento-02','Estudo EME · estar e sacada'),('botanique-apartamento-03','Estudo EME · suíte'),('botanique-apartamento-05','Estudo EME · churrasqueira da Final 1'),('botanique-exterior-01','Estudo volumétrico EME · torre e implantação'),('botanique-exterior-02','Estudo EME · implantação e natureza'),('botanique-exterior-04','Estudo EME · piscina e convivência'),('botanique-exterior-05','Estudo EME · quadra e quiosque'),('botanique-exterior-07','Estudo EME · salão junto à piscina')]:
     if (web/'renders'/(slug+'.webp')).exists():renders.append({'url':asset_url('renders/'+slug+'.webp'),'title':title,'credit':'EME Spatial · Reconstrução demonstrativa em 3D','kind':'render'})
 images=renders+images
-manifest={'project':'Botanique Home Resort','version':'demo-07','disclaimer':'Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.','scenes':scenes,'images':images}
+manifest={'project':'Botanique Home Resort','version':'demo-08','disclaimer':'Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.','scenes':scenes,'images':images}
 if (web/'botanique-experiencia.mp4').exists():manifest['video']={'url':asset_url('botanique-experiencia.mp4'),'poster':asset_url('renders/botanique-apartamento-01.webp')}
 if (web/'apresentacao-botanique.pdf').exists():manifest['presentation']={'url':asset_url('apresentacao-botanique.pdf'),'label':'Baixar apresentação'}
 (web/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')

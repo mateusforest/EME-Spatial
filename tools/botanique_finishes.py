@@ -542,7 +542,7 @@ def apply_web_finishes(asset_dir=None):
         # Preserve transmission/alpha from the original model and avoid an
         # expensive extra coat/transmission layer in mobile WebGL.
         glass_refined.append(name)
-    report = {'schema': 'eme.botanique.finishes/7', 'finish_revision': 7, 'materials': processed,
+    report = {'schema': 'eme.botanique.finishes/8', 'finish_revision': 8, 'materials': processed,
               'uv_objects': uv_objects, 'uv_faces': uv_faces, 'packed_images': len(cache),
               'resolutions': sorted({tuple(image.size) for image in cache.values()}), 'uv_layer': UV_NAME,
               'texture_bytes': sum((folder / n).stat().st_size for n in required),

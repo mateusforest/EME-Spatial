@@ -71,7 +71,7 @@ function geometrySignature(nodes){
 test('GLB, embedded contract, manifest and runtime agree on eight groups and eighteen choices',()=>{
  assert.deepEqual([...furnitureGroups].sort(),Object.keys(expected).sort());
  assert.equal(layout.furniture_variants.revision,7);
- assert.equal(layout.finish_revision,7);
+  assert.equal(layout.finish_revision,8);
  const actual=new Set(variantNodes.map(keyOf));
  const expectedKeys=Object.entries(expected).flatMap(([group,choices])=>choices.map(choice=>`${group}/${choice}`));
  assert.equal(expectedKeys.length,18);

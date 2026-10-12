@@ -1,6 +1,6 @@
 {
   "project": "Botanique Home Resort",
-  "version": "demo-07",
+  "version": "demo-08",
   "disclaimer": "Estudo demonstrativo EME Spatial baseado em referências públicas. Dimensões e ambientação estimadas.",
   "scenes": {
     "exterior": {
@@ -5446,7 +5446,7 @@
       ]
     },
     "apartamento": {
-      "url": "/assets/botanique/apartamento.glb?v=07183b1a262c",
+      "url": "/assets/botanique/apartamento.glb?v=a35a5c9a651b",
       "camera": {
         "position": [
           6.45,

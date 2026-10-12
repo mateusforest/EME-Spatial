@@ -51,7 +51,7 @@ function lawnShader(material:T.MeshStandardMaterial){
  */
 export function createBotaniqueVisualRefinement(root:T.Object3D,options:BotaniqueVisualRefinementOptions):BotaniqueVisualRefinement{
  const existing=installed.get(root);if(existing)return existing;
- const stats={revision:7,materials:0,lawns:0,roads:0,stone:0,glass:0};
+ const stats={revision:8,materials:0,lawns:0,roads:0,stone:0,glass:0};
  const originals=new Map<T.MeshStandardMaterial,{copy:T.MeshStandardMaterial;compile:T.Material['onBeforeCompile'];key:T.Material['customProgramCacheKey']}>();
  const textures=new Map<T.Texture,number>();let disposed=false;
  const materials=new Set<T.MeshStandardMaterial>();
@@ -65,7 +65,10 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
   const glass=/^B_(?:GLASS(?:_smoked|_railing)?|POOL_clear_glass)$/.test(name);
   const metal=/^B_(?:MIRROR|STEEL_brushed|METAL(?:_brass)?|APPLIANCE_(?:SILVER|GRAPHITE))$/.test(name);
   const foliage=name==='B_CONTEXT6_BROADLEAF'||name==='B_CONTEXT6_FOREST_BACKDROP';
-  if(!(lawn||road||paving||stone||glass||metal||foliage))continue;
+  const fabric=options.apartment&&name.startsWith('B_FABRIC');
+  const wood=options.apartment&&/^B_WOOD(?:_dark)?$/.test(name);
+  const lacquer=options.apartment&&name.startsWith('B_ACCENT');
+  if(!(lawn||road||paving||stone||glass||metal||foliage||fabric||wood||lacquer))continue;
   originals.set(material,{copy:material.clone(),compile:material.onBeforeCompile,key:material.customProgramCacheKey});
   stats.materials++;
   if(lawn){
@@ -85,7 +88,7 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
    material.normalScale.setScalar(name==='B_FLOOR'?.045:dark?.065:.035);
    material.metalness=0;material.envMapIntensity=.7;
    if(name==='B_CERAMIC')material.roughness=.19;
-   else if(name==='B_FLOOR')material.roughness=.91;
+   else if(name==='B_FLOOR')material.roughness=options.apartment?.70:.91;
    else material.roughness=material.roughnessMap?.88:.38;
    stats.stone++;
   }else if(glass){
@@ -103,6 +106,18 @@ export function createBotaniqueVisualRefinement(root:T.Object3D,options:Botaniqu
    }
   }else if(foliage){
    material.roughness=1;material.metalness=0;material.envMapIntensity=.2;
+  }else if(fabric){
+   const rug=name.includes('rug'),sheer=name.includes('sheer');
+   material.roughness=1;material.metalness=0;material.envMapIntensity=.45;
+   material.normalScale.setScalar(rug?.48:sheer?.08:.31);
+   if(material instanceof T.MeshPhysicalMaterial){
+    material.sheen=rug?.38:sheer?.12:.42;material.sheenColor.set('#eee8df');material.sheenRoughness=.82;
+   }
+  }else if(wood){
+   // Satin sealed oak: restrained grain relief and a broad window highlight.
+   material.roughness=.82;material.normalScale.setScalar(.085);material.envMapIntensity=.85;
+  }else if(lacquer){
+   material.roughness=.39;material.metalness=0;material.envMapIntensity=.65;
   }
   for(const texture of [material.map,material.normalMap,material.roughnessMap]){
    if(!texture||textures.has(texture))continue;

@@ -278,7 +278,7 @@ class UnitBuilder:
         self.material('B_FABRIC_olive', (.20, .28, .17), .87, noise=(140, .2, .006))
         self.material('B_FABRIC_sheer', (.79, .76, .67), .94, alpha=.68)
         self.material('B_FLOOR', (.66, .64, .56), .49, noise=(100, .13, .010))
-        self.material('B_FLOOR_grout', (.38, .37, .33), .84)
+        self.material('B_FLOOR_grout', (.54, .525, .48), .84)
         self.material('B_ACCENT_green', (.20, .29, .23), .47)
         self.material('B_ACCENT_wall', (.48, .51, .42), .82)
         self.material('B_METAL', (.045, .052, .05), .30, metallic=.85)
@@ -488,9 +488,9 @@ class UnitBuilder:
                 v = math.ceil((lo + .01) / pitch) * pitch
                 while v < hi - .01:
                     if axis == 'x':
-                        self.box('GROUT', (v, (y0 + y1) / 2, level + .001), (.004, y1 - y0, .0015), 'B_FLOOR_grout', room)
+                        self.box('GROUT', (v, (y0 + y1) / 2, level + .0003), (.002, y1 - y0, .0005), 'B_FLOOR_grout', room)
                     else:
-                        self.box('GROUT', ((x0 + x1) / 2, v, level + .001), (x1 - x0, .004, .0015), 'B_FLOOR_grout', room)
+                        self.box('GROUT', ((x0 + x1) / 2, v, level + .0003), (x1 - x0, .002, .0005), 'B_FLOOR_grout', room)
                     v += pitch
 
     def architecture(self):
@@ -864,7 +864,9 @@ class UnitBuilder:
 
     def soft_cushion(self,key,center,dims,mat,room,rotation=None):
         """Rounded sewn form with shared pole vertices and no pinched end caps."""
-        rings,sides=(18,36) if self.fine else (12,24)
+        rings,sides=(28,56) if self.fine else (18,36)
+        phase=sum(ord(c) for c in key)*.173
+        thin=min(range(3),key=lambda axis:dims[axis])
         verts=[(0,0,-dims[2]/2)];faces=[]
         def signed_power(v,p):return math.copysign(abs(v)**p,v)
         for j in range(1,rings):
@@ -877,8 +879,20 @@ class UnitBuilder:
                 # Millimetric cloth compression, strongest around sewn edges.
                 # Multiplying toward the centre never grows a collision envelope.
                 crease=.014*(.5+.5*math.sin(lon*7+lat*2))*abs(zz)**3*(1-abs(zz))
-                verts.append((xx*dims[0]/2*(1-crease),yy*dims[1]/2*(1-crease),
-                              zz*dims[2]/2*(1-.012*math.cos(lon*4)**2*(1-abs(zz)))))
+                unit=[xx,yy,zz]
+                point=[xx*dims[0]/2*(1-crease),yy*dims[1]/2*(1-crease),
+                       zz*dims[2]/2*(1-.012*math.cos(lon*4)**2*(1-abs(zz)))]
+                # Small, inward compression wrinkles at sewn edges. Their
+                # irregular spacing avoids the inflated-perfect-box silhouette.
+                across=[axis for axis in range(3) if axis!=thin]
+                a,b=unit[across[0]],unit[across[1]]
+                edge=abs(a)**5+abs(b)**5
+                ripple=(.5+.5*math.sin(a*19+b*7+phase+1.3*math.sin(b*9)))**6
+                compression=min(.065,edge*(.012+.040*ripple))
+                point[thin]*=1-compression
+                if thin==2 and zz>0:
+                    point[2]-=.005*(1-a*a)*(1-b*b)*zz
+                verts.append(point)
         top=len(verts);verts.append((0,0,dims[2]/2))
         for i in range(sides):
             faces.append((0,1+(i+1)%sides,1+i))
@@ -932,7 +946,7 @@ class UnitBuilder:
                 u=ix/nx
                 a,b=next((a,b) for a,b in zip(guide,guide[1:]) if a[0]<=u<=b[0])
                 t=(u-a[0])/(b[0]-a[0]);xx=a[1]+(b[1]-a[1])*t;zz=a[2]+(b[2]-a[2])*t
-                fold=math.sin(v*math.pi*9+.28*math.sin(u*6))*.009+math.sin(v*math.pi*17+u)*.003
+                fold=math.sin(v*math.pi*9+.70*math.sin(u*6+v*3))*.012+math.sin(v*math.pi*17+u*2)*.003
                 vertices.append((xx+fold*max(0,(u-.55)/.45),3.04+.54*v+.005*math.sin(u*11+v*7),zz+fold*max(0,1-u)))
         for iy in range(ny):
             for ix in range(nx):
@@ -1009,13 +1023,50 @@ class UnitBuilder:
             self.chair('DINING_CHAIR',x,4.51,math.pi,room,width=.43)
         self.vase('DINING_VASE',6.28,5.16,.82,room,.08)
 
-    def sink(self, key, x, y, z, width, depth, room, orientation='x'):
-        self.box(key + '_BASIN_SHADOW', (x, y, z), (width, depth, .017), 'B_STONE_dark', room, bevel=.055)
-        self.box(key + '_BOWL', (x, y, z + .010), (width * .80, depth * .73, .011), 'B_METAL', room, bevel=.065)
-        self.cylinder(key + '_DRAIN', (x, y, z + .018), .025, .004, 'B_METAL_brass', room)
+    def sink(self, key, x, y, z, width, depth, room, orientation='x', counter=None):
+        # An actual opening through the stone and a watertight rounded bowl.
+        # The cut is local to the counter; cabinet/navigation bounds stay fixed.
+        if counter:
+            cutter=self.box(key+'_CUTTER',(x,y,z-.08),(width*.89,depth*.89,.25),'B_METAL',room,bevel=.045)
+            bpy.context.view_layer.objects.active=cutter
+            for mod in list(cutter.modifiers):bpy.ops.object.modifier_apply(modifier=mod.name)
+            bases=[o for o in bpy.data.objects if o.type=='MESH' and
+                   (o.name=='B_UNIT_KITCHEN_BASE' if orientation=='y' else o.name=='B_UNIT_KITCHEN_NORTH_BASE')]
+            for solid in [counter,*bases]:
+                mod=solid.modifiers.new('Recessed sink opening','BOOLEAN');mod.operation='DIFFERENCE';mod.object=cutter
+                bpy.context.view_layer.objects.active=solid
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+            bpy.data.objects.remove(cutter,do_unlink=True)
+        vertices=[];faces=[];segments=64
+        # Outer lip, inner rolled edge, vertical sides, softened basin bottom.
+        for scale,height in [(1,z+.006),(.94,z+.009),(.89,z-.002),(.85,z-.112),(.66,z-.149)]:
+            for i in range(segments):
+                angle=math.tau*i/segments
+                xx=math.copysign(abs(math.cos(angle))**.35,math.cos(angle))*width*.5*scale
+                yy=math.copysign(abs(math.sin(angle))**.35,math.sin(angle))*depth*.5*scale
+                vertices.append((x+xx,y+yy,height))
+        for ring in range(4):
+            for i in range(segments):
+                a=ring*segments+i;b=ring*segments+(i+1)%segments
+                faces.append((a,b,b+segments,a+segments))
+        vertices.append((x,y,z-.153));center=len(vertices)-1
+        for i in range(segments):faces.append((4*segments+i,4*segments+(i+1)%segments,center))
+        bowl=self.mesh(key+'_BOWL',vertices,faces,'B_STEEL_brushed',room)
+        for p in bowl.data.polygons:p.use_smooth=True
+        self.cylinder(key+'_DRAIN',(x,y,z-.150),.027,.003,'B_METAL',room)
+        for i in range(8):
+            angle=math.tau*i/8
+            self.cylinder(key+'_DRAIN_HOLE',(x+.016*math.cos(angle),y+.016*math.sin(angle),z-.148),.0025,.002,'B_BLACK',room,vertices=10)
         fx, fy = (x - width * .43, y) if orientation == 'y' else (x, y + depth * .43)
-        self.rod(key + '_TAP_UP', (fx, fy, z), (fx, fy, z + .24), .018, 'B_METAL', room)
-        self.rod(key + '_TAP_SPOUT', (fx, fy, z + .24), (x, y, z + .24), .018, 'B_METAL', room)
+        self.cylinder(key+'_TAP_BASE',(fx,fy,z+.016),.024,.035,'B_STEEL_brushed',room)
+        self.rod(key+'_TAP_UP',(fx,fy,z+.02),(fx,fy,z+.225),.013,'B_STEEL_brushed',room)
+        dx,dy=x-fx,y-fy
+        for i in range(20):
+            a=math.pi*i/20;b=math.pi*(i+1)/20
+            def arc(t):return (fx+dx*(1-math.cos(t))*.5,fy+dy*(1-math.cos(t))*.5,z+.225+math.sin(t)*.085)
+            self.rod(key+'_TAP_CURVE',arc(a),arc(b),.013,'B_STEEL_brushed',room)
+        self.rod(key+'_TAP_AERATOR',(x,y,z+.225),(x,y,z+.198),.014,'B_STEEL_brushed',room)
+        self.rod(key+'_TAP_LEVER',(fx,fy,z+.075),(fx+.06,fy,z+.112),.006,'B_STEEL_brushed',room)
 
     def kitchen(self):
         room='kitchen'
@@ -1023,20 +1074,20 @@ class UnitBuilder:
         # Both legs follow the visible L in the source. Main sink and hob are
         # on the vertical leg; laundry is on the short north service leg.
         self.box('KITCHEN_BASE',(3.80,6.33,.47),(.60,2.54,.84),'B_ACCENT_green',room,'furniture',.016,self.furniture,True,True)
-        self.box('KITCHEN_WORKTOP',(3.81,6.33,.91),(.65,2.57,.04),'B_STONE',room,'furniture',.012,self.furniture)
+        main_counter=self.box('KITCHEN_WORKTOP',(3.81,6.33,.91),(.65,2.57,.04),'B_STONE',room,'furniture',.012,self.furniture)
         for y in (5.38,6.01,6.64,7.27):
             self.box('KITCHEN_LOWER_FRONT',(4.12,y,.49),(.026,.626,.74),'B_ACCENT_green',room,'furniture',.002,self.furniture,True)
             self.rod('KITCHEN_HANDLE',(4.143,y-.11,.78),(4.143,y+.11,.78),.008,'B_METAL_brass',room)
         self.box('KITCHEN_NORTH_BASE',(4.69,7.46,.47),(1.13,.54,.84),'B_ACCENT_green',room,'furniture',.016,self.furniture,True,True)
-        self.box('KITCHEN_NORTH_TOP',(4.68,7.46,.91),(1.16,.59,.04),'B_STONE',room,'furniture',.012,self.furniture)
+        north_counter=self.box('KITCHEN_NORTH_TOP',(4.68,7.46,.91),(1.16,.59,.04),'B_STONE',room,'furniture',.012,self.furniture)
         self.box('KITCHEN_BACKSPLASH',(3.489,6.34,1.22),(.023,2.58,.62),'B_PORCELAIN_warm',room)
         self.box('KITCHEN_UPPER',(3.69,6.28,2.04),(.40,2.24,.70),'B_WOOD',room,'furniture',.016,self.furniture,True)
         for y in (5.42,5.98,6.54,7.10):
             self.box('KITCHEN_UPPER_FRONT',(3.91,y,2.04),(.025,.556,.65),'B_WOOD',room,'furniture',.002,self.furniture,True)
         self.box('KITCHEN_LED_PROFILE',(3.86,6.28,1.683),(.028,2.20,.010),'B_WOOD',room,bevel=.002)
         self.box('KITCHEN_UNDERCABINET_LED',(3.86,6.28,1.675),(.025,2.17,.005),'B_LED',room,bevel=.001)
-        self.sink('KITCHEN_SINK',3.82,5.76,.937,.41,.45,room,'y')
-        self.sink('LAUNDRY_SINK',4.67,7.45,.937,.42,.35,room,'x')
+        self.sink('KITCHEN_SINK',3.82,5.76,.937,.41,.45,room,'y',main_counter)
+        self.sink('LAUNDRY_SINK',4.67,7.45,.937,.42,.35,room,'x',north_counter)
         self.box('KITCHEN_HOB',(3.82,6.56,.948),(.47,.50,.018),'B_BLACK',room,bevel=.012)
         for x in (3.70,3.94):
             for y in (6.43,6.69):
@@ -1689,9 +1740,9 @@ class UnitBuilder:
             self.box('BALCONY_POST_SHOE',(x,.028,.072),(.047,.046,.09),
                      'B_METAL','balcony','railing',.003)
         self.interior_refinements()
-        self.contract['finish_revision']=7
-        self.contract['geometry_revision']=7
-        self.contract['finish_note']='Revision 7 retains the six living/kitchen configuration groups and refines suite and wet-room geometry. The Final 1 room distribution, cameras and validated navigation envelopes are unchanged.'
+        self.contract['finish_revision']=8
+        self.contract['geometry_revision']=8
+        self.contract['finish_note']='Revision 8: compressed sewn upholstery, fine porcelain joints, real recessed stainless bowls and curved taps, oak living wall. All eight configuration groups, Final 1 room distribution and navigation envelopes retained.'
 
     def interior_refinements(self):
         """Fitted details stay against walls and outside all walking envelopes."""
@@ -1756,6 +1807,12 @@ class UnitBuilder:
             'blender_watts':2,'fixture_role':'cabinet-light','room':'suite'})
 
     def living_art_and_table(self):
+        # Shallow, individually jointed oak boards behind the sofa, matching
+        # the material language of the supplied furnished interior reference.
+        for i in range(32):
+            panel=self.box('SOFA_OAK_WALL',(7.116,1.49+i*.083,1.365),(.018,.081,2.60),
+                           'B_WOOD','living',bevel=.001)
+            panel['noShadow']=True  # The solid wall supplies occlusion; avoid coplanar shadow acne.
         # Original restrained botanical graphics in thin oak frames. The pair
         # occupies the blank sofa wall shown in the furnished reference.
         for frame,cy in enumerate((2.18,3.22)):
@@ -1776,7 +1833,11 @@ class UnitBuilder:
                         angle=side*.75
                         vertices.append((7.071,center_y+du*math.cos(angle)-dv*math.sin(angle),z+du*math.sin(angle)+dv*math.cos(angle)))
                     faces=[(0,(k+1)%32+1,k+1) for k in range(32)]
-                    self.mesh('SOFA_ART_LEAF',vertices,faces,'B_ACCENT_green' if (leaf+stem)%2 else 'B_ACCENT_wall','living')
+                    graphic=self.mesh('SOFA_ART_LEAF',vertices,faces,'B_ACCENT_green' if (leaf+stem)%2 else 'B_ACCENT_wall','living')
+                    # Overlapping printed shapes must not occupy one depth
+                    # after Draco quantisation, otherwise they flicker in motion.
+                    graphic.location.x=-.0015*(leaf+stem*5)
+                    graphic['noShadow']=True  # Printed ink must not cast its own shadow.
         # A small book stack and a real cup handle give the table useful scale.
         self.rounded_slab('DINING_BOOK_COVER',(5.99,5.25,.824),(.30,.205,.026),.009,'B_ACCENT_green','living')
         self.box('DINING_BOOK_PAGES',(5.99,5.25,.840),(.285,.194,.021),'B_PAPER','living',bevel=.003)
@@ -2104,9 +2165,9 @@ def build_unit(detail='web'):
     builder.cabinetry_variants()
     builder.appliance_variants()
     builder.bedroom_variants()
-    builder.contract['finish_revision']=7
-    builder.contract['geometry_revision']=7
-    builder.contract['finish_note']='Revision 7 refines the suite and wet rooms, adds two suite-bed compositions and two social-bath vanity/mirror compositions, corrects mirrors hidden behind wall finishes, and creates recessed vessel basins. Existing architecture, cameras and colliders remain unchanged.'
+    builder.contract['finish_revision']=8
+    builder.contract['geometry_revision']=8
+    builder.contract['finish_note']='Revision 8 refines sewn upholstery, porcelain joints, recessed stainless kitchen bowls and curved taps, oak living wall and layered balcony planting. Existing room layout, eight configuration groups, cameras and navigation envelopes retained.'
     builder.validate_variant_contract()
     builder.make_cameras()
     builder.contract['detail'] = detail

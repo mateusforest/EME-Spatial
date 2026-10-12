@@ -37,7 +37,7 @@ def apply_balcony_context(asset_root=None):
         obj['context_only'] = True
         obj['exclude_from_bounds'] = True
         obj['estimated_geometry'] = True
-        obj['context_revision'] = 7
+        obj['context_revision'] = 8
         objects.append(obj)
         return obj
 
@@ -166,10 +166,11 @@ def apply_balcony_context(asset_root=None):
     leaf_uv=[(x/1024,1-y/1024) for x,y in leaf_pixels]
     outline=[(-.42,-.22),(-.47,.10),(-.26,.40),(.12,.50),
              (.42,.26),(.43,-.13),(.16,-.45),(-.22,-.48)]
-    trees=[(-8,-6,11.5,4200),(18,-5,12.7,4600),
+    trees=[(-8,-6,11.5,7600),(18,-5,12.7,8000),
            (-5,-30,15.0,2100),(17,-32,16.0,2100),
            (-26,-26,15.6,2100),(34,-22,14.6,2100),
-           (-32,13,14.3,1800),(35,14,15.2,1800)]
+           (-32,13,14.3,1800),(35,14,15.2,1800),
+           (6,-38,13.8,2600),(-16,-43,12.6,2200),(28,-45,16.2,2600)]
     leaf_count=0
     for tree_index,(x,y,h,count) in enumerate(trees):
         z=ground_height(x,y);r=h*.255
@@ -192,37 +193,33 @@ def apply_balcony_context(asset_root=None):
             az=rng.random()*math.tau
             direction=Vector((math.cos(az),math.sin(az),rng.uniform(-.5,.9))).normalized()
             side=Vector((-math.sin(az),math.cos(az),rng.uniform(-.65,.65))).normalized()
-            length=rng.uniform(.30,.44) if tree_index<2 else rng.uniform(.43,.61)
+            length=rng.uniform(.20,.32) if tree_index<2 else rng.uniform(.29,.44)
             width=length*.68
             verts=[point+side*(u*width)+direction*(v*length)+Vector((0,0,.022*abs(u))) for u,v in outline]
             face(leaf.name,verts,[(0,1,2),(0,2,3),(0,3,4),(0,4,5),(0,5,6),(0,6,7)],leaf_uv)
             leaf_count+=1
 
     # Low planted islands behind the far pavement break up the broad lawn.
-    # They remain below 1 m, leaving the third-floor sightline open. Reuse the
+    # They remain below the balcony sightline. Reuse the
     # verified leaf material/batch: no extra images or draw calls are introduced.
     garden_islands=[(-28,-23,7.0,3.1),(-15,-22.5,6.0,2.8),
-                    (0,-27,8.0,3.7),(15,-24,6.5,3.0),(29,-24.5,7.5,3.0)]
+                    (0,-27,8.0,3.7),(15,-24,6.5,3.0),(29,-24.5,7.5,3.0),
+                    (-7,-37,8.5,4.2),(8,-41,10,4.0),(25,-37,8,4.2)]
     shrub_count=0
     for island,(x,y,sx,sy) in enumerate(garden_islands):
-        ring=[]
-        for i in range(24):
-            a=i*math.tau/24
-            r=1+.09*math.sin(a*3+island)
-            xx=x+math.cos(a)*sx*.5*r;yy=y+math.sin(a)*sy*.5*r
-            ring.append((xx,yy,ground_height(xx,yy)+.027))
-        face(soil.name,[(x,y,ground_height(x,y)+.027),*ring],
-             [(0,1+i,1+(i+1)%24) for i in range(24)])
-        for shrub in range(7):
+        # Soft plant clusters merge into lawn instead of flat brown ellipse
+        # decals. Unequal heights and irregular centres give depth from above.
+        for shrub in range(11):
             a=shrub*2.399+island
-            cx=x+math.cos(a)*sx*.31;cy=y+math.sin(a)*sy*.25
-            z=ground_height(cx,cy);height=rng.uniform(.55,.86)
+            spread=.18+.18*rng.random()
+            cx=x+math.cos(a)*sx*spread;cy=y+math.sin(a)*sy*spread
+            z=ground_height(cx,cy);height=rng.uniform(.85,1.45)
             center=Vector((cx,cy,z+height*.5))
-            for i in range(82):
+            for i in range(120):
                 a=rng.random()*math.tau;v=rng.uniform(-1,1)
                 radial=rng.random()**(1/3);q=(1-v*v)**.5
-                point=center+Vector((math.cos(a)*q*.57*radial,
-                                      math.sin(a)*q*.49*radial,v*height*.40*radial))
+                point=center+Vector((math.cos(a)*q*.72*radial,
+                                      math.sin(a)*q*.61*radial,v*height*.44*radial))
                 az=rng.random()*math.tau
                 direction=Vector((math.cos(az),math.sin(az),rng.uniform(.15,.65))).normalized()
                 side=Vector((-math.sin(az),math.cos(az),rng.uniform(-.25,.25))).normalized()
@@ -268,13 +265,13 @@ def apply_balcony_context(asset_root=None):
     triangles=0
     for obj in objects:
         obj.data.calc_loop_triangles();triangles+=len(obj.data.loop_triangles)
-    report={'schema':'eme.botanique.balcony-context/7','role':'context','measured_view':False,
+    report={'schema':'eme.botanique.balcony-context/8','role':'context','measured_view':False,
             'floor':'3rd floor, illustrative and unconfirmed','groundDatum':-8.70,'coordinateSystem':'BLENDER_Z_UP',
             'layers':['near garden','street and two pavements below unit','dense 3D broadleaf crowns','three distant photographic forest bands'],
             'foliage_revision':'Leaf-shaped geometry samples only verified green UV islands, excluding white atlas packing strips. No sampled/discarded source leaves or enlarged brown shrubs.',
             'sourceTreeTriangles':495533,'sourceLeafTriangles':386574,'sourceLeafIslands':63152,
             'realTrees':0,'proceduralTrees':len(trees),'individualLeaves':leaf_count,'farTwigTrees':0,'shrubs':shrub_count,
-            'gardenIslands':len(garden_islands),'gardenLocation':'Beyond far sidewalk, y < -20 m; illustrative planting under 1 m high',
+            'gardenIslands':len(garden_islands),'gardenLocation':'Beyond far sidewalk, y < -20 m; irregular illustrative shrubs .85–1.45 m high, without flat soil decals',
             'backdropPlanes':3,'backdropRangeMetres':[82,95],'backdropNoShadow':True,
             'backdropSource':'public/assets/botanique/materials/v6/woodland-backdrop-provenance.json',
             'objects':len(objects),'triangles':triangles,'previousContextRemoved':removed,
