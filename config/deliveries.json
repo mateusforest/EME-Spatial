@@ -1,0 +1,80 @@
+{
+  "origin": "https://www.emespatial.com",
+  "projects": [
+    {
+      "slug": "botanique",
+      "status": "unlisted",
+      "title": "Botanique Home Resort",
+      "eyebrow": "Uma nova perspectiva de morar",
+      "description": "Conheça o empreendimento, entre no apartamento e experimente outras possibilidades para cada ambiente.",
+      "cover": "/assets/botanique/references/o01-banner-fachada.webp",
+      "coverCredit": "Imagem de referência do empreendimento · BBDR",
+      "shareImage": "/assets/deliveries/botanique-social.jpg",
+      "viewer": "botanique",
+      "experience": "/apresentar/botanique?cena=apartamento",
+      "manifest": "/assets/botanique/manifest.json",
+      "pdf": "/assets/botanique/apresentacao-botanique.pdf?v=79db87cf5ec2",
+      "note": "Pré-apresentação demonstrativa. Reconstrução baseada em referências públicas; dimensões e ambientação estimadas. As opções de decoração não representam especificações de entrega da construtora."
+    },
+    {
+      "slug": "torre-m",
+      "status": "public",
+      "title": "Torre M",
+      "eyebrow": "Arquitetura para explorar",
+      "description": "Conheça o edifício, percorra o apartamento e descubra novas possibilidades de materiais e iluminação.",
+      "cover": "/assets/torre.webp",
+      "coverCredit": "Projeto conceitual · EME Spatial",
+      "viewer": "embedded",
+      "experience": "/apresentar/m?apartamento=14",
+      "note": "Projeto autoral e conceitual EME Spatial."
+    },
+    {
+      "slug": "g400",
+      "status": "unlisted",
+      "title": "G400",
+      "eyebrow": "Conheça o projeto",
+      "description": "Uma apresentação visual para explorar a arquitetura por diferentes perspectivas.",
+      "cover": "/assets/g400.webp",
+      "coverCredit": "Material de apresentação do projeto",
+      "viewer": "embedded",
+      "experience": "/apresentar/g400",
+      "note": "Apresentação visual demonstrativa."
+    },
+    {
+      "slug": "moradas-da-serra",
+      "status": "unlisted",
+      "title": "Moradas da Serra",
+      "eyebrow": "O espaço ganha novas perspectivas",
+      "description": "Explore o empreendimento em uma experiência interativa preparada para conhecer e compartilhar.",
+      "cover": "/assets/moradas.webp",
+      "coverCredit": "Material de apresentação do empreendimento",
+      "viewer": "embedded",
+      "experience": "/apresentar/moradas-da-serra",
+      "note": "Consulte os materiais oficiais para especificações do empreendimento."
+    },
+    {
+      "slug": "residencial-vacaria",
+      "status": "unlisted",
+      "title": "Residencial Vacaria",
+      "eyebrow": "Uma experiência para conhecer",
+      "description": "Descubra o estudo residencial por diferentes perspectivas.",
+      "cover": "/assets/marketing/hero-casa.webp",
+      "coverCredit": "Referência conceitual de linguagem visual",
+      "viewer": "embedded",
+      "experience": "/apresentar/residencial-vacaria",
+      "note": "Estudo demonstrativo EME Spatial."
+    },
+    {
+      "slug": "patio-m",
+      "status": "unlisted",
+      "title": "Pátio M",
+      "eyebrow": "Arquitetura e convivência",
+      "description": "Conheça a implantação e os espaços de convivência em uma visita interativa.",
+      "cover": "/assets/marketing/condominio.webp",
+      "coverCredit": "Referência conceitual de linguagem visual",
+      "viewer": "embedded",
+      "experience": "/apresentar/patio-m",
+      "note": "Estudo conceitual EME Spatial."
+    }
+  ]
+}

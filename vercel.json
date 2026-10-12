@@ -11,6 +11,10 @@
   ],
   "rewrites": [
     {
+      "source": "/visitar/:slug",
+      "destination": "/visitar/:slug/index.html"
+    },
+    {
       "source": "/apresentar/botanique",
       "destination": "/botanique.html"
     },

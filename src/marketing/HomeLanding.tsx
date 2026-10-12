@@ -3,6 +3,7 @@ import type {KeyboardEvent, MouseEvent} from 'react';
 import {ArrowRight, ArrowUpRight, Box, Footprints, Maximize, Menu, SlidersHorizontal, X} from 'lucide-react';
 import DemoDialog from './DemoDialog';
 import SceneImage from './SceneImage';
+import publicProjects from 'virtual:delivery-public';
 import './home-landing.css';
 
 type Scene = 'exterior' | 'interior' | 'aerea';
@@ -176,11 +177,7 @@ export default function HomeLanding() {
           <p>Conheça os projetos e experiências do M Spatial.</p>
         </div>
         <div className="ms-project-grid">
-          {[
-            {name: 'Torre M', image: '/assets/torre.webp', href: '/apresentar/m', description: 'Projeto autoral · Experiência 3D', alt: 'Torre M: edifício conceitual com varandas curvas e vegetação.'},
-            {name: 'G400', image: '/assets/g400.webp', href: '/apresentar/g400', description: 'Empreendimento · Apresentação visual', alt: 'Fachada do empreendimento G400.'},
-            {name: 'Moradas da Serra', image: '/assets/moradas.webp', href: '/apresentar/moradas-da-serra', description: 'Empreendimento · Experiência interativa', alt: 'Vista do empreendimento Moradas da Serra.'},
-          ].map(project => <a className="ms-project" href={project.href} key={project.name}>
+          {publicProjects.map(project => <a className="ms-project" href={project.href} key={project.name}>
             <div className="ms-project-image"><img src={project.image} alt={project.alt} loading="lazy" decoding="async"/><span aria-hidden="true"><ArrowUpRight size={19}/></span></div>
             <h3>{project.name}</h3><p>{project.description}</p>
           </a>)}
