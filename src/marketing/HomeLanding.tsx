@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, MouseEvent} from 'react';
-import {ArrowRight, ArrowUpRight, Box, Footprints, Maximize, Menu, SlidersHorizontal, X} from 'lucide-react';
+import {ArrowRight, ArrowUpRight, Box, Check, Footprints, Maximize, Menu, SlidersHorizontal, X} from 'lucide-react';
 import DemoDialog from './DemoDialog';
 import SceneImage from './SceneImage';
 import publicProjects from 'virtual:delivery-public';
@@ -11,6 +11,27 @@ const scenes: {id: Scene; label: string; image: string; alt: string}[] = [
   {id: 'exterior', label: 'Exterior', image: '/assets/marketing/casa-m-exterior.webp', alt: 'Prévia conceitual da Casa M: fachada curva em pedra natural, vegetação e piscina.'},
   {id: 'interior', label: 'Interiores', image: '/assets/marketing/casa-m-interior.webp', alt: 'Prévia conceitual da sala da Casa M, com materiais naturais e abertura para a varanda e a piscina.'},
   {id: 'aerea', label: 'Visão aérea', image: '/assets/marketing/casa-m-aerea.webp', alt: 'Prévia conceitual aérea da Casa M, mostrando a relação entre a casa, a piscina e o jardim.'},
+];
+
+const experiences = [
+  {
+    name: 'Essential',
+    caption: 'O primeiro passo para explorar.',
+    description: 'Para ambientes e residências com uma apresentação objetiva, a partir de um modelo 3D existente.',
+    features: ['Preparação do modelo fornecido', 'Materiais e iluminação essenciais', 'Navegação pelos ambientes definidos', 'Experiência para apresentar e compartilhar'],
+  },
+  {
+    name: 'Signature',
+    caption: 'Cada detalhe faz parte da experiência.',
+    description: 'Para residências de médio e alto padrão que pedem mais profundidade visual e cuidado na apresentação.',
+    features: ['Interiores e exteriores integrados', 'Materiais e texturas refinados', 'Iluminação e perspectivas personalizadas', 'Pontos de interesse e identidade visual'],
+  },
+  {
+    name: 'Exclusive',
+    caption: 'Uma experiência na escala da sua visão.',
+    description: 'Para casas exclusivas, condomínios e empreendimentos com uma experiência desenvolvida sob medida.',
+    features: ['Modelagem e otimização sob medida', 'Paisagismo e contexto do projeto', 'Interações personalizadas', 'Apresentação comercial do empreendimento'],
+  },
 ];
 
 function Brand() {
@@ -96,6 +117,7 @@ export default function HomeLanding() {
           <a href="#experiencia" onClick={() => setMenuOpen(false)}>Experiência</a>
           <a href="#projetos" onClick={() => setMenuOpen(false)}>Projetos</a>
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
+          <a href="#spatial-experience" onClick={() => setMenuOpen(false)}>Spatial Experience</a>
           <a className="ms-header-cta" href="/criar-projeto">Começar meu projeto <ArrowUpRight size={14}/></a>
         </nav>
       </div>
@@ -183,6 +205,26 @@ export default function HomeLanding() {
           </a>)}
         </div>
         <div className="ms-solutions" id="solucoes"><p>Para o que você imagina.</p><div><a href="/solucoes/casas">Casas</a><a href="/solucoes/interiores">Interiores</a><a href="/solucoes/edificios">Edifícios</a><a href="/solucoes/condominios">Condomínios</a><a href="/solucoes/mixed-use">Mixed Use <ArrowUpRight size={13}/></a></div></div>
+      </section>
+
+      <section className="ms-experience" id="spatial-experience" aria-labelledby="ms-experience-title">
+        <div className="ms-container">
+          <div className="ms-experience-heading">
+            <div><p className="ms-eyebrow">SPATIAL EXPERIENCE</p><h2 id="ms-experience-title">Seu projeto, em outra dimensão.</h2></div>
+            <p>Produção de experiências 3D para arquitetos, escritórios e empreendimentos. Escolha o ponto de partida; nós damos forma à experiência.</p>
+          </div>
+          <div className="ms-experience-grid">
+            {experiences.map((experience, index) => <article className={`ms-experience-card${experience.name === 'Signature' ? ' ms-experience-signature' : ''}`} key={experience.name} aria-labelledby={`ms-package-${index}`}>
+              <div className="ms-experience-card-top"><span aria-hidden="true">0{index + 1}</span><span>{experience.name === 'Signature' ? 'EM DESTAQUE' : 'PRODUÇÃO SOB DEMANDA'}</span></div>
+              <h3 id={`ms-package-${index}`}>{experience.name}</h3>
+              <p className="ms-experience-caption">{experience.caption}</p>
+              <p className="ms-experience-description">{experience.description}</p>
+              <ul>{experience.features.map(feature => <li key={feature}><Check size={16} strokeWidth={1.5} aria-hidden="true"/><span>{feature}</span></li>)}</ul>
+              <a className="ms-experience-link" href={`/criar-projeto?${new URLSearchParams({interesse: `Spatial Experience — ${experience.name}`})}`} aria-label={`Preparar meu projeto com Spatial Experience ${experience.name}`}>Preparar meu projeto <ArrowUpRight size={17} aria-hidden="true"/></a>
+            </article>)}
+          </div>
+          <p className="ms-experience-note">Cada projeto começa com uma análise dos materiais disponíveis. Ambientes, recursos, entregas e revisões são definidos na proposta personalizada.</p>
+        </div>
       </section>
     </main>
 
