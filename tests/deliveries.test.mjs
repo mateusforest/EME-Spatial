@@ -11,7 +11,7 @@ test('only deliberately public projects enter the public catalog',()=>{
   assert.deepEqual(publicProjects(copy),[]);
 });
 test('unlisted links have crawler-readable personalized metadata, not a public index directive',()=>{
-  const registry=readRegistry(),p=registry.projects[0],head=deliveryHead(registry,p);
+  const registry=readRegistry(),p=registry.projects.find(p=>p.slug==='botanique'),head=deliveryHead(registry,p);
   assert.match(head,/noindex, nofollow/);assert.match(head,/og:image/);assert.match(head,/Botanique Home Resort/);
   assert.match(head,/https:\/\/www.emespatial.com\/visitar\/botanique/);
   assert.ok(!head.includes('moradas-da-serra'));

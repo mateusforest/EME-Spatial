@@ -1,0 +1,3 @@
+Arquitetura e estudo Casa M · referências fornecidas pelo proprietário.
+CarConcept: Eric Chadwick / Darmstadt Graphics Group GmbH, CC BY 4.0; pintura e posição modificadas. Veículos genéricos. https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept
+Vegetação: Poly Haven, CC0. Materiais procedurais da base V15 convertidos para mapas PBR.
