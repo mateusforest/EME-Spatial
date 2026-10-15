@@ -35,7 +35,7 @@ const experiences = [
 ];
 
 function Brand() {
-  return <a className="ms-brand" href="/" aria-label="M Spatial — início"><span className="ms-brand-symbol" aria-hidden="true">M</span><span>SPATIAL</span></a>;
+  return <a className="ms-brand" href="/" aria-label="EME Spatial — início"><img className="ms-brand-logo" src="/assets/eme-spatial-logo.png" alt="" width={80} height={80}/><span>SPATIAL</span></a>;
 }
 
 function SceneTabs({scene, onChange, prefix}: {scene: Scene; onChange: (scene: Scene) => void; prefix: string}) {
