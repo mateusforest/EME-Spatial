@@ -427,5 +427,5 @@
   .ms-demo-footer > span { display: none; }
 }
 
-.ms-brand .ms-brand-logo{display:block;width:80px;height:80px;object-fit:contain;border-radius:10px;flex-shrink:0}
-@media(max-width:760px){.ms-brand .ms-brand-logo{width:60px;height:60px}}
+.ms-brand .ms-brand-logo{display:block;width:56px;height:64px;object-fit:contain;flex-shrink:0}
+@media(max-width:760px){.ms-brand .ms-brand-logo{width:42px;height:50px}}
