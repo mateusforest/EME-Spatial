@@ -426,3 +426,6 @@
   .ms-home .ms-demo-footer p { font-size: 10px; max-width: 350px; }
   .ms-demo-footer > span { display: none; }
 }
+
+.ms-brand .ms-brand-logo{display:block;width:56px;height:64px;object-fit:contain;flex-shrink:0}
+@media(max-width:760px){.ms-brand .ms-brand-logo{width:42px;height:50px}}
