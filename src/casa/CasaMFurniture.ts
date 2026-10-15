@@ -14,7 +14,7 @@ export function createCasaFurniture(group:FurnitureGroup,id:string,materials?:Ma
  const root=new T.Group();
  const material=(family:string,color:string,roughness=.7)=>{
   const source=materials?.get(family);const m=source?source.clone():new T.MeshStandardMaterial({color,roughness});
-  if(source)m.userData={...source.userData};
+  if(source){m.userData={...source.userData};m.envMap=null;}
   if(!source)m.color.set(color);return m;
  };
  const wood=material('walnut','#5b3420',.4),linen=material('linen','#d5c8b3',.94),olive=material('velvet','#596047',.95),stone=material('travertine','#d7c7ac',.38);

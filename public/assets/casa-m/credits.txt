@@ -1,3 +1,9 @@
 Arquitetura e estudo Casa M · referências fornecidas pelo proprietário.
 CarConcept: Eric Chadwick / Darmstadt Graphics Group GmbH, CC BY 4.0; pintura e posição modificadas. Veículos genéricos. https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept
 Vegetação: Poly Haven, CC0. Materiais procedurais da base V15 convertidos para mapas PBR.
+
+Refinamento V2: nogueira walnut_veneer_02 e solo grass_ground, Poly Haven, CC0. Mapas de cor, normal OpenGL e rugosidade em 1K. URLs e verificações em materials/v2/sources.json.
+https://polyhaven.com/a/walnut_veneer_02
+https://polyhaven.com/a/grass_ground
+Materiais e iluminação adicionais: biblioteca EME Spatial reutilizada dos estudos Botanique e M. Reflexos locais e da piscina calculados no navegador.
+Mata ao fundo: imagem ilustrativa produzida com OpenAI image_gen para a biblioteca EME Spatial (09/10/2026); não corresponde a levantamento geográfico. Vegetação próxima em geometria 3D.

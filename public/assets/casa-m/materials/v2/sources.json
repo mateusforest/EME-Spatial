@@ -1,0 +1,50 @@
+[
+  {
+    "asset": "walnut_veneer_02",
+    "map": "color",
+    "file": "walnut_veneer_02-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/walnut_veneer_02/walnut_veneer_02_diff_1k.jpg",
+    "md5": "5f1198a623856d828387febc07a1811d",
+    "license": "CC0"
+  },
+  {
+    "asset": "walnut_veneer_02",
+    "map": "normal",
+    "file": "walnut_veneer_02-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/walnut_veneer_02/walnut_veneer_02_nor_gl_1k.jpg",
+    "md5": "0c463e1aea6016e70f87eba9d664ec56",
+    "license": "CC0"
+  },
+  {
+    "asset": "walnut_veneer_02",
+    "map": "roughness",
+    "file": "walnut_veneer_02-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/walnut_veneer_02/walnut_veneer_02_rough_1k.jpg",
+    "md5": "52d8f00e50a49eb45dbca23f252d9ba6",
+    "license": "CC0"
+  },
+  {
+    "asset": "grass_ground",
+    "map": "color",
+    "file": "grass_ground-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
+    "md5": "299047258586c762735b7284d3c662c3",
+    "license": "CC0"
+  },
+  {
+    "asset": "grass_ground",
+    "map": "normal",
+    "file": "grass_ground-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_nor_gl_1k.jpg",
+    "md5": "d518c5b2af6f2c0297bc807b351f511f",
+    "license": "CC0"
+  },
+  {
+    "asset": "grass_ground",
+    "map": "roughness",
+    "file": "grass_ground-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_rough_1k.jpg",
+    "md5": "2e6afca246cf6b80bdb53f46fe7e5ce5",
+    "license": "CC0"
+  }
+]
