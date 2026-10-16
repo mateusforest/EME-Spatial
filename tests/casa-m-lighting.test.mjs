@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CASA_LIGHT_DEFAULTS,casaSolar,casaCircuitGain,casaFixtureCircuit} from '../src/casa/CasaMLightState.ts';
+import {CASA_LIGHT_DEFAULTS,CASA_SOLAR_SITE,casaSolar,casaCircuitGain,casaFixtureCircuit} from '../src/casa/CasaMLightState.ts';
 
 test('electrical circuits keep their intensity across the entire solar path',()=>{
  for(const circuit of ['interior','facade','exterior'])for(let hour=7;hour<=20;hour+=.25){
@@ -17,15 +17,17 @@ test('dimming one circuit never dims another and zero really switches it off',()
  }
 });
 
-test('solar strength and azimuth are independent of the electrical circuits',()=>{
- const dark={...CASA_LIGHT_DEFAULTS,solar:0,azimuth:90};
- assert.equal(casaCircuitGain('day',dark),0);
- for(const c of ['interior','facade','exterior'])assert.equal(casaCircuitGain(c,dark),1);
- const a=casaSolar(14.5,0),b=casaSolar(14.5,90);
- assert.ok(Math.abs(a.direction.y-b.direction.y)<1e-12);
- assert.ok(Math.abs(a.direction.x+b.direction.z)<1e-12);
- assert.ok(Math.abs(a.direction.z-b.direction.x)<1e-12);
- assert.ok(Math.abs(a.direction.length()-1)<1e-12);
+test('Vacaria marker and west-facing house determine morning, noon and afternoon orientation',()=>{
+ assert.ok(Math.abs(CASA_SOLAR_SITE.latitude+28.488319444)<1e-8);
+ assert.ok(Math.abs(CASA_SOLAR_SITE.longitude+50.918680556)<1e-8);
+ assert.equal(CASA_SOLAR_SITE.frontBearing,270);
+ assert.ok(casaSolar(9).direction.z<0,'morning sun behind the west facade');
+ assert.ok(casaSolar(12).direction.x<0,'midday sun on the north side');
+ assert.ok(casaSolar(16).direction.z>0,'afternoon sun faces the street');
+ for(let h=6;h<=21;h+=.25)assert.ok(Math.abs(casaSolar(h).direction.length()-1)<1e-12);
+ const local=casaSolar(16),utc=casaSolar(19,{...CASA_SOLAR_SITE,utcOffset:0});
+ assert.ok(Math.abs(local.elevation-utc.elevation)<.08,'civil-time offset preserves the instant');
+ assert.ok(Math.abs(local.azimuth-utc.azimuth)<.08);
 });
 
 test('daylight fades continuously at sunset and is absent at night',()=>{
@@ -35,8 +37,8 @@ test('daylight fades continuously at sunset and is absent at night',()=>{
 });
 
 test('the sun stops casting direct light below the horizon while twilight can remain',()=>{
- assert.equal(casaSolar(19.25).sunlight,0);
- assert.ok(casaSolar(19.25).day>0);
+ assert.equal(casaSolar(18.75).sunlight,0);
+ assert.ok(casaSolar(18.75).day>0);
  assert.equal(casaSolar(12).sunlight,1);
 });
 

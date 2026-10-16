@@ -1,20 +1,20 @@
 {
-  "version": 3,
-  "model": "/assets/casa-m/casa-m-v1.glb",
+  "version": 4,
+  "model": "/assets/casa-m/casa-m-v4.glb",
   "views": [
     {
       "id": "facade",
       "label": "Fachada",
       "level": "Exterior",
       "position": [
-        31,
-        9,
-        27
+        26,
+        8,
+        21
       ],
       "target": [
-        13.5,
+        14.8,
         3.8,
-        -5
+        -3.5
       ],
       "walk": false
     },
@@ -10326,10 +10326,10 @@
     ]
   },
   "source": "Base nativa V15 · dossiê de 15/10/2026",
-  "note": "Primeira versão navegável. Medidas do estudo digital; norte geográfico ainda não vinculado. Acabamentos em evolução.",
+  "note": "Estudo navegável em evolução. Sol calculado para Vacaria em 16/10/2026; fachada oeste estimada pela imagem do lote. Entorno ilustrativo. Medidas do modelo digital.",
   "credits": [
     "Arquitetura e estudo Casa M · referências fornecidas pelo proprietário.",
-    "CarConcept: Eric Chadwick / Darmstadt Graphics Group GmbH, CC BY 4.0; pintura e posição modificadas. Veículos genéricos. https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept",
+    "BMW X5 (G05): BMW AG / BMW Car IT, CC BY 4.0. Derivado de digital-car-3d: montagem, escala, materiais e redução para navegação. https://github.com/bmwcarit/digital-car-3d",
     "Vegetação: Poly Haven, CC0. Materiais procedurais da base V15 convertidos para mapas PBR."
   ]
 }

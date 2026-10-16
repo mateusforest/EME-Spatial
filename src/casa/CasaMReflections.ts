@@ -6,7 +6,7 @@ export function createCasaReflections(scene:T.Scene,renderer:T.WebGLRenderer,mat
  camera.children.forEach(c=>c.userData.casaProbe=true);
  const car:T.MeshStandardMaterial[]=[],room:T.MeshStandardMaterial[]=[];
  for(const m of materials)if(m instanceof T.MeshStandardMaterial){
-  if(/automovel|^Glass$|^Rim|^Mirror$/.test(m.name))car.push(m);
+  if(m.userData.vehicle||/automovel|^Glass$|^Rim|^Mirror$/.test(m.name))car.push(m);
   // Diffuse wood/stone keep the stable sky irradiance. A delayed reflection
   // capture must not change the brightness of whole walls and floors.
   else if(m.userData.finish==='marble'||/espelho|Metais|Aco/.test(m.name))room.push(m);

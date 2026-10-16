@@ -45,9 +45,9 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  if(!touch){const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});composer=new EffectComposer(renderer,target);composer.addPass(new RenderPass(scene,camera));ao=new GTAOPass(scene,camera,1,1);ao.blendIntensity=1;ao.updateGtaoMaterial({radius:.7,distanceExponent:1.5,thickness:.5,scale:1,samples:12});composer.addPass(ao);bloom=new UnrealBloomPass(new T.Vector2(1,1),.12,.3,1.8);composer.addPass(bloom);composer.addPass(new OutputPass());}
  function request(){if(disposed||frame||document.hidden||!loaded)return;frame=requestAnimationFrame(draw);}
  function lighting(){
-  lightRig.set(lightSettings);surroundings.lighting(lightSettings.hour,lightSettings.azimuth,lightSettings.solar);
+  lightRig.set(lightSettings);surroundings.lighting(lightSettings.hour);
   reflections?.schedule();
-  mount.dataset.hour=String(lightSettings.hour);mount.dataset.indoor=String(lightSettings.interior);mount.dataset.outdoor=String(lightSettings.exterior);mount.dataset.facade=String(lightSettings.facade);mount.dataset.solar=String(lightSettings.solar);mount.dataset.azimuth=String(lightSettings.azimuth);mount.dataset.lighting=JSON.stringify(lightRig.snapshot());request();
+  mount.dataset.hour=String(lightSettings.hour);mount.dataset.indoor=String(lightSettings.interior);mount.dataset.outdoor=String(lightSettings.exterior);mount.dataset.facade=String(lightSettings.facade);mount.dataset.lighting=JSON.stringify(lightRig.snapshot());request();
  }
  function look(target?:T.Vector3){
   if(target){const d=target.clone().sub(camera.position).normalize();targetYaw=yaw=Math.atan2(-d.x,-d.z);targetPitch=pitch=Math.asin(T.MathUtils.clamp(d.y,-1,1));}
@@ -63,7 +63,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
    if(floor)dest.copy(floor).y+=1.65;else events.hint('Vista de observação. Escolha outro ambiente para caminhar.');
   }
   camera.position.copy(dest);player.copy(dest);camera.fov=walk?62:48;camera.updateProjectionMatrix();controls.target.fromArray(v.target);if(walk)look(controls.target);else{camera.position.sub(controls.target).multiplyScalar(1/Math.min(1,camera.aspect)).add(controls.target);controls.update();}
-  surroundings.plan(false);lightRig.mode(false);reflections?.enable(quality!=='light');
+  surroundings.plan(false);reflections?.enable(quality!=='light');
   mount.dataset.view=id;mount.dataset.mode=walk?'walk':'orbit';events.view(v);request();
  }
  function fitPlan(){if(planFloor===null)return;const distance=Math.max(46,36/(2*Math.tan(T.MathUtils.degToRad(24))*camera.aspect));controls.target.set(15,planFloor*4.02,-8);camera.position.copy(controls.target).add(new T.Vector3(0,.904,.428).multiplyScalar(distance));controls.update();}
@@ -91,6 +91,18 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  loader.load(manifest.model,async gltf=>{
   if(disposed){disposeCasaObject(gltf.scene);return;}
   root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);
+  // Mobile uses the complete lower-density leaf islands already in the asset.
+  // Retain the same silhouette and materials without processing dense nearby LODs.
+  if(touch){
+   const foliage=new Map<string,T.BufferGeometry>();
+   root.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.Material&&/tree_small/.test(o.material.name)){
+    const key=o.material.name.replace(/\.\d+$/,'');const old=foliage.get(key);
+    if(!old||old.attributes.position.count>o.geometry.attributes.position.count)foliage.set(key,o.geometry);
+   }});
+   root.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.Material){
+    const lod=foliage.get(o.material.name.replace(/\.\d+$/,''));if(lod){geometry.add(o.geometry);o.geometry=lod;}
+   }});
+  }
   // Keep the entrance open for an uninterrupted walk from the arrival steps.
   const entrance=new T.Group();entrance.position.set(9.55,0,-1.97);root.add(entrance);entrance.updateMatrixWorld(true);
   const leaves:T.Object3D[]=[];root.traverse(o=>{if(o.userData.door==='entry')leaves.push(o);});
@@ -123,7 +135,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   camera.position.fromArray(manifest.views[0].position);camera.lookAt(...manifest.views[0].target);
   const previousTarget=renderer.getRenderTarget();
   try{if(composer)renderer.setRenderTarget(composer.readBuffer);await renderer.compileAsync(scene,camera);}catch{/* Render below reports unsupported GPU shaders in the browser. */}finally{renderer.setRenderTarget(previousTarget);}
-  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='3';select('facade');reflections.schedule();events.ready();request();
+  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='4';select('facade');reflections.schedule();events.ready();request();
  },e=>events.progress(e.total?`Carregando a casa · ${Math.round(e.loaded/e.total*100)}%`:'Carregando a casa…'),()=>{if(!disposed)events.error('Não foi possível carregar a Casa M. Atualize a página para tentar novamente.');});
 
  const ray=new T.Raycaster();
@@ -165,10 +177,9 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  }
  return {
   view:select,
-  plan(floor){stop();walk=false;planFloor=floor;controls.enabled=true;scene.traverse(o=>{if(o.userData.vegetation&&o.visible){o.visible=false;o.userData.planHidden=true;}if(o.receiveShadow){o.receiveShadow=false;o.userData.planShadow=true;}});camera.fov=48;camera.updateProjectionMatrix();fitPlan();surroundings.plan(true);lightRig.mode(true);reflections?.enable(false);cutPlane.constant=floor*4.02+1.4;mount.dataset.mode='plan';events.view(floor?'Planta do superior':'Planta do térreo');request();},
-  sun(value){lightSettings.hour=T.MathUtils.clamp(value,7,20);lighting();},lights(value){lightSettings.interior=T.MathUtils.clamp(value,0,1.5);lighting();},
-  outdoorLights(value){lightSettings.exterior=T.MathUtils.clamp(value,0,1.5);lighting();},facadeLights(value){lightSettings.facade=T.MathUtils.clamp(value,0,1.5);lighting();},
-  solarIntensity(value){lightSettings.solar=T.MathUtils.clamp(value,0,1.5);lighting();},solarDirection(value){lightSettings.azimuth=T.MathUtils.clamp(value,-180,180);lighting();},
+  plan(floor){stop();walk=false;planFloor=floor;controls.enabled=true;scene.traverse(o=>{if(o.userData.vegetation&&o.visible){o.visible=false;o.userData.planHidden=true;}if(o.receiveShadow){o.receiveShadow=false;o.userData.planShadow=true;}});camera.fov=48;camera.updateProjectionMatrix();fitPlan();surroundings.plan(true);reflections?.enable(false);cutPlane.constant=floor*4.02+1.4;mount.dataset.mode='plan';events.view(floor?'Planta do superior':'Planta do térreo');request();},
+  sun(value){lightSettings.hour=T.MathUtils.clamp(value,6,21);lighting();},lights(value){lightSettings.interior=T.MathUtils.clamp(value,0,1);lighting();},
+  outdoorLights(value){lightSettings.exterior=T.MathUtils.clamp(value,0,1);lighting();},facadeLights(value){lightSettings.facade=T.MathUtils.clamp(value,0,1);lighting();},
   move(x,y){movement.x=x;movement.y=y;request();},finish,
   furniture(group,id){
    const old=alternatives.get(group);if(old){scene.remove(old);disposeCasaObject(old);alternatives.delete(group);}

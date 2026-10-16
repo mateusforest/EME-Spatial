@@ -39,5 +39,7 @@ test('Casa M stays unlisted and ships the native rooms, PBR finishes and replace
  for(const group of ['sofa','dining','chairs'])assert.ok(gltf.nodes.some(n=>n.extras?.furnitureGroup===group),group);
  for(const finish of ['stone','walnut','marble','travertine','velvet'])assert.ok(gltf.materials.some(m=>m.extras?.finish===finish&&m.pbrMetallicRoughness.baseColorTexture),finish);
  assert.ok(buffer.length<80*1024*1024,'compressed delivery must remain below 80 MB');
- assert.match(manifest.note,/norte geográfico ainda não vinculado/);
+ assert.match(manifest.note,/fachada oeste estimada/);
+ assert.ok(gltf.nodes.some(n=>n.extras?.vehicle==='BMW X5 (G05)'));
+ assert.ok(!gltf.materials.some(m=>/V13 pintura automovel/.test(m.name)),'generic sports cars removed');
 });

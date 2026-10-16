@@ -57,7 +57,7 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
   }
   if(n.includes('automovel')){m.metalness=.62;m.roughness=.22;m.clearcoat=1;m.clearcoatRoughness=.13;m.envMapIntensity=1.4;}
   if(n==='glass'){m.color.set('#52676b');m.opacity=.72;m.metalness=.15;m.roughness=.09;m.clearcoat=1;m.clearcoatRoughness=.07;m.depthWrite=false;}
-  if(n.includes('vidro')){m.opacity=.055;m.color.set('#b6d1d0');m.roughness=.12;m.metalness=.1;m.depthWrite=false;}
+  if(n.includes('vidro')){m.opacity=.045;m.color.set('#c5d2ce');m.roughness=.16;m.metalness=0;m.specularIntensity=.35;m.depthWrite=false;}
   if(n.includes('tire')){m.roughness=.88;m.metalness=0;}
   // Several car materials inherited a white emission in the authoring file.
   if(['brake','mirror','hardware','rim2','rim1','material_2'].includes(n)){m.emissive.set(0);m.emissiveIntensity=0;if(n.startsWith('rim')||n==='mirror'){m.metalness=1;m.roughness=n==='mirror'?.06:.26;}}
@@ -65,7 +65,11 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
   if(n==='signallight'||n==='brakelight'||n==='dashboard')m.emissiveIntensity=.1;
   if(n.includes('led')){m.emissive.set('#ffe0b5');m.emissiveIntensity=3;m.userData.casaLed=true;m.polygonOffset=true;m.polygonOffsetFactor=-2;m.polygonOffsetUnits=-2;}
   if(n.includes('integrado')){m.side=T.DoubleSide;m.alphaTest=.4;m.alphaToCoverage=false;m.transparent=false;m.depthWrite=true;m.roughness=1;m.metalness=0;m.specularIntensity=0;m.envMapIntensity=0;m.emissive.set(0);m.normalScale.setScalar(.12);}
-  if(n.includes('leaves')){m.color.set('#c6d4a4');m.normalScale.setScalar(0);}
+  if(n.includes('leaves')){
+   m.map=texture('/assets/casa-m/materials/v4/tree_small_02_leaves_diff_1k.jpg',true);
+   m.alphaMap=texture('/assets/casa-m/materials/v4/tree_small_02_leaves_alpha_1k.jpg');
+   m.color.set('#ffffff');m.normalScale.setScalar(0);m.alphaTest=.4;m.alphaToCoverage=false;
+  }
   m.needsUpdate=true;return m;
  }
  return {upgrade,texture,ready:()=>Promise.all(pending),dispose(){disposed=true;textures.forEach(t=>t.dispose());textures.clear();}};
