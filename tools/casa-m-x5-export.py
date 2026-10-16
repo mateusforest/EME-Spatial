@@ -1,5 +1,5 @@
 """Assemble the BMW-authored X5 glTF parts into one web-ready derivative."""
-import bpy, math, json
+import bpy, bmesh, math, json
 from pathlib import Path
 from mathutils import Vector, Matrix
 root=Path(__file__).resolve().parents[1]
@@ -27,6 +27,9 @@ for file in src.rglob('*.gltf'):
             if 'Seats' in file.name and not ('Seat_F' in o.name or 'Seats_F' in o.name):continue
             if 'Hood' in file.name and 'paint' not in o.name.lower():continue
             copy=o.copy();bpy.context.scene.collection.objects.link(copy);copy.matrix_world=Matrix.Diagonal((1,-1,1,1))@matrix
+for o in list(bpy.context.scene.objects):
+    if o.type=='MESH' and any(s in o.name.lower() for s in ('lighteffect','_void','emblem_shadow')):
+        bpy.data.objects.remove(o,do_unlink=True)
 objects=[o for o in bpy.context.scene.objects if o.type=='MESH']
 print('X5_BOUNDS',[(o.name, [round(v,2) for v in o.location],len(o.data.vertices)) for o in objects],flush=True)
 pts=[o.matrix_world@Vector(p) for o in objects for p in o.bound_box]
@@ -53,6 +56,7 @@ for m in bpy.data.materials:
     if 'tire' in n:p.inputs['Base Color'].default_value=(.014,.016,.017,1);p.inputs['Metallic'].default_value=0;p.inputs['Roughness'].default_value=.86
     if 'general' in n:p.inputs['Base Color'].default_value=(.032,.028,.023,1);p.inputs['Metallic'].default_value=0;p.inputs['Roughness'].default_value=.8
 for o in objects:
+    bm=bmesh.new();bm.from_mesh(o.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.0001);bm.to_mesh(o.data);bm.free();o.data.update()
     if len(o.data.vertices)>15000:
         if o.data.users>1:o.data=o.data.copy()
         bpy.context.view_layer.objects.active=o;dec=o.modifiers.new('Web LOD','DECIMATE');dec.ratio=.55

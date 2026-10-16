@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "model": "/assets/casa-m/casa-m-v4.glb",
+  "version": 5,
+  "model": "/assets/casa-m/casa-m-v5.glb",
   "views": [
     {
       "id": "facade",
@@ -190,6 +190,22 @@
       "target": [
         7,
         1,
+        -14.8
+      ],
+      "walk": true
+    },
+    {
+      "id": "pool-deck",
+      "label": "Deck externo da piscina",
+      "level": "Lazer",
+      "position": [
+        5.72,
+        1.65,
+        -14.8
+      ],
+      "target": [
+        14,
+        1.1,
         -14.8
       ],
       "walk": true
@@ -1404,6 +1420,36 @@
           "minZ": -11,
           "maxZ": -8
         }
+      },
+      {
+        "id": "pool-deck-west",
+        "y": 0,
+        "rect": {
+          "minX": 4.95,
+          "maxX": 6.55,
+          "minZ": -17.1,
+          "maxZ": -12.2
+        }
+      },
+      {
+        "id": "pool-deck-north",
+        "y": 0,
+        "rect": {
+          "minX": 6.55,
+          "maxX": 9.95,
+          "minZ": -13.4,
+          "maxZ": -12.2
+        }
+      },
+      {
+        "id": "pool-deck-south",
+        "y": 0,
+        "rect": {
+          "minX": 6.55,
+          "maxX": 9.95,
+          "minZ": -17.3,
+          "maxZ": -16.2
+        }
       }
     ],
     "obstacles": [
@@ -2462,21 +2508,21 @@
       },
       {
         "id": "V13 veiculo 1",
-        "minX": 20.5806,
-        "maxX": 23.309,
-        "minZ": -6.0402,
-        "maxZ": -1.6828,
+        "minX": 20.735,
+        "maxX": 23.064999999999998,
+        "minZ": -6.37,
+        "maxZ": -1.4299999999999997,
         "minY": -0.23,
-        "maxY": 1.078
+        "maxY": 1.506
       },
       {
         "id": "V13 veiculo 2",
-        "minX": 24.4306,
-        "maxX": 27.159,
-        "minZ": -6.0402,
-        "maxZ": -1.6828,
+        "minX": 24.407999999999998,
+        "maxX": 26.492,
+        "minZ": -6.295,
+        "maxZ": -1.505,
         "minY": -0.23,
-        "maxY": 1.078
+        "maxY": 1.193
       }
     ],
     "exclusions": [
@@ -10330,6 +10376,18 @@
   "credits": [
     "Arquitetura e estudo Casa M · referências fornecidas pelo proprietário.",
     "BMW X5 (G05): BMW AG / BMW Car IT, CC BY 4.0. Derivado de digital-car-3d: montagem, escala, materiais e redução para navegação. https://github.com/bmwcarit/digital-car-3d",
-    "Vegetação: Poly Haven, CC0. Materiais procedurais da base V15 convertidos para mapas PBR."
+    "Vegetação: Poly Haven, CC0. Materiais procedurais da base V15 convertidos para mapas PBR.",
+    "BMW M4 Competition M Package: SRT Performance (TheRealSRT), CC BY 4.0. Pintura branca, texturas e geometria adaptadas para esta apresentação. https://sketchfab.com/3d-models/bmw-m4-competition-m-package-5c0a2dafb1ad408d9fc9eeef9aee531b"
+  ],
+  "vehicles": [
+    {
+      "model": "/assets/casa-m/vehicles/bmw-m4-v5.glb",
+      "name": "BMW M4 Competition · apresentação",
+      "position": [
+        25.45,
+        -0.23,
+        -3.9
+      ]
+    }
   ]
 }

@@ -19,6 +19,11 @@ export function createCasaLighting(scene:T.Scene,renderer:T.WebGLRenderer,touch:
  const areas:Area[]=[],spots:Spot[]=[],fills:Fill[]=[];
  let settings={...CASA_LIGHT_DEFAULTS};
  const anchor=new T.Vector3(14,3,-8);
+ // Concealed linear fixture above the living room walnut wall, as in the reference.
+ const coveMaterial=new T.MeshStandardMaterial({color:'#f9d5a6',emissive:'#ffd09a',emissiveIntensity:2,roughness:.8});
+ coveMaterial.userData={casaLed:true,casaCircuit:'interior'};
+ const cove=new T.Mesh(new T.BoxGeometry(.014,.018,3.08),coveMaterial);cove.position.set(18.845,3.49,-3.865);group.add(cove);
+ const wallWash=new T.RectAreaLight('#ffddb0',0,3.05,.12);wallWash.position.set(18.71,3.42,-3.865);wallWash.lookAt(18.89,2.6,-3.865);group.add(wallWash);
  // Visible LED profiles come from the native architecture only. Duplicating
  // them here caused coplanar flicker and two luminous edges on each shelf.
  // A fixed, short-range fill for each room represents indirect light. Limit the
@@ -53,19 +58,20 @@ export function createCasaLighting(scene:T.Scene,renderer:T.WebGLRenderer,touch:
   else if(f.light instanceof T.PointLight)f.power*=.35;
   else if(f.light instanceof T.SpotLight)f.power*=.45;
  });
+ fixtures.push({light:wallWash,power:1.35,circuit:'interior'});
  const lamps:T.MeshStandardMaterial[]=[];
  function register(materials:Iterable<T.Material>){for(const m of materials)if(m instanceof T.MeshStandardMaterial){casaIndirectMaterial(m);if(m.userData.casaLed&&!lamps.includes(m))lamps.push(m);}}
  // Context surfaces and fixtures use the same bounce-light response as the house.
  scene.traverse(o=>{if(o instanceof T.Mesh)register(Array.isArray(o.material)?o.material:[o.material]);});
  function set(value:CasaLightSettings){
   settings={...value};const solar=casaSolar(settings.hour),daylight=solar.day;
-  sun.intensity=daylight*solar.sunlight*2.2;sun.color.copy(solar.color);sun.target.position.copy(anchor);sun.position.copy(anchor).addScaledVector(solar.direction,78);
-  hemi.intensity=.25+daylight*.45;scene.environmentIntensity=.025+daylight*.065;
+  sun.intensity=daylight*solar.sunlight*2.4;sun.color.copy(solar.color);sun.target.position.copy(anchor);sun.position.copy(anchor).addScaledVector(solar.direction,78);
+  hemi.intensity=.25+daylight*.62;scene.environmentIntensity=.025+daylight*.09;
   lamps.forEach(m=>{const c=(m.userData.casaCircuit||'interior') as CasaLightCircuit;m.emissive.set('#ffe0b5');m.emissiveIntensity=casaCircuitGain(c,settings)*2.2;});
   fixtures.forEach(f=>f.light.intensity=f.power*casaCircuitGain(f.circuit,settings));renderer.shadowMap.needsUpdate=true;
  }
  return {register,set,
   snapshot(){return fixtures.map(f=>[f.circuit,...f.light.position.toArray(),f.light.intensity]);},
-  dispose(){group.removeFromParent();sun.shadow.map?.dispose();}
+  dispose(){group.removeFromParent();cove.geometry.dispose();coveMaterial.dispose();sun.shadow.map?.dispose();}
  };
 }

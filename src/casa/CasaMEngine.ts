@@ -14,6 +14,7 @@ import {createCasaEnvironment} from './CasaMEnvironment';
 import {createCasaLighting} from './CasaMLighting';
 import {dampMotion,walkInput,routeSpeed} from './CasaMMotion';
 import {createCasaReflections} from './CasaMReflections';
+import {casaPerformanceScale} from './CasaMPerformance';
 import {CASA_LIGHT_DEFAULTS} from './CasaMLightState';
 import {CASA_LED_CIRCUITS,casaLedGeometry} from './CasaMLed';
 import {createCasaFurniture,disposeCasaObject} from './CasaMFurniture';
@@ -33,16 +34,30 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.minDistance=4;controls.maxDistance=90;controls.maxPolarAngle=Math.PI*.48;
  const nav=createBotaniqueNavigator(manifest.navigation,{radius:.18,eyeHeight:1.65,bodyHeight:1.78,gridSize:.15,maxStep:.19,maxSlopeDegrees:38,maxExpandedNodes:40000,maxSearchMs:350});
  let disposed=false,loaded=false,frame=0,last=0,root:T.Group|undefined,walk=false,planFloor:number|null=null,yaw=0,pitch=0,targetYaw=0,targetPitch=0,quality='auto',selected='facade';
+ let renderScale=1,frameAverage=16,continuousFrames=0;
  const lightSettings={...CASA_LIGHT_DEFAULTS};
  let pointer:{id:number;x:number;y:number;lastX:number;lastY:number;dragged:boolean}|null=null;
- let route:T.Vector3[]=[],routeIndex=0;
+ let route:T.Vector3[]=[],routeIndex=0,routeRequest=0;
+ let routeWorker:Worker|null=null;
+ try{
+  routeWorker=new Worker(new URL('./CasaMNavigation.worker.ts',import.meta.url),{type:'module'});
+  routeWorker.postMessage({data:manifest.navigation});
+  routeWorker.onmessage=e=>{
+   if(disposed||e.data.id!==routeRequest)return;
+   const result=e.data.result;mount.dataset.routeStatus=result.ok?'walking':result.reason;
+   if(!result.ok){events.hint('A passagem está bloqueada. Escolha um ponto mais próximo.');return;}
+   route=result.points.map((p:{x:number;y:number;z:number})=>new T.Vector3(p.x,p.y,p.z));routeIndex=0;speed=0;request();
+  };
+  routeWorker.onerror=()=>{routeWorker?.terminate();routeWorker=null;mount.dataset.routeStatus='fallback';};
+ }catch{routeWorker=null;}
  const player=new T.Vector3(),velocity={x:0,y:0};let speed=0;
  let reflections:ReturnType<typeof createCasaReflections>|undefined;
  const movement={x:0,y:0},keys=new Set<string>(),originals=new Map<FurnitureGroup,T.Object3D[]>(),alternatives=new Map<FurnitureGroup,T.Group>(),families=new Map<string,T.MeshStandardMaterial>(),finishes=new Map<string,T.MeshStandardMaterial[]>();
  const textures=new Set<T.Texture>(),materials=new Set<T.Material>(),geometry=new Set<T.BufferGeometry>();
  const library=createCasaMaterials(renderer,request),surroundings=createCasaEnvironment(scene,renderer,library,touch,request),lightRig=createCasaLighting(scene,renderer,touch);
  let composer:EffectComposer|undefined,ao:GTAOPass|undefined,bloom:UnrealBloomPass|undefined;
- if(!touch){const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});composer=new EffectComposer(renderer,target);composer.addPass(new RenderPass(scene,camera));ao=new GTAOPass(scene,camera,1,1);ao.blendIntensity=1;ao.updateGtaoMaterial({radius:.7,distanceExponent:1.5,thickness:.5,scale:1,samples:12});composer.addPass(ao);bloom=new UnrealBloomPass(new T.Vector2(1,1),.12,.3,1.8);composer.addPass(bloom);composer.addPass(new OutputPass());}
+ // The normal pass must include both sides of imported vehicle panels, like their visible materials.
+ if(!touch){const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});composer=new EffectComposer(renderer,target);composer.addPass(new RenderPass(scene,camera));ao=new GTAOPass(scene,camera,1,1);ao.normalMaterial.side=T.DoubleSide;ao.blendIntensity=.75;ao.updateGtaoMaterial({radius:.7,distanceExponent:1.5,thickness:.5,scale:1,samples:12});composer.addPass(ao);bloom=new UnrealBloomPass(new T.Vector2(1,1),.12,.3,1.8);composer.addPass(bloom);composer.addPass(new OutputPass());}
  function request(){if(disposed||frame||document.hidden||!loaded)return;frame=requestAnimationFrame(draw);}
  function lighting(){
   lightRig.set(lightSettings);surroundings.lighting(lightSettings.hour);
@@ -53,7 +68,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   if(target){const d=target.clone().sub(camera.position).normalize();targetYaw=yaw=Math.atan2(-d.x,-d.z);targetPitch=pitch=Math.asin(T.MathUtils.clamp(d.y,-1,1));}
   camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
  }
- function stop(){movement.x=movement.y=velocity.x=velocity.y=speed=0;keys.clear();route=[];}
+ function stop(){movement.x=movement.y=velocity.x=velocity.y=speed=0;keys.clear();route=[];routeRequest++;}
  function select(id:string){
   const v=manifest.views.find(v=>v.id===id);if(!v)return;stop();selected=id;planFloor=null;cutPlane.constant=1000;
   walk=v.walk;controls.enabled=!walk;scene.traverse(o=>{if(o.userData.planHidden){o.visible=true;delete o.userData.planHidden;}if(o.userData.planShadow){o.receiveShadow=true;delete o.userData.planShadow;}});
@@ -67,22 +82,25 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   mount.dataset.view=id;mount.dataset.mode=walk?'walk':'orbit';events.view(v);request();
  }
  function fitPlan(){if(planFloor===null)return;const distance=Math.max(46,36/(2*Math.tan(T.MathUtils.degToRad(24))*camera.aspect));controls.target.set(15,planFloor*4.02,-8);camera.position.copy(controls.target).add(new T.Vector3(0,.904,.428).multiplyScalar(distance));controls.update();}
- function size(){const w=Math.max(1,mount.clientWidth),h=Math.max(1,mount.clientHeight),low=quality==='light'||quality==='auto'&&touch,oldAspect=camera.aspect;renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.5,Math.sqrt((low?900000:2100000)/(w*h))));renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(planFloor!==null)fitPlan();else if(loaded&&!walk){camera.position.sub(controls.target).multiplyScalar(Math.min(1,oldAspect)/Math.min(1,camera.aspect)).add(controls.target);controls.update();}composer?.setPixelRatio(renderer.getPixelRatio());composer?.setSize(w,h);request();}
+ function size(){const w=Math.max(1,mount.clientWidth),h=Math.max(1,mount.clientHeight),low=quality==='light'||quality==='auto'&&touch,oldAspect=camera.aspect;renderer.setPixelRatio(Math.min(devicePixelRatio,low?1:1.5,Math.sqrt((low?900000:quality==='high'?2100000:1500000)/(w*h)))*(quality==='auto'?renderScale:1));renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();if(planFloor!==null)fitPlan();else if(loaded&&!walk){camera.position.sub(controls.target).multiplyScalar(Math.min(1,oldAspect)/Math.min(1,camera.aspect)).add(controls.target);controls.update();}composer?.setPixelRatio(renderer.getPixelRatio());composer?.setSize(w,h);mount.dataset.renderScale=renderScale.toFixed(2);request();}
  const resize=new ResizeObserver(size);resize.observe(mount);size();
  function draw(now:number){
-  frame=0;if(disposed||!loaded)return;const dt=Math.min(.05,(now-last)/1000||.016);last=now;
+  frame=0;if(disposed||!loaded)return;const elapsed=now-last,dt=Math.min(.05,elapsed/1000||.016);last=now;
+  if(elapsed>0&&elapsed<200){frameAverage=frameAverage*.94+elapsed*.06;continuousFrames++;}else continuousFrames=0;
+  if(quality==='auto'){const next=casaPerformanceScale(renderScale,frameAverage,continuousFrames);if(next!==renderScale){renderScale=next;continuousFrames=0;size();}}
+  mount.dataset.frameMs=frameAverage.toFixed(1);
   if(walk){
    const x=movement.x+(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0),y=movement.y+(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0);
    const desired=walkInput(x,y);velocity.x=dampMotion(velocity.x,desired.x,dt,x?7:14);velocity.y=dampMotion(velocity.y,desired.y,dt,y?7:14);
-   if(x||y)route=[];
+   if(x||y){route=[];routeRequest++;}
    if(Math.hypot(velocity.x,velocity.y)>.05)player.copy(stepBotaniquePlayer(nav,player,yaw,velocity,dt,1.55));
-   if(route.length){const distanceToEnd=player.distanceTo(route[route.length-1]);speed=dampMotion(speed,routeSpeed(distanceToEnd),dt,6);let remaining=dt*speed;while(remaining>0&&routeIndex<route.length){const next=route[routeIndex],distance=player.distanceTo(next);if(distance<=remaining+.008){player.copy(next);routeIndex++;remaining-=distance;}else{player.lerp(next,remaining/distance);remaining=0;}}if(routeIndex>=route.length){route=[];speed=0;}}
+   if(route.length){const distanceToEnd=player.distanceTo(route[route.length-1]);speed=dampMotion(speed,routeSpeed(distanceToEnd),dt,6);let remaining=dt*speed;while(remaining>0&&routeIndex<route.length){const next=route[routeIndex],distance=player.distanceTo(next);if(distance<=remaining+.008){player.copy(next);routeIndex++;remaining-=distance;}else{player.lerp(next,remaining/distance);remaining=0;}}if(routeIndex>=route.length){route=[];speed=0;mount.dataset.routeStatus='arrived';}}
    camera.position.x=player.x;camera.position.z=player.z;camera.position.y=dampMotion(camera.position.y,player.y,dt,15);
    yaw=dampMotion(yaw,targetYaw,dt,24);pitch=dampMotion(pitch,targetPitch,dt,24);
    look();
   }
   const animate=surroundings.animate(now/1000,camera);renderer.info.reset();
-  if(composer){if(ao)ao.enabled=quality!=='light'&&planFloor===null;if(bloom)bloom.enabled=quality!=='light';composer.render();}else renderer.render(scene,camera);
+  if(composer){if(ao)ao.enabled=quality!=='light'&&planFloor===null&&(quality==='high'||renderScale>.7);if(bloom)bloom.enabled=quality!=='light';composer.render();}else renderer.render(scene,camera);
   mount.dataset.position=camera.position.toArray().map(x=>x.toFixed(3)).join(',');mount.dataset.drawCalls=String(renderer.info.render.calls);mount.dataset.triangles=String(renderer.info.render.triangles);
   mount.dataset.motionSpeed=Math.hypot(velocity.x,velocity.y).toFixed(3);mount.dataset.reflectionFrames=String(surroundings.reflectionFrames);
   if(keys.size||movement.x||movement.y||route.length||Math.hypot(velocity.x,velocity.y)>.05||Math.abs(yaw-targetYaw)+Math.abs(pitch-targetPitch)>.0002||Math.abs(player.y-camera.position.y)>.001&&walk||animate)request();
@@ -90,10 +108,19 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  const draco=new DRACOLoader();draco.setDecoderPath('/assets/draco/');const loader=new GLTFLoader();loader.setDRACOLoader(draco);
  loader.load(manifest.model,async gltf=>{
   if(disposed){disposeCasaObject(gltf.scene);return;}
-  root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);
+  root=gltf.scene;
+  await Promise.all((manifest.vehicles||[]).map(async vehicle=>{
+   const car=await loader.loadAsync(vehicle.model);
+   if(disposed){disposeCasaObject(car.scene);return;}
+   car.scene.name=vehicle.name;car.scene.position.fromArray(vehicle.position);car.scene.rotation.y=vehicle.rotation||0;
+   car.scene.traverse(o=>{o.userData.vehicle=vehicle.name;if(o instanceof T.Mesh)for(const m of Array.isArray(o.material)?o.material:[o.material])m.userData.vehicle=vehicle.name;});
+   root!.add(car.scene);
+  })).catch(()=>events.hint('O segundo veículo não carregou. A visita continua disponível.'));
+  if(disposed)return;
+  scene.add(root);root.updateMatrixWorld(true);
   // Mobile uses the complete lower-density leaf islands already in the asset.
   // Retain the same silhouette and materials without processing dense nearby LODs.
-  if(touch){
+  if(touch||quality==='auto'){
    const foliage=new Map<string,T.BufferGeometry>();
    root.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.Material&&/tree_small/.test(o.material.name)){
     const key=o.material.name.replace(/\.\d+$/,'');const old=foliage.get(key);
@@ -135,7 +162,8 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   camera.position.fromArray(manifest.views[0].position);camera.lookAt(...manifest.views[0].target);
   const previousTarget=renderer.getRenderTarget();
   try{if(composer)renderer.setRenderTarget(composer.readBuffer);await renderer.compileAsync(scene,camera);}catch{/* Render below reports unsupported GPU shaders in the browser. */}finally{renderer.setRenderTarget(previousTarget);}
-  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='4';select('facade');reflections.schedule();events.ready();request();
+
+  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='5';select('facade');reflections.schedule();events.ready();request();
  },e=>events.progress(e.total?`Carregando a casa · ${Math.round(e.loaded/e.total*100)}%`:'Carregando a casa…'),()=>{if(!disposed)events.error('Não foi possível carregar a Casa M. Atualize a página para tentar novamente.');});
 
  const ray=new T.Raycaster();
@@ -145,6 +173,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   const group=hit.object.userData.furnitureGroup as FurnitureGroup|undefined;if(group){stop();events.pick(group);return;}
   if(!walk||!hit.face||hit.face.normal.clone().transformDirection(hit.object.matrixWorld).y<.7)return;
   const floor=nav.projectToFloor(hit.point,.22);if(!floor){events.hint('Escolha uma área livre do piso.');return;}
+  if(routeWorker){stop();mount.dataset.routeStatus='planning';routeWorker.postMessage({id:routeRequest,from:{x:player.x,y:player.y,z:player.z},to:{x:floor.x,y:floor.y,z:floor.z}});return;}
   const result=nav.planRoute(player,floor);if(!result.ok){events.hint('A passagem está bloqueada. Escolha um ponto mais próximo.');return;}
   route=result.points;routeIndex=0;speed=0;request();
  }
@@ -189,7 +218,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   },
   quality(value){quality=value;surroundings.quality(value!=='light');reflections?.enable(value!=='light'&&planFloor===null);size();},reset(){select(selected);},
   dispose(){
-   disposed=true;cancelAnimationFrame(frame);resize.disconnect();controls.dispose();draco.dispose();
+   disposed=true;cancelAnimationFrame(frame);routeWorker?.terminate();resize.disconnect();controls.dispose();draco.dispose();
    window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',cancel);document.removeEventListener('visibilitychange',visibility);
    renderer.domElement.removeEventListener('webglcontextlost',lost);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',cancel);
    reflections?.dispose();surroundings.dispose();lightRig.dispose();library.dispose();alternatives.forEach(disposeCasaObject);textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());geometry.forEach(g=>g.dispose());composer?.passes.forEach(p=>p.dispose());composer?.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();

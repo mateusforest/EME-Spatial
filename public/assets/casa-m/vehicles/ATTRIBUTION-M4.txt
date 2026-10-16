@@ -1,0 +1,16 @@
+BMW M4 Competition M Package
+Author: SRT Performance (TheRealSRT)
+Author profile: https://sketchfab.com/TheRealSRT
+Original model: https://sketchfab.com/3d-models/bmw-m4-competition-m-package-5c0a2dafb1ad408d9fc9eeef9aee531b
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+Full license text: LICENSE-BMW.txt (the same CC BY 4.0 license)
+
+Source GLB retrieved from:
+https://github.com/lukaizj/car-mod-saas/blob/main/public/models/bmw-m4.glb
+The original GLB contains the author, source URL and CC BY 4.0 attribution.
+Source SHA-256: 913ac951ba2645777c91393b86aed2def2433a807e57e626b203908aa474b8fb
+
+EME Spatial modifications: white paint, physically based material adjustments,
+coincident-vertex welding, metre scale, texture resize and Draco compression.
+Used as the approved presentation alternative, not as a BMW 320i replica.

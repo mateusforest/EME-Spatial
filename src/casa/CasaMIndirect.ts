@@ -19,11 +19,11 @@ export function casaIndirectChunk(){
 export function casaIndirectMaterial(material:MeshStandardMaterial){
  if(installed.has(material))return;
  installed.add(material);
- const before=material.onBeforeCompile;
+ const before=material.onBeforeCompile,previousKey=material.customProgramCacheKey();
  material.onBeforeCompile=(shader,renderer)=>{
   before.call(material,shader,renderer);
   shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',casaIndirectChunk());
  };
- material.customProgramCacheKey=()=> 'casa-diffuse-fill-v1';
+ material.customProgramCacheKey=()=> previousKey+':casa-diffuse-fill-v1';
  material.needsUpdate=true;
 }

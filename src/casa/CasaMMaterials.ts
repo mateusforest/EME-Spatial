@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {casaPoolCutout} from './CasaMPool';
 
 /** Photographed PBR finishes, measured against the export's two-metre UVs. */
 export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
@@ -25,10 +26,10 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
    m.roughnessMap=texture(photo+'walnut_veneer_02-roughness.jpg',false,1.25,angle);
    m.color.set('#b29276');m.roughness=.72;m.normalScale.setScalar(.23);m.clearcoat=.18;m.clearcoatRoughness=.36;
   }else if(f==='linen'||f==='velvet'||f==='rug'){
-   m.map=texture(base+(f==='velvet'?'linen-olive-color.png':f==='rug'?'v6/wool-natural-color.png':'linen-cream-color.png'),true,f==='rug'?7:6);
-   m.normalMap=texture(base+(f==='rug'?'v6/wool-normal.png':'linen-photo-normal.png'),false,f==='rug'?7:6);
-   m.roughnessMap=texture(base+'linen-photo-roughness.png',false,6);
-   m.normalScale.setScalar(f==='rug'?.33:.22);m.roughness=1;m.color.set('#ffffff');
+   m.map=texture(base+(f==='velvet'?'linen-olive-color.png':f==='rug'?'v6/wool-natural-color.png':'linen-cream-color.png'),true,f==='rug'?3:5);
+   m.normalMap=texture(base+(f==='rug'?'v6/wool-normal.png':'linen-photo-normal.png'),false,f==='rug'?3:5);
+   m.roughnessMap=texture(base+(f==='rug'?'v6/wool-roughness.png':'linen-photo-roughness.png'),false,f==='rug'?3:5);
+   m.normalScale.setScalar(f==='rug'?.65:.3);m.roughness=1;m.color.set(f==='rug'?'#d8c6a8':'#ffffff');
    m.sheen=f==='velvet'?.22:.32;m.sheenColor.set(f==='velvet'?'#56603d':'#d2c5ad');m.sheenRoughness=.88;
    if(f==='velvet')m.color.set('#879269');
   }else if(f==='leather'){
@@ -39,10 +40,20 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
    m.map=texture('/assets/m/materials/realism50/stone-color.webp',true,.9);
    m.normalMap=texture('/assets/m/materials/realism50/stone-normal.webp',false,.9);
    m.roughnessMap=texture('/assets/m/materials/realism50/stone-rough.webp',false,.9);
-   m.color.set('#e0cbb0');m.roughness=.64;m.normalScale.setScalar(.16);m.clearcoat=.12;m.clearcoatRoughness=.38;
+   m.color.set('#f0e4cf');m.roughness=.48;m.normalScale.setScalar(.12);m.clearcoat=.12;m.clearcoatRoughness=.38;
   }else if(f==='stone'){
-   m.color.set('#dbceb8');m.normalScale.setScalar(.85);m.roughness=.9;
-   m.roughnessMap=texture(base+'v6/honed-limestone-roughness.png',false,2);
+   const stone='/assets/casa-m/materials/v5/stone-wall-';
+   m.map=texture(stone+'color.jpg',true,.9);m.normalMap=texture(stone+'normal.jpg',false,.9);
+   m.roughnessMap=texture(stone+'roughness.jpg',false,.9);
+   m.color.set('#fff2dc');m.normalScale.setScalar(.38);m.roughness=.85;
+   // Retain photographed stone pores and joints, with the pale limestone palette
+   // of the supplied design rather than the weathered colour of the scan.
+   m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+    float casaStoneTone=dot(sampledDiffuseColor.rgb,vec3(.2126,.7152,.0722));
+    diffuseColor.rgb=diffuse*mix(vec3(.48),vec3(.82),smoothstep(.035,.58,casaStoneTone));`);};
+   m.customProgramCacheKey=()=> 'casa-limestone-v5';
+  }else if(f==='pool-tile'){
+   m.color.set('#b5d2c8');m.roughness=.5;m.normalScale.setScalar(.22);
   }else if(f==='marble'){
    m.color.set('#c4c5aa');m.roughness=.22;m.normalScale.setScalar(.12);m.clearcoat=.38;m.clearcoatRoughness=.2;
    m.roughnessMap=texture('/assets/m/materials/realism50/stone-rough.webp',false,1);
@@ -51,7 +62,7 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
    m.color.set('#f3ede3');m.normalScale.setScalar(.045);m.roughness=.96;
   }else if(f==='grass'){
    m.map=texture(photo+'grass_ground-color.jpg',true,1);m.normalMap=texture(photo+'grass_ground-normal.jpg',false,1);
-   m.roughnessMap=texture(photo+'grass_ground-roughness.jpg',false,1);m.normalScale.setScalar(.45);m.roughness=1;m.color.set('#aeb99a');
+   m.roughnessMap=texture(photo+'grass_ground-roughness.jpg',false,1);m.normalScale.setScalar(.45);m.roughness=1;m.color.set('#aeb99a');casaPoolCutout(m);
   }else if(f==='road'){
    m.map=texture(base+'v6/context-asphalt-color.png',true,1.8);m.normalMap=texture(base+'v6/context-asphalt-normal.png',false,1.8);m.normalScale.setScalar(.22);m.color.set('#92948e');m.roughness=.96;
   }
@@ -63,7 +74,7 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
   if(['brake','mirror','hardware','rim2','rim1','material_2'].includes(n)){m.emissive.set(0);m.emissiveIntensity=0;if(n.startsWith('rim')||n==='mirror'){m.metalness=1;m.roughness=n==='mirror'?.06:.26;}}
   if(n==='headlight'){m.emissive.set('#d9e9ff');m.emissiveIntensity=.4;}
   if(n==='signallight'||n==='brakelight'||n==='dashboard')m.emissiveIntensity=.1;
-  if(n.includes('led')){m.emissive.set('#ffe0b5');m.emissiveIntensity=3;m.userData.casaLed=true;m.polygonOffset=true;m.polygonOffsetFactor=-2;m.polygonOffsetUnits=-2;}
+  if(n.includes('led')&&!m.userData.vehicle){m.emissive.set('#ffe0b5');m.emissiveIntensity=3;m.userData.casaLed=true;m.polygonOffset=true;m.polygonOffsetFactor=-2;m.polygonOffsetUnits=-2;}
   if(n.includes('integrado')){m.side=T.DoubleSide;m.alphaTest=.4;m.alphaToCoverage=false;m.transparent=false;m.depthWrite=true;m.roughness=1;m.metalness=0;m.specularIntensity=0;m.envMapIntensity=0;m.emissive.set(0);m.normalScale.setScalar(.12);}
   if(n.includes('leaves')){
    m.map=texture('/assets/casa-m/materials/v4/tree_small_02_leaves_diff_1k.jpg',true);

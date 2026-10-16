@@ -3,6 +3,7 @@ import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {casaSolar,CASA_LIGHT_DEFAULTS} from './CasaMLightState';
+import {casaPoolCutout} from './CasaMPool';
 import type {createCasaMaterials} from './CasaMMaterials';
 
 type Library=ReturnType<typeof createCasaMaterials>;
@@ -33,6 +34,7 @@ export function createCasaEnvironment(scene:T.Scene,renderer:T.WebGLRenderer,lib
   environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;pmrem.dispose();resolve();request();
  },undefined,()=>{pmrem.dispose();resolve();}));
  const ground=new T.MeshStandardMaterial({color:'#91ad77',map:library.texture('/assets/casa-m/materials/v2/grass_ground-color.jpg',true,90),roughness:1,vertexColors:true});
+ casaPoolCutout(ground);
  const terrain=new T.Mesh(new T.PlaneGeometry(420,420,64,64),ground);terrain.rotation.x=-Math.PI/2;terrain.position.set(14,-.56,-8);terrain.receiveShadow=true;root.add(terrain);resources.push(terrain.geometry,ground);
  const p=terrain.geometry.getAttribute('position'),grassColors=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),edge=T.MathUtils.smoothstep(Math.hypot(x,y),42,110);p.setZ(i,edge*(1.3+Math.sin(x*.06)*Math.cos(y*.05)*1.2));const tone=.76+.17*Math.sin(x*.13)*Math.cos(y*.19);grassColors.set([tone,tone+.05,tone*.84],i*3);}terrain.geometry.setAttribute('color',new T.BufferAttribute(grassColors,3));terrain.geometry.computeVertexNormals();
  // A fixed woodland belt gives the upper balconies a complete, quiet horizon.
@@ -54,15 +56,23 @@ export function createCasaEnvironment(scene:T.Scene,renderer:T.WebGLRenderer,lib
   vertexShader:`uniform mat4 textureMatrix;varying vec4 vUv;varying vec3 vWorld;void main(){vUv=textureMatrix*vec4(position,1.);vWorld=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform sampler2D tDiffuse,normalMap;uniform vec3 color;uniform float time,day;varying vec4 vUv;varying vec3 vWorld;
    void main(){vec2 st=vWorld.xz*.32;vec3 a=texture2D(normalMap,st+vec2(time*.008,time*.005)).rgb*2.-1.;vec3 b=texture2D(normalMap,st*.73-vec2(time*.005,time*.007)).rgb*2.-1.;vec2 ripple=(a.xy+b.xy)*.004;
-   vec3 reflected=texture2D(tDiffuse,vUv.xy/vUv.w+ripple).rgb;float fresnel=.12+.72*pow(1.-abs(normalize(cameraPosition-vWorld).y),4.);
-   vec3 water=color*(.18+.5*day);vec3 c=mix(water,reflected,fresnel*.83);gl_FragColor=vec4(c,.76);
+   vec3 reflected=texture2D(tDiffuse,vUv.xy/vUv.w+ripple).rgb;float fresnel=.04+.68*pow(1.-abs(normalize(cameraPosition-vWorld).y),4.);
+   vec3 water=color*(.12+.55*day);vec3 c=mix(water,reflected,fresnel);gl_FragColor=vec4(c,.38+fresnel*.35);
    #include <tonemapping_fragment>
    #include <colorspace_fragment>
    }`};
  const water=new Reflector(new T.PlaneGeometry(9,2.8),{textureWidth:touch?256:512,textureHeight:touch?256:512,clipBias:.003,shader:waterShader});
  water.rotation.x=-Math.PI/2;water.position.set(11.05,-.102,-14.8);const waterMat=water.material as T.ShaderMaterial;waterMat.transparent=true;waterMat.depthWrite=false;root.add(water);
- const reflect=water.onBeforeRender.bind(water);let reflectionFrame=0;
- water.onBeforeRender=(r,s,c,g,m,group)=>{if(high&&!plan&&!s.overrideMaterial&&!c.userData.casaProbe&&c.position.distanceTo(water.position)<25){reflect(r,s,c,g,m,group);reflectionFrame++;}};
+ const reflect=water.onBeforeRender.bind(water);let reflectionFrame=0,lastReflection=0,reflectionDirty=true;
+ const reflectedCamera=new T.Matrix4(),reflectedProjection=new T.Matrix4();
+ water.onBeforeRender=(r,s,c,g,m,group)=>{
+  if(!high||plan||s.overrideMaterial||c.userData.casaProbe||c.position.distanceTo(water.position)>=25)return;
+  const now=performance.now(),moved=!reflectedCamera.equals(c.matrixWorld)||!reflectedProjection.equals(c.projectionMatrix);
+  if(reflectionDirty||moved&&now-lastReflection>100){
+   reflect(r,s,c,g,m,group);reflectionFrame++;lastReflection=now;reflectionDirty=false;
+   reflectedCamera.copy(c.matrixWorld);reflectedProjection.copy(c.projectionMatrix);
+  }
+ };
  resources.push(water.geometry,waterMat,water.getRenderTarget());
  function populate(model:T.Group){
   // The V4 model carries complete native leaf cards with preserved UVs.
@@ -72,7 +82,7 @@ export function createCasaEnvironment(scene:T.Scene,renderer:T.WebGLRenderer,lib
    if(ms.some(m=>m.name.includes('Agua')))o.visible=false;
   }});
  }
- function lighting(value:number){hour=value;const solar=casaSolar(hour);
+ function lighting(value:number){hour=value;reflectionDirty=true;const solar=casaSolar(hour);
   skyUniforms.horizon.value.set('#a3c7df').lerp(new T.Color('#e8c29f'),solar.gold*.35).lerp(new T.Color('#273b53'),1-solar.day);skyUniforms.top.value.set('#4d91c5').lerp(new T.Color('#18283e'),1-solar.day);
   skyUniforms.day.value=solar.day;skyUniforms.gold.value=solar.gold;skyUniforms.sunDir.value.copy(solar.direction);waterMat.uniforms.day.value=solar.day;forestMat.color.setScalar(.065+solar.day*.7);
   scene.fog=new T.Fog(skyUniforms.horizon.value,90,210);

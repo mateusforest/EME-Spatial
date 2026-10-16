@@ -122,7 +122,7 @@ for image_index,im in enumerate(bpy.data.images):
         im.filepath_raw=str(WORK/('texture-'+str(image_index)+'.png'));im.file_format='PNG';im.save();im.pack()
 
 metadata={'source':'Casa-M-V15-Segundo-Andar.blend','sourceSha256':hashlib.sha256(Path(source).read_bytes()).hexdigest(),'coordinates':'[Blender X, Z, -Y]','cameras':[], 'colliders':[], 'floorFaces':[], 'furniture':{},'lights':[]}
-floor_names=('Piso casa','Piso continuo piscina','Laje superior com abertura','Varanda posterior piso','Piso apoios patio','Rooftop piso nivel','V13 piso varanda','V13 garagem piso')
+floor_names=('Piso casa','Piso continuo piscina','Deck piscina descoberta','Laje superior com abertura','Varanda posterior piso','Piso apoios patio','Rooftop piso nivel','V13 piso varanda','V13 garagem piso')
 structural=('01 Terreo','04 Superior','08A Gourmet alto','09 Piscina inverno','V13 | Fechamento frontal e portoes')
 cache={};buckets={};export_objects=[]
 

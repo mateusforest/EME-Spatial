@@ -30,6 +30,14 @@ test('water, closed exterior glazing and furniture remain barriers',()=>{
  assert.equal(nav.canStand(point([25,4.02,-15])),false,'no imaginary floor above the gourmet');
 });
 
+test('both pool edges reach the outdoor deck without entering the water',()=>{
+ const paths=[[[17.4,0,-14.8],[16.15,0,-12.85],[11,0,-12.85],[8,0,-12.85],[5.75,0,-12.85],[5.75,0,-14.8]],[[17.4,0,-14.8],[16.2,0,-16.65],[11,0,-16.65],[8,0,-16.65],[5.75,0,-16.65],[5.75,0,-14.8]]];
+ for(const path of paths)for(let i=1;i<path.length;i++)assert.ok(nav.canTraverse(point(path[i-1]),point(path[i])),`pool edge ${path[i-1]} -> ${path[i]}`);
+ const route=nav.planRoute(point([17.4,1.65,-14.8]),point([5.75,0,-14.8]));
+ assert.ok(route.ok,'floor click reaches the far outdoor deck');
+ assert.equal(nav.canTraverse(point([17.4,0,-14.8]),point([5.75,0,-14.8])),false,'no shortcut through water');
+});
+
 test('Casa M stays unlisted and ships the native rooms, PBR finishes and replaceable furniture',()=>{
  const registry=JSON.parse(readFileSync('config/deliveries.json','utf8'));
  assert.equal(registry.projects.find(p=>p.slug==='casa-m').status,'unlisted');
@@ -42,4 +50,11 @@ test('Casa M stays unlisted and ships the native rooms, PBR finishes and replace
  assert.match(manifest.note,/fachada oeste estimada/);
  assert.ok(gltf.nodes.some(n=>n.extras?.vehicle==='BMW X5 (G05)'));
  assert.ok(!gltf.materials.some(m=>/V13 pintura automovel/.test(m.name)),'generic sports cars removed');
+ assert.ok(!gltf.nodes.some(n=>n.name?.startsWith('CM_333_')),'no leftover body panels from the replaced concept car');
+ const m4=manifest.vehicles.find(v=>v.name.includes('M4'));
+ assert.ok(m4,'approved second vehicle is included');
+ const car=readFileSync('public'+m4.model);
+ assert.equal(car.toString('ascii',0,4),'glTF');
+ assert.ok(car.length<8*1024*1024,'second vehicle remains a bounded web asset');
+ assert.match(readFileSync('public/assets/casa-m/vehicles/ATTRIBUTION-M4.txt','utf8'),/SRT Performance/);
 });

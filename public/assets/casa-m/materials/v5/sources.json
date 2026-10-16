@@ -1,0 +1,23 @@
+[
+  {
+    "file": "stone-wall-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall/stone_wall_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/stone_wall",
+    "license": "CC0",
+    "md5": "451e4c5e2309af341fcdc1f1d637b1d6"
+  },
+  {
+    "file": "stone-wall-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall/stone_wall_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/stone_wall",
+    "license": "CC0",
+    "md5": "5c686c6c907ae2a1bb5c438ad96da055"
+  },
+  {
+    "file": "stone-wall-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/stone_wall/stone_wall_rough_1k.jpg",
+    "asset": "https://polyhaven.com/a/stone_wall",
+    "license": "CC0",
+    "md5": "ddc708ee3b0730ec9c5e79c52990aff1"
+  }
+]
