@@ -12,6 +12,20 @@ export default function deliveryPlugin():Plugin {
     configResolved(config){output=config.build.outDir;},
     resolveId(id){if(id==='virtual:delivery-public')return '\0delivery-public';},
     load(id){if(id==='\0delivery-public')return 'export default '+JSON.stringify(publicProjects(readRegistry()));},
+    configurePreviewServer(server){
+      server.middlewares.use((req,res,next)=>{
+        const path=(req.url||'').split('?')[0];
+        const match=/^\/visitar\/([a-z0-9-]+)\/?$/.exec(path);
+        if(match){
+          const file=resolve(output,'visitar',match[1],'index.html');
+          res.statusCode=existsSync(file)?200:404;
+          res.setHeader('Content-Type','text/html; charset=utf-8');
+          res.end(readFileSync(existsSync(file)?file:resolve(output,'404.html'),'utf8'));
+          return;
+        }
+        next();
+      });
+    },
     configureServer(server){
       server.watcher.add(resolve('config/deliveries.json'));
       server.watcher.on('change',file=>{if(file===resolve('config/deliveries.json')){const mod=server.moduleGraph.getModuleById('\0delivery-public');if(mod)server.moduleGraph.invalidateModule(mod);server.ws.send({type:'full-reload'});}});

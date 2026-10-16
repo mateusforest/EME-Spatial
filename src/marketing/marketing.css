@@ -8,3 +8,28 @@
 
 .wordmark{display:inline-flex;align-items:center;gap:14px}.wordmark img{width:64px;height:64px;object-fit:contain;border-radius:8px;flex-shrink:0}
 @media(max-width:600px){.wordmark img{width:52px;height:52px}.wordmark{gap:10px}}
+
+/* Shared navigation and legibility across the public pages. */
+.site-header { position: sticky; top: 0; z-index: 10; background: #fcfbf7f5; border-bottom: 1px solid #dfe2d9; }
+.site-header .wordmark img, .site-footer .wordmark img { object-fit: contain; border-radius: 0; width: 44px; height: 52px; }
+.site-header nav a, .site-footer>div>a { min-height: 44px; display: inline-flex; align-items: center; }
+.site-header nav a:not(.cta):hover, .site-footer>div>a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.site-header~main [id] { scroll-margin-top: 100px; }
+.category-hero .caption, .level-note, .caption { color: #586650; line-height: 1.7; }
+.site-footer>div { flex-wrap: wrap; font-size: 12px; }
+.back-link, .quiet-link { min-height: 44px; align-items: center; }
+.brief-progress>span { color: #536448; }
+.brief-content form>p, .brief-content label { font-size: 14px; }
+.brief-content .caption { font-size: 12px; }
+@media(max-width:760px) {
+ .site-header nav { max-height: calc(100dvh - 72px); overflow-y: auto; gap: 12px; }
+ .site-header .wordmark img, .site-footer .wordmark img { width: 34px; height: 42px; }
+ .category-hero h1 { font-size: clamp(36px,10vw,49px); }
+ .category-hero .cta { font-size: 12px; min-height: 48px; }
+ .category-hero .caption { font-size: 11px; }
+ .viewer-toolbar { gap: 12px; padding: 10px 15px; }
+ .viewer-toolbar a { min-height: 28px; }
+}
+
+:root{--muted:#5b6856}
+.brief-content h1{scroll-margin-top:100px}

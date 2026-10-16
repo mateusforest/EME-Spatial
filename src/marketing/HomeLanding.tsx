@@ -56,6 +56,14 @@ export default function HomeLanding() {
   const selectedScene = scenes.find(view => view.id === scene)!;
 
   useEffect(() => {
+    // The browser may resolve the incoming anchor before React has created its target.
+    const frame=requestAnimationFrame(()=>{
+      try { const id=decodeURIComponent(location.hash.slice(1));if(id)document.getElementById(id)?.scrollIntoView({block:'start',behavior:'instant'}); } catch { /* Ignore a malformed external fragment. */ }
+    });
+    return()=>cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     return () => { document.body.style.removeProperty('overflow'); };
   }, []);
 
@@ -73,12 +81,6 @@ export default function HomeLanding() {
   function restorePreviewFocus() {
     document.body.style.removeProperty('overflow');
     expandButtonRef.current?.focus({preventScroll: true});
-  }
-
-  function returnToExterior() {
-    setScene('exterior');
-    document.getElementById('experiencia')?.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
-    document.getElementById('hero-tab-exterior')?.focus({preventScroll: true});
   }
 
   return <div className="ms-home">
@@ -104,13 +106,13 @@ export default function HomeLanding() {
         <div className="ms-hero-copy">
           <p className="ms-eyebrow">ARQUITETURA EM 3D</p>
           <h1 id="ms-hero-title">Seu projeto em 3D.<br/>Uma experiência<br/>para explorar.</h1>
-          <p className="ms-hero-description">Criação e visualização imersiva para projetos de arquitetura e interiores.</p>
+          <p className="ms-hero-description">Entre nos ambientes, descubra os detalhes e apresente seu projeto por uma nova perspectiva.</p>
           <p className="ms-hero-categories"><a href="/solucoes/casas">Casas</a><span>·</span><a href="/solucoes/interiores">Interiores</a><span>·</span><a href="/solucoes/edificios">Empreendimentos</a></p>
           <div className="ms-hero-actions">
             <a className="ms-button" href="#projetos">Escolher um projeto <ArrowRight size={19}/></a>
             <a className="ms-text-link ms-light-link" href="#como-funciona">Como funciona</a>
           </div>
-          <p className="ms-hero-demo-note">Casas, edifícios e condomínios. Uma experiência de cada vez.</p>
+          <p className="ms-hero-demo-note">No navegador. Sem instalar aplicativos.</p>
         </div>
 
         <div className={`ms-scene ms-scene-${scene}`}>
@@ -118,13 +120,9 @@ export default function HomeLanding() {
             <SceneImage scene={scene} src={selectedScene.image} alt={selectedScene.alt} className="ms-scene-image" eager/>
           </div>
           <div className="ms-scene-shade" aria-hidden="true"/>
-          <p className="ms-scene-eyebrow">CONHEÇA OUTRAS PERSPECTIVAS</p>
-          <button className={`ms-hotspot ms-hero-hotspot ms-hotspot-${scene}`} type="button" onClick={() => setScene(scene === 'interior' ? 'exterior' : 'interior')}>
-            <span className="ms-hotspot-dot" aria-hidden="true"><span/></span>
-            <span className="ms-hotspot-label">{scene === 'interior' ? 'Ir para a varanda' : 'Sala de estar'} <ArrowRight size={14}/></span>
-          </button>
+          <p className="ms-scene-eyebrow">0{scenes.findIndex(view=>view.id===scene)+1} / 03 · PERSPECTIVAS DA CASA M</p>
           <div className="ms-scene-bottom">
-            <p className="ms-scene-caption"><strong>Casa M</strong><span>Prévia conceitual</span></p>
+            <a className="ms-scene-caption" href="/visitar/casa-m" aria-label="Conhecer o projeto Casa M"><strong>Casa M <ArrowUpRight size={16}/></strong><span>Referências visuais · Ver projeto</span></a>
             <SceneTabs scene={scene} onChange={setScene} prefix="hero"/>
             <button className="ms-expand" type="button" aria-label="Ampliar a prévia visual da Casa M" onClick={openPreview} ref={expandButtonRef}><Maximize size={20}/></button>
           </div>
@@ -132,7 +130,7 @@ export default function HomeLanding() {
       </section>
 
       <section className="ms-live-demo ms-container" id="experimentar" aria-labelledby="ms-live-demo-title">
-        <div className="ms-live-demo-heading"><div><p className="ms-eyebrow">EXPERIMENTE O M SPATIAL</p><h2 id="ms-live-demo-title">Entre no projeto.</h2></div><p>Escolha um projeto, conheça sua apresentação e entre no cenário quando quiser explorar.</p></div>
+        <div className="ms-live-demo-heading"><div><p className="ms-eyebrow">EXPERIMENTE O EME SPATIAL</p><h2 id="ms-live-demo-title">Mais do que olhar. Explorar.</h2></div><p>Conheça a proposta, escolha sua perspectiva e descubra os recursos disponíveis em cada experiência.</p></div>
         <div className="ms-live-demo-features">
           <article><Box size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Planta 3D</h3><p>Veja a distribuição dos ambientes e escolha por onde começar.</p></div></article>
           <article><Footprints size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Percorrer</h3><p>Explore os espaços e escolha os percursos disponíveis em cada projeto.</p></div></article>
@@ -172,7 +170,7 @@ export default function HomeLanding() {
         <div className="ms-interior-image">
           <img src="/assets/casa-m/reference-interior.webp" alt="Sala da Casa M com madeira, pedra natural e estofados — referência visual." loading="lazy" decoding="async"/>
           <p className="ms-interior-caption">SALA DE ESTAR · CASA M</p>
-          <button className="ms-hotspot ms-interior-hotspot" type="button" onClick={returnToExterior}><span className="ms-hotspot-dot" aria-hidden="true"><span/></span><span className="ms-hotspot-label">Ir para a varanda <ArrowRight size={14}/></span></button>
+          <a className="ms-interior-visit" href="/visitar/casa-m">Conhecer a Casa M <ArrowUpRight size={17}/></a>
         </div>
         <div className="ms-interior-copy">
           <p className="ms-eyebrow">DENTRO DO PROJETO</p>

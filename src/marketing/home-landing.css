@@ -433,3 +433,53 @@
 @media(max-width:700px){.ms-project-toolbar{align-items:flex-start;flex-direction:column;gap:16px}.ms-project-filters{gap:6px}.ms-project-filters button{padding:11px 13px;gap:8px;font-size:11px}.ms-project-copy{padding:20px}.ms-home .ms-project-copy>p{font-size:13px}.ms-project-meta{font-size:9px}.ms-project-image{aspect-ratio:1.5}}
 @media(prefers-reduced-motion:reduce){.ms-project-image img{transition:none}}
 @media(max-width:760px){.ms-brand .ms-brand-logo{width:42px;height:50px}}
+
+/* Presentation audit: clearer navigation, readable controls and uncropped mobile views. */
+.ms-header { position: sticky; top: 0; z-index: 10; }
+.ms-home section, .ms-home [id] { scroll-margin-top: 112px; }
+.ms-home .ms-scene-caption { min-height: 44px; justify-content: center; }
+.ms-scene-caption strong { display: flex; align-items: center; gap: 9px; }
+.ms-scene-caption:hover strong { text-decoration: underline; text-underline-offset: 5px; }
+.ms-scene-caption > span { font-size: 11px; letter-spacing: 0; }
+.ms-scene-tabs button { min-height: 44px; }
+.ms-scene-shade { background: linear-gradient(90deg,#102f27fa 0%,#102f27e8 22%,#102f2780 42%,transparent 67%),linear-gradient(0deg,#09241e99,transparent 28%); }
+.ms-interior-visit { position: absolute; bottom: 28px; right: 28px; display: inline-flex; align-items: center; gap: 22px; min-height: 48px; padding: 14px 20px; background: #f5f2e9f5; color: #142f28; border: 1px solid #ffffffa0; font-size: 13px; }
+.ms-interior-visit:hover { background: white; }
+.ms-home .ms-experience-caption { color: #c5d4c0; }
+.ms-home .ms-hero-demo-note { font-size: 12px; line-height: 1.6; }
+.ms-home .ms-project-meta { font-size: 11px; }
+.ms-project-copy li { font-size: 11px; line-height: 1.5; }
+.ms-home .ms-interior-link-note { font-size: 12px; }
+.ms-footer-bottom nav { flex-wrap: wrap; font-size: 12px; }
+.ms-footer-bottom nav a { min-height: 44px; }
+.ms-home .ms-footer-bottom > p { font-size: 12px; }
+@media (max-width: 900px) {
+  .ms-home section, .ms-home [id] { scroll-margin-top: 94px; }
+  .ms-navigation { max-height: calc(100dvh - 79px); overflow-y: auto; }
+  .ms-home .ms-live-demo-heading h2 { max-width: 420px; }
+}
+@media (max-width: 700px) {
+  .ms-home section, .ms-home [id] { scroll-margin-top: 90px; }
+  .ms-hero-copy { padding-top: 34px; padding-bottom: 26px; }
+  .ms-hero h1 { font-size: clamp(35px,10vw,58px); }
+  .ms-scene { height: auto; }
+  .ms-scene-panel { height: auto; aspect-ratio: 1.55; }
+  .ms-scene-image { object-position: center; }
+  .ms-scene-shade, .ms-scene-aerea .ms-scene-shade { display: none; }
+  .ms-scene .ms-scene-eyebrow { top: 14px; padding: 7px 10px; background: #102f27dc; border-radius: 3px; font-size: 9px; letter-spacing: .1em; }
+  .ms-scene-bottom { position: relative; left: auto; right: auto; bottom: auto; padding: 16px 6% 22px; gap: 12px; background: #102f27; border-top: 1px solid #ffffff26; }
+  .ms-home .ms-scene-caption { flex-direction: column!important; align-items: flex-start; gap: 5px!important; grid-column: 1 / -1; }
+  .ms-scene-caption strong { font-size: 16px; }
+  .ms-scene-tabs { padding: 3px; }
+  .ms-scene-tabs button { font-size: 11px; padding-inline: 8px; }
+  .ms-scene-bottom > .ms-expand { width: 44px; height: 44px; }
+  .ms-interior-visit { bottom: 20px; right: 6%; font-size: 12px; }
+  .ms-interior-copy { padding-bottom: 38px; }
+  .ms-navigation { max-height: calc(100dvh - 74px); }
+  .ms-preview-dialog { width: calc(100vw - 20px); height: calc(100dvh - 20px); }
+}
+@media (max-width: 360px) {
+  .ms-hero-actions { flex-wrap: wrap; gap: 10px 20px; }
+  .ms-scene-bottom { grid-template-columns: minmax(0,1fr) 44px; }
+  .ms-scene-tabs button { padding-inline: 4px; font-size: 10px; }
+}
