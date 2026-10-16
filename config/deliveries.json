@@ -3,7 +3,7 @@
   "projects": [
     {
       "slug": "casa-m",
-      "status": "unlisted",
+      "status": "public",
       "title": "Casa M",
       "eyebrow": "Veredas · Uma casa para explorar",
       "description": "Entre nos ambientes, percorra os dois pavimentos e experimente a luz, os materiais e o mobiliário da Casa M.",
@@ -11,11 +11,69 @@
       "coverCredit": "Referência visual fornecida pelo proprietário · acabamento pretendido",
       "viewer": "embedded",
       "experience": "/apresentar/casa-m",
-      "note": "Estudo navegável em evolução. Sol calculado para a localização de Vacaria; orientação oeste estimada a partir da imagem do lote. Entorno ilustrativo e dimensões do modelo digital."
+      "note": "Estudo navegável em evolução. Sol calculado para a localização de Vacaria; orientação oeste estimada a partir da imagem do lote. Entorno ilustrativo e dimensões do modelo digital.",
+      "category": "Casas",
+      "stage": "Estudo navegável",
+      "highlights": [
+        "Dois pavimentos",
+        "Horário solar",
+        "Móveis e materiais"
+      ],
+      "gallery": [
+        {
+          "image": "/assets/casa-m/reference-interior.webp",
+          "caption": "Estar · referência de acabamento fornecida para o projeto"
+        },
+        {
+          "image": "/assets/casa-m/reference-aerial.webp",
+          "caption": "Vista aérea · referência visual; cenário em evolução"
+        }
+      ]
+    },
+    {
+      "slug": "torre-m",
+      "status": "public",
+      "title": "Torre M",
+      "eyebrow": "Arquitetura para explorar",
+      "description": "Conheça a Torre M por inteiro, explore o edifício e entre no Apartamento 14 para experimentar os ambientes, materiais e iluminação.",
+      "cover": "/assets/torre.webp",
+      "coverCredit": "Projeto conceitual · EME Spatial",
+      "viewer": "embedded",
+      "experience": "/apresentar/m",
+      "note": "Projeto autoral e conceitual EME Spatial.",
+      "category": "Edifícios",
+      "stage": "Projeto autoral",
+      "highlights": [
+        "Edifício completo",
+        "Apartamento 14",
+        "Personalização"
+      ],
+      "entries": [
+        {
+          "label": "Edifício completo",
+          "description": "Fachada, implantação e perspectivas do empreendimento.",
+          "experience": "/apresentar/m"
+        },
+        {
+          "label": "Apartamento 14",
+          "description": "Entre nos ambientes e experimente a personalização.",
+          "experience": "/apresentar/m?apartamento=14"
+        }
+      ],
+      "gallery": [
+        {
+          "image": "/assets/marketing/torre-acesso.webp",
+          "caption": "Acesso da torre · referência conceitual"
+        },
+        {
+          "image": "/assets/marketing/torre-sala.webp",
+          "caption": "Interiores · referência de linguagem visual"
+        }
+      ]
     },
     {
       "slug": "botanique",
-      "status": "unlisted",
+      "status": "public",
       "title": "Botanique Home Resort",
       "eyebrow": "Uma nova perspectiva de morar",
       "description": "Conheça o empreendimento, entre no apartamento e experimente outras possibilidades para cada ambiente.",
@@ -26,35 +84,111 @@
       "experience": "/apresentar/botanique?cena=apartamento",
       "manifest": "/assets/botanique/manifest.json",
       "pdf": "/assets/botanique/apresentacao-botanique.pdf?v=79db87cf5ec2",
-      "note": "Pré-apresentação demonstrativa. Reconstrução baseada em referências públicas; dimensões e ambientação estimadas. As opções de decoração não representam especificações de entrega da construtora."
+      "note": "Pré-apresentação demonstrativa. Reconstrução baseada em referências públicas; dimensões e ambientação estimadas. As opções de decoração não representam especificações de entrega da construtora.",
+      "category": "Edifícios",
+      "stage": "Estudo demonstrativo",
+      "highlights": [
+        "Empreendimento",
+        "Apartamento",
+        "Luz e mobiliário"
+      ],
+      "entries": [
+        {
+          "label": "Empreendimento",
+          "description": "Explore a torre, a implantação e as áreas externas.",
+          "experience": "/apresentar/botanique?cena=exterior",
+          "scene": "exterior"
+        },
+        {
+          "label": "Apartamento",
+          "description": "Percorra os ambientes e experimente móveis e materiais.",
+          "experience": "/apresentar/botanique?cena=apartamento",
+          "scene": "apartamento"
+        }
+      ]
     },
     {
-      "slug": "torre-m",
+      "slug": "patio-m",
       "status": "public",
-      "title": "Torre M",
-      "eyebrow": "Arquitetura para explorar",
-      "description": "Conheça o edifício, percorra o apartamento e descubra novas possibilidades de materiais e iluminação.",
-      "cover": "/assets/torre.webp",
-      "coverCredit": "Projeto conceitual · EME Spatial",
+      "title": "Pátio M",
+      "eyebrow": "Arquitetura e convivência",
+      "description": "Explore o condomínio de casas, sua implantação, os acessos e os espaços de convivência em um estudo interativo.",
+      "cover": "/assets/marketing/condominio.webp",
+      "coverCredit": "Referência conceitual de linguagem visual",
       "viewer": "embedded",
-      "experience": "/apresentar/m?apartamento=14",
-      "note": "Projeto autoral e conceitual EME Spatial."
+      "experience": "/apresentar/patio-m",
+      "note": "Estudo conceitual EME Spatial.",
+      "category": "Condomínios",
+      "stage": "Conceito em desenvolvimento",
+      "highlights": [
+        "Casas e lotes",
+        "Clube",
+        "Vistas do conjunto"
+      ]
+    },
+    {
+      "slug": "residencial-vacaria",
+      "status": "public",
+      "title": "Residencial Vacaria",
+      "eyebrow": "Uma experiência para conhecer",
+      "description": "Conheça o estudo residencial de Vacaria: casas térreas, quintais, ruas internas e praça. Compare as duas alternativas de implantação.",
+      "cover": "/assets/vacaria/exterior-v8-conjunto.webp",
+      "coverCredit": "Render do modelo do Residencial Vacaria · implantação em estudo",
+      "viewer": "embedded",
+      "experience": "/apresentar/residencial-vacaria?imersivo=1",
+      "note": "Estudo demonstrativo EME Spatial.",
+      "category": "Condomínios",
+      "stage": "Estudo em desenvolvimento",
+      "highlights": [
+        "Casa demonstrativa",
+        "Áreas comuns",
+        "Duas alternativas"
+      ],
+      "entries": [
+        {
+          "label": "Projeto original · 24 casas",
+          "description": "Implantação e casa demonstrativa V01, com 45 m².",
+          "experience": "/apresentar/residencial-vacaria?imersivo=1"
+        },
+        {
+          "label": "Alternativa compacta · 27 casas",
+          "description": "Estudo independente com casa C01 de 42,12 m².",
+          "experience": "/apresentar/residencial-vacaria?alternativa=compacta&imersivo=1"
+        }
+      ],
+      "gallery": [
+        {
+          "image": "/assets/vacaria/exterior-v8-rua.webp",
+          "caption": "Rua interna · render do estudo atual"
+        },
+        {
+          "image": "/assets/vacaria/interior-v4-sala.webp",
+          "caption": "Casa V01 · render do interior em desenvolvimento"
+        }
+      ]
     },
     {
       "slug": "g400",
-      "status": "unlisted",
+      "status": "public",
       "title": "G400",
       "eyebrow": "Conheça o projeto",
-      "description": "Uma apresentação visual para explorar a arquitetura por diferentes perspectivas.",
+      "description": "Conheça a arquitetura do G400, consulte as perspectivas e explore os recursos de apresentação disponíveis para o empreendimento.",
       "cover": "/assets/g400.webp",
       "coverCredit": "Material de apresentação do projeto",
       "viewer": "embedded",
       "experience": "/apresentar/g400",
-      "note": "Apresentação visual demonstrativa."
+      "note": "Apresentação visual demonstrativa.",
+      "category": "Edifícios",
+      "stage": "Apresentação demonstrativa",
+      "highlights": [
+        "Fachada",
+        "Pavimentos",
+        "Perspectivas"
+      ]
     },
     {
       "slug": "moradas-da-serra",
-      "status": "unlisted",
+      "status": "public",
       "title": "Moradas da Serra",
       "eyebrow": "O espaço ganha novas perspectivas",
       "description": "Explore o empreendimento em uma experiência interativa preparada para conhecer e compartilhar.",
@@ -62,31 +196,24 @@
       "coverCredit": "Material de apresentação do empreendimento",
       "viewer": "embedded",
       "experience": "/apresentar/moradas-da-serra",
-      "note": "Consulte os materiais oficiais para especificações do empreendimento."
-    },
-    {
-      "slug": "residencial-vacaria",
-      "status": "unlisted",
-      "title": "Residencial Vacaria",
-      "eyebrow": "Uma experiência para conhecer",
-      "description": "Descubra o estudo residencial por diferentes perspectivas.",
-      "cover": "/assets/marketing/hero-casa.webp",
-      "coverCredit": "Referência conceitual de linguagem visual",
-      "viewer": "embedded",
-      "experience": "/apresentar/residencial-vacaria",
-      "note": "Estudo demonstrativo EME Spatial."
-    },
-    {
-      "slug": "patio-m",
-      "status": "unlisted",
-      "title": "Pátio M",
-      "eyebrow": "Arquitetura e convivência",
-      "description": "Conheça a implantação e os espaços de convivência em uma visita interativa.",
-      "cover": "/assets/marketing/condominio.webp",
-      "coverCredit": "Referência conceitual de linguagem visual",
-      "viewer": "embedded",
-      "experience": "/apresentar/patio-m",
-      "note": "Estudo conceitual EME Spatial."
+      "note": "Consulte os materiais oficiais para especificações do empreendimento.",
+      "category": "Edifícios",
+      "stage": "Apresentação interativa",
+      "highlights": [
+        "Torres e unidades",
+        "Plantas",
+        "Áreas comuns"
+      ],
+      "gallery": [
+        {
+          "image": "/assets/developments/moradas-da-serra/living.jpg",
+          "caption": "Sala · material de apresentação do empreendimento"
+        },
+        {
+          "image": "/assets/developments/moradas-da-serra/pool.jpg",
+          "caption": "Piscina · material de apresentação do empreendimento"
+        }
+      ]
     }
   ]
 }

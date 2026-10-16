@@ -1,38 +1,18 @@
 import {useEffect, useRef, useState} from 'react';
-import type {KeyboardEvent, MouseEvent} from 'react';
+import type {KeyboardEvent} from 'react';
 import {ArrowRight, ArrowUpRight, Box, Check, Footprints, Maximize, Menu, SlidersHorizontal, X} from 'lucide-react';
-import DemoDialog from './DemoDialog';
+import {offerings as experiences} from './data';
 import SceneImage from './SceneImage';
 import publicProjects from 'virtual:delivery-public';
 import './home-landing.css';
 
 type Scene = 'exterior' | 'interior' | 'aerea';
 const scenes: {id: Scene; label: string; image: string; alt: string}[] = [
-  {id: 'exterior', label: 'Exterior', image: '/assets/marketing/casa-m-exterior.webp', alt: 'Prévia conceitual da Casa M: fachada curva em pedra natural, vegetação e piscina.'},
-  {id: 'interior', label: 'Interiores', image: '/assets/marketing/casa-m-interior.webp', alt: 'Prévia conceitual da sala da Casa M, com materiais naturais e abertura para a varanda e a piscina.'},
-  {id: 'aerea', label: 'Visão aérea', image: '/assets/marketing/casa-m-aerea.webp', alt: 'Prévia conceitual aérea da Casa M, mostrando a relação entre a casa, a piscina e o jardim.'},
+  {id: 'exterior', label: 'Exterior', image: '/assets/casa-m/reference-cover.webp', alt: 'Prévia conceitual da Casa M: fachada em pedra natural, jardim e garagem.'},
+  {id: 'interior', label: 'Interiores', image: '/assets/casa-m/reference-interior.webp', alt: 'Prévia conceitual da sala da Casa M, com sofá verde, madeira e pedra natural.'},
+  {id: 'aerea', label: 'Visão aérea', image: '/assets/casa-m/reference-aerial.webp', alt: 'Prévia conceitual aérea da Casa M, mostrando a relação entre a casa, a piscina e o jardim.'},
 ];
 
-const experiences = [
-  {
-    name: 'Essential',
-    caption: 'O primeiro passo para explorar.',
-    description: 'Para ambientes e residências com uma apresentação objetiva, a partir de um modelo 3D existente.',
-    features: ['Preparação do modelo fornecido', 'Materiais e iluminação essenciais', 'Navegação pelos ambientes definidos', 'Experiência para apresentar e compartilhar'],
-  },
-  {
-    name: 'Signature',
-    caption: 'Cada detalhe faz parte da experiência.',
-    description: 'Para residências de médio e alto padrão que pedem mais profundidade visual e cuidado na apresentação.',
-    features: ['Interiores e exteriores integrados', 'Materiais e texturas refinados', 'Iluminação e perspectivas personalizadas', 'Pontos de interesse e identidade visual'],
-  },
-  {
-    name: 'Exclusive',
-    caption: 'Uma experiência na escala da sua visão.',
-    description: 'Para casas exclusivas, condomínios e empreendimentos com uma experiência desenvolvida sob medida.',
-    features: ['Modelagem e otimização sob medida', 'Paisagismo e contexto do projeto', 'Interações personalizadas', 'Apresentação comercial do empreendimento'],
-  },
-];
 
 function Brand() {
   return <a className="ms-brand" href="/" aria-label="EME Spatial — início"><img className="ms-brand-logo" src="/assets/spatial-symbol-transparent.png" alt="" width={56} height={64}/><span>SPATIAL</span></a>;
@@ -68,8 +48,9 @@ function SceneTabs({scene, onChange, prefix}: {scene: Scene; onChange: (scene: S
 export default function HomeLanding() {
   const [scene, setScene] = useState<Scene>('exterior');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [demoOpen, setDemoOpen] = useState(false);
-  const demoTriggerRef = useRef<HTMLElement | null>(null);
+  const [category,setCategory]=useState('Todos');
+  const categories=['Todos','Casas','Edifícios','Condomínios'];
+  const visibleProjects=publicProjects.filter(p=>category==='Todos'||p.category===category);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const selectedScene = scenes.find(view => view.id === scene)!;
@@ -83,11 +64,6 @@ export default function HomeLanding() {
     if (!dialog) return;
     dialog.showModal();
     document.body.style.overflow = 'hidden';
-  }
-
-  function openDemo(event: MouseEvent<HTMLButtonElement>) {
-    demoTriggerRef.current = event.currentTarget;
-    setDemoOpen(true);
   }
 
   function closePreview() {
@@ -117,7 +93,7 @@ export default function HomeLanding() {
           <a href="#experiencia" onClick={() => setMenuOpen(false)}>Experiência</a>
           <a href="#projetos" onClick={() => setMenuOpen(false)}>Projetos</a>
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
-          <a href="#spatial-experience" onClick={() => setMenuOpen(false)}>Spatial Experience</a>
+          <a href="#planos" onClick={() => setMenuOpen(false)}>Planos</a>
           <a className="ms-header-cta" href="/criar-projeto">Começar meu projeto <ArrowUpRight size={14}/></a>
         </nav>
       </div>
@@ -131,10 +107,10 @@ export default function HomeLanding() {
           <p className="ms-hero-description">Criação e visualização imersiva para projetos de arquitetura e interiores.</p>
           <p className="ms-hero-categories"><a href="/solucoes/casas">Casas</a><span>·</span><a href="/solucoes/interiores">Interiores</a><span>·</span><a href="/solucoes/edificios">Empreendimentos</a></p>
           <div className="ms-hero-actions">
-            <button className="ms-button" type="button" onClick={openDemo} aria-haspopup="dialog">Experimentar em 3D <ArrowRight size={19}/></button>
+            <a className="ms-button" href="#projetos">Escolher um projeto <ArrowRight size={19}/></a>
             <a className="ms-text-link ms-light-link" href="#como-funciona">Como funciona</a>
           </div>
-          <p className="ms-hero-demo-note">Demonstração interativa · Torre M, Apartamento 14.</p>
+          <p className="ms-hero-demo-note">Casas, edifícios e condomínios. Uma experiência de cada vez.</p>
         </div>
 
         <div className={`ms-scene ms-scene-${scene}`}>
@@ -156,13 +132,28 @@ export default function HomeLanding() {
       </section>
 
       <section className="ms-live-demo ms-container" id="experimentar" aria-labelledby="ms-live-demo-title">
-        <div className="ms-live-demo-heading"><div><p className="ms-eyebrow">EXPERIMENTE O M SPATIAL</p><h2 id="ms-live-demo-title">Entre no projeto.</h2></div><p>Conheça o Apartamento 14 da Torre M em uma experiência 3D que responde às suas escolhas.</p></div>
+        <div className="ms-live-demo-heading"><div><p className="ms-eyebrow">EXPERIMENTE O M SPATIAL</p><h2 id="ms-live-demo-title">Entre no projeto.</h2></div><p>Escolha um projeto, conheça sua apresentação e entre no cenário quando quiser explorar.</p></div>
         <div className="ms-live-demo-features">
           <article><Box size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Planta 3D</h3><p>Veja a distribuição dos ambientes e escolha por onde começar.</p></div></article>
-          <article><Footprints size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Percorrer</h3><p>Entre nos espaços e mova a câmera pelo apartamento.</p></div></article>
+          <article><Footprints size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Percorrer</h3><p>Explore os espaços e escolha os percursos disponíveis em cada projeto.</p></div></article>
           <article><SlidersHorizontal size={23} strokeWidth={1.3} aria-hidden="true"/><div><h3>Personalizar e iluminar</h3><p>Experimente materiais e cenários de luz no mesmo ambiente.</p></div></article>
         </div>
-        <div className="ms-live-demo-actions"><button className="ms-button ms-button-forest" type="button" onClick={openDemo} aria-haspopup="dialog">Experimentar em 3D <ArrowRight size={19}/></button><a className="ms-text-link" href="/apresentar/m">Explorar o edifício completo <ArrowUpRight size={16}/></a></div>
+        <div className="ms-live-demo-actions"><a className="ms-button ms-button-forest" href="/visitar/casa-m">Conhecer a Casa M <ArrowRight size={19}/></a><p className="ms-loading-note">O 3D só carrega ao entrar na experiência.</p></div>
+      </section>
+
+      <section className="ms-projects ms-container" id="projetos" aria-labelledby="ms-projects-title">
+        <div className="ms-projects-heading" id="autorais">
+          <div><p className="ms-eyebrow">PORTFÓLIO INTERATIVO · EME SPATIAL</p><h2 id="ms-projects-title">Escolha seu próximo espaço.</h2></div>
+          <p>Uma página para cada projeto. Conheça a proposta, veja as imagens e abra a experiência no seu ritmo.</p>
+        </div>
+        <div className="ms-project-toolbar"><div className="ms-project-filters" role="group" aria-label="Filtrar projetos por categoria">{categories.map(c=><button key={c} aria-pressed={category===c} onClick={()=>setCategory(c)}>{c}<span>{publicProjects.filter(p=>c==='Todos'||p.category===c).length}</span></button>)}</div><p aria-live="polite">{visibleProjects.length} {visibleProjects.length===1?'projeto':'projetos'} para explorar</p></div>
+        <div className="ms-project-grid">
+          {visibleProjects.map(project => <a className="ms-project" href={project.href} key={project.slug}>
+            <div className="ms-project-image"><img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="900" height="600"/><span aria-hidden="true"><ArrowUpRight size={19}/></span></div>
+            <div className="ms-project-copy"><div className="ms-project-meta"><span>{project.category}</span><span>{project.stage}</span></div><h3>{project.name}</h3><p>{project.description}</p><ul>{project.highlights.map(h=><li key={h}>{h}</li>)}</ul><span className="ms-project-open">Conhecer projeto <ArrowRight size={17}/></span></div>
+          </a>)}
+        </div>
+        <div className="ms-solutions" id="solucoes"><p>Para o que você imagina.</p><div><a href="/solucoes/casas">Casas</a><a href="/solucoes/interiores">Interiores</a><a href="/solucoes/edificios">Edifícios</a><a href="/solucoes/condominios">Condomínios</a><a href="/solucoes/mixed-use">Mixed Use <ArrowUpRight size={13}/></a></div></div>
       </section>
 
       <section className="ms-process ms-container" id="como-funciona" aria-labelledby="ms-process-title">
@@ -179,7 +170,7 @@ export default function HomeLanding() {
 
       <section className="ms-interior" id="ferramentas" aria-labelledby="ms-interior-title">
         <div className="ms-interior-image">
-          <img src="/assets/marketing/casa-m-interior.webp" alt="Sala da Casa M integrada à varanda e à área da piscina — prévia visual conceitual." loading="lazy" decoding="async"/>
+          <img src="/assets/casa-m/reference-interior.webp" alt="Sala da Casa M com madeira, pedra natural e estofados — referência visual." loading="lazy" decoding="async"/>
           <p className="ms-interior-caption">SALA DE ESTAR · CASA M</p>
           <button className="ms-hotspot ms-interior-hotspot" type="button" onClick={returnToExterior}><span className="ms-hotspot-dot" aria-hidden="true"><span/></span><span className="ms-hotspot-label">Ir para a varanda <ArrowRight size={14}/></span></button>
         </div>
@@ -188,29 +179,15 @@ export default function HomeLanding() {
           <h2 id="ms-interior-title">Veja o espaço.<br/>Entenda cada detalhe.</h2>
           <p>Do exterior aos ambientes internos, explore a arquitetura e compreenda o projeto.</p>
           <span className="ms-fine-rule" aria-hidden="true"/>
-          <a className="ms-text-link" href="/apresentar/m?apartamento=14">Conhecer a experiência <ArrowRight size={19}/></a>
-          <span className="ms-interior-link-note">Navegue pelo apartamento da Torre M.</span>
+          <a className="ms-text-link" href="/visitar/casa-m">Conhecer a experiência <ArrowRight size={19}/></a>
+          <span className="ms-interior-link-note">Explore os dois pavimentos da Casa M.</span>
         </div>
       </section>
 
-      <section className="ms-projects ms-container" id="projetos" aria-labelledby="ms-projects-title">
-        <div className="ms-projects-heading" id="autorais">
-          <div><p className="ms-eyebrow">OUTRAS FORMAS DE EXPLORAR</p><h2 id="ms-projects-title">Novas perspectivas.</h2></div>
-          <p>Conheça os projetos e experiências do M Spatial.</p>
-        </div>
-        <div className="ms-project-grid">
-          {publicProjects.map(project => <a className="ms-project" href={project.href} key={project.name}>
-            <div className="ms-project-image"><img src={project.image} alt={project.alt} loading="lazy" decoding="async"/><span aria-hidden="true"><ArrowUpRight size={19}/></span></div>
-            <h3>{project.name}</h3><p>{project.description}</p>
-          </a>)}
-        </div>
-        <div className="ms-solutions" id="solucoes"><p>Para o que você imagina.</p><div><a href="/solucoes/casas">Casas</a><a href="/solucoes/interiores">Interiores</a><a href="/solucoes/edificios">Edifícios</a><a href="/solucoes/condominios">Condomínios</a><a href="/solucoes/mixed-use">Mixed Use <ArrowUpRight size={13}/></a></div></div>
-      </section>
-
-      <section className="ms-experience" id="spatial-experience" aria-labelledby="ms-experience-title">
+      <section className="ms-experience" id="planos" aria-labelledby="ms-experience-title">
         <div className="ms-container">
-          <div className="ms-experience-heading">
-            <div><p className="ms-eyebrow">SPATIAL EXPERIENCE</p><h2 id="ms-experience-title">Seu projeto, em outra dimensão.</h2></div>
+          <div className="ms-experience-heading" id="spatial-experience">
+            <div><p className="ms-eyebrow">PLANOS · SPATIAL EXPERIENCE</p><h2 id="ms-experience-title">A experiência certa para o seu projeto.</h2></div>
             <p>Produção de experiências 3D para arquitetos, escritórios e empreendimentos. Escolha o ponto de partida; nós damos forma à experiência.</p>
           </div>
           <div className="ms-experience-grid">
@@ -220,7 +197,7 @@ export default function HomeLanding() {
               <p className="ms-experience-caption">{experience.caption}</p>
               <p className="ms-experience-description">{experience.description}</p>
               <ul>{experience.features.map(feature => <li key={feature}><Check size={16} strokeWidth={1.5} aria-hidden="true"/><span>{feature}</span></li>)}</ul>
-              <a className="ms-experience-link" href={`/criar-projeto?${new URLSearchParams({interesse: `Spatial Experience — ${experience.name}`})}`} aria-label={`Preparar meu projeto com Spatial Experience ${experience.name}`}>Preparar meu projeto <ArrowUpRight size={17} aria-hidden="true"/></a>
+              <a className="ms-experience-link" href={`/criar-projeto?${new URLSearchParams({nivel:experience.id,interesse: `Spatial Experience — ${experience.name}`})}`} aria-label={`Preparar meu projeto com Spatial Experience ${experience.name}`}>Preparar meu projeto <ArrowUpRight size={17} aria-hidden="true"/></a>
             </article>)}
           </div>
           <p className="ms-experience-note">Cada projeto começa com uma análise dos materiais disponíveis. Ambientes, recursos, entregas e revisões são definidos na proposta personalizada.</p>
@@ -232,11 +209,10 @@ export default function HomeLanding() {
       <div className="ms-container">
         <div className="ms-footer-invitation"><h2>Vamos dar forma ao seu projeto?</h2><a className="ms-button" href="/criar-projeto">Começar meu projeto <ArrowRight size={19}/></a></div>
         <div className="ms-footer-brand"><Brand/><span aria-hidden="true"/></div>
-        <div className="ms-footer-bottom"><p>Arquitetura, visualização e novas possibilidades.</p><nav aria-label="Links complementares"><a href="/projetos/torre-m">Projetos autorais</a><a href="/personalizar">Personalização</a><a href="/portal">Workspace <ArrowUpRight size={12}/></a></nav></div>
+        <div className="ms-footer-bottom"><p>Arquitetura, visualização e novas possibilidades.</p><nav aria-label="Links complementares"><a href="#projetos">Todos os projetos</a><a href="#planos">Planos</a><a href="/personalizar">Personalização</a><a href="/portal">Workspace <ArrowUpRight size={12}/></a></nav></div>
       </div>
     </footer>
 
-    {demoOpen && <DemoDialog onClose={() => setDemoOpen(false)} returnFocusTo={demoTriggerRef.current}/>}
 
     <dialog className="ms-preview-dialog" ref={dialogRef} onClose={restorePreviewFocus} aria-labelledby="ms-preview-title" onClick={event => {if (event.target === event.currentTarget) closePreview();}}>
       <div className="ms-preview-inner">

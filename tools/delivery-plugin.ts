@@ -13,6 +13,8 @@ export default function deliveryPlugin():Plugin {
     resolveId(id){if(id==='virtual:delivery-public')return '\0delivery-public';},
     load(id){if(id==='\0delivery-public')return 'export default '+JSON.stringify(publicProjects(readRegistry()));},
     configureServer(server){
+      server.watcher.add(resolve('config/deliveries.json'));
+      server.watcher.on('change',file=>{if(file===resolve('config/deliveries.json')){const mod=server.moduleGraph.getModuleById('\0delivery-public');if(mod)server.moduleGraph.invalidateModule(mod);server.ws.send({type:'full-reload'});}});
       server.middlewares.use(async(req,res,next)=>{
         const path=(req.url||'').split('?')[0];
         if(!path.startsWith('/visitar/'))return next();
@@ -29,6 +31,7 @@ export default function deliveryPlugin():Plugin {
       for(const p of registry.projects.filter(p=>p.status!=='draft'))for(const key of ['cover','shareImage','pdf','manifest'] as const){
         if(p[key]&&!existsSync(resolve('public','.'+p[key].split('?')[0])))throw Error(`Arquivo ausente na entrega ${p.slug}: ${key}`);
       }
+      for(const p of registry.projects.filter(p=>p.status!=='draft'))for(const g of p.gallery||[])if(!existsSync(resolve('public','.'+g.image)))throw Error(`Imagem ausente na galeria ${p.slug}`);
       for(const project of registry.projects.filter(p=>p.status!=='draft')){
         const folder=resolve(output,'visitar',project.slug);mkdirSync(folder,{recursive:true});
         writeFileSync(resolve(folder,'index.html'),template.replace(marker,deliveryHead(registry,project)));

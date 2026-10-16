@@ -38,9 +38,9 @@ test('both pool edges reach the outdoor deck without entering the water',()=>{
  assert.equal(nav.canTraverse(point([17.4,0,-14.8]),point([5.75,0,-14.8])),false,'no shortcut through water');
 });
 
-test('Casa M stays unlisted and ships the native rooms, PBR finishes and replaceable furniture',()=>{
+test('Casa M is deliberately listed and ships the native rooms, PBR finishes and replaceable furniture',()=>{
  const registry=JSON.parse(readFileSync('config/deliveries.json','utf8'));
- assert.equal(registry.projects.find(p=>p.slug==='casa-m').status,'unlisted');
+ assert.equal(registry.projects.find(p=>p.slug==='casa-m').status,'public');
  const buffer=readFileSync('public'+manifest.model);
  assert.equal(buffer.toString('ascii',0,4),'glTF');
  const gltf=JSON.parse(buffer.toString('utf8',20,20+buffer.readUInt32LE(12)));
