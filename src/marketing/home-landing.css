@@ -476,7 +476,7 @@
   .ms-interior-visit { bottom: 20px; right: 6%; font-size: 12px; }
   .ms-interior-copy { padding-bottom: 38px; }
   .ms-navigation { max-height: calc(100dvh - 74px); }
-  .ms-preview-dialog { width: calc(100vw - 20px); height: calc(100dvh - 20px); }
+  .ms-preview-dialog { width: calc(100vw - 20px); height: calc(100dvh - 20px); margin: auto; }
 }
 @media (max-width: 360px) {
   .ms-hero-actions { flex-wrap: wrap; gap: 10px 20px; }
