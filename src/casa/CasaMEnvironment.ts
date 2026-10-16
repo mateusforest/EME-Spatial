@@ -2,7 +2,7 @@ import * as T from 'three';
 import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {botaniqueSun,botaniqueAtmosphere} from '../botaniqueLighting';
+import {casaSolar,CASA_LIGHT_DEFAULTS} from './CasaMLightState';
 import type {createCasaMaterials} from './CasaMMaterials';
 
 type Library=ReturnType<typeof createCasaMaterials>;
@@ -24,7 +24,7 @@ function broadenLeaves(g:T.BufferGeometry){
 
 export function createCasaEnvironment(scene:T.Scene,renderer:T.WebGLRenderer,library:Library,touch:boolean,request:()=>void){
  const root=new T.Group();root.name='Paisagem e acabamentos exteriores';scene.add(root);
- const resources:{dispose:()=>void}[]=[];let disposed=false,hour=16.5,high=true,plan=false;
+ const resources:{dispose:()=>void}[]=[];let disposed=false,hour=CASA_LIGHT_DEFAULTS.hour,high=true,plan=false;
  const skyUniforms={top:{value:new T.Color('#8eb8d0')},horizon:{value:new T.Color('#d1d5cd')},day:{value:1},skyMap:{value:null as T.Texture|null},hasMap:{value:0},sunDir:{value:new T.Vector3()},gold:{value:0}};
  const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,toneMapped:false,uniforms:skyUniforms,
   vertexShader:'varying vec3 vDirection;void main(){vDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -126,9 +126,9 @@ export function createCasaEnvironment(scene:T.Scene,renderer:T.WebGLRenderer,lib
    leaves.userData.vegetation=true;leaves.castShadow=false;leaves.receiveShadow=true;leaves.computeBoundingSphere();root.add(leaves);resources.push(card);
   }
  }
- function lighting(value:number){hour=value;const solar=botaniqueSun(hour),atm=botaniqueAtmosphere(hour);
-  skyUniforms.horizon.value.copy(atm.horizon).lerp(new T.Color('#bdcfda'),solar.day*.88);skyUniforms.top.value.set('#77add1').lerp(new T.Color('#101a2c'),1-solar.day);
-  skyUniforms.day.value=solar.day;skyUniforms.gold.value=solar.gold;skyUniforms.sunDir.value.copy(solar.direction);waterMat.uniforms.day.value=solar.day;forestMat.color.setScalar(.018+solar.day*.62);
+ function lighting(value:number,azimuth=0,intensity=1){hour=value;const solar=casaSolar(hour,azimuth);
+  skyUniforms.horizon.value.set('#bfd7e5').lerp(new T.Color('#e8c29f'),solar.gold*.35).lerp(new T.Color('#273b53'),1-solar.day);skyUniforms.top.value.set('#77add1').lerp(new T.Color('#18283e'),1-solar.day);
+  skyUniforms.day.value=solar.day;skyUniforms.gold.value=solar.gold;skyUniforms.sunDir.value.copy(solar.direction);waterMat.uniforms.day.value=solar.day*intensity;forestMat.color.setScalar(.065+solar.day*.7*intensity);
   scene.fog=new T.Fog(skyUniforms.horizon.value,90,210);
  }
  lighting(hour);

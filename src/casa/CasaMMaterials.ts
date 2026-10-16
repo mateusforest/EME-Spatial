@@ -63,7 +63,7 @@ export function createCasaMaterials(renderer:T.WebGLRenderer,request:()=>void){
   if(['brake','mirror','hardware','rim2','rim1','material_2'].includes(n)){m.emissive.set(0);m.emissiveIntensity=0;if(n.startsWith('rim')||n==='mirror'){m.metalness=1;m.roughness=n==='mirror'?.06:.26;}}
   if(n==='headlight'){m.emissive.set('#d9e9ff');m.emissiveIntensity=.4;}
   if(n==='signallight'||n==='brakelight'||n==='dashboard')m.emissiveIntensity=.1;
-  if(n.includes('led')){m.emissive.set('#ffcf8d');m.emissiveIntensity=5;m.userData.casaLed=true;}
+  if(n.includes('led')){m.emissive.set('#ffe0b5');m.emissiveIntensity=3;m.userData.casaLed=true;m.polygonOffset=true;m.polygonOffsetFactor=-2;m.polygonOffsetUnits=-2;}
   if(n.includes('integrado')){m.side=T.DoubleSide;m.alphaTest=.4;m.alphaToCoverage=false;m.transparent=false;m.depthWrite=true;m.roughness=1;m.metalness=0;m.specularIntensity=0;m.envMapIntensity=0;m.emissive.set(0);m.normalScale.setScalar(.12);}
   if(n.includes('leaves')){m.color.set('#c6d4a4');m.normalScale.setScalar(0);}
   m.needsUpdate=true;return m;

@@ -14,6 +14,8 @@ import {createCasaEnvironment} from './CasaMEnvironment';
 import {createCasaLighting} from './CasaMLighting';
 import {dampMotion,walkInput,routeSpeed} from './CasaMMotion';
 import {createCasaReflections} from './CasaMReflections';
+import {CASA_LIGHT_DEFAULTS} from './CasaMLightState';
+import {CASA_LED_CIRCUITS,casaLedGeometry} from './CasaMLed';
 import {createCasaFurniture,disposeCasaObject} from './CasaMFurniture';
 import type {CasaApi,CasaManifest,CasaView,FurnitureGroup} from './CasaMTypes';
 
@@ -21,13 +23,17 @@ type Events={progress:(value:string)=>void;ready:()=>void;error:(message:string)
 export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,events:Events):CasaApi{
  const touch=matchMedia('(pointer:coarse)').matches;
  const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
- renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;renderer.info.autoReset=false;
+ renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.info.autoReset=false;
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;
+ // Keep one clipping uniform in every shader; opening the floor plan then only
+ // moves the cut plane instead of compiling another complete lighting pipeline.
+ const cutPlane=new T.Plane(new T.Vector3(0,-1,0),1000);renderer.clippingPlanes=[cutPlane];
  mount.append(renderer.domElement);renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Casa M em 3D. Arraste para olhar; use W A S D ou as setas para caminhar.');
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(58,1,.06,600);
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.minDistance=4;controls.maxDistance=90;controls.maxPolarAngle=Math.PI*.48;
  const nav=createBotaniqueNavigator(manifest.navigation,{radius:.18,eyeHeight:1.65,bodyHeight:1.78,gridSize:.15,maxStep:.19,maxSlopeDegrees:38,maxExpandedNodes:40000,maxSearchMs:350});
- let disposed=false,loaded=false,frame=0,last=0,root:T.Group|undefined,walk=false,planFloor:number|null=null,hour=16.5,indoor=.65,outdoor=.8,yaw=0,pitch=0,targetYaw=0,targetPitch=0,quality='auto',selected='facade';
+ let disposed=false,loaded=false,frame=0,last=0,root:T.Group|undefined,walk=false,planFloor:number|null=null,yaw=0,pitch=0,targetYaw=0,targetPitch=0,quality='auto',selected='facade';
+ const lightSettings={...CASA_LIGHT_DEFAULTS};
  let pointer:{id:number;x:number;y:number;lastX:number;lastY:number;dragged:boolean}|null=null;
  let route:T.Vector3[]=[],routeIndex=0;
  const player=new T.Vector3(),velocity={x:0,y:0};let speed=0;
@@ -35,13 +41,13 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  const movement={x:0,y:0},keys=new Set<string>(),originals=new Map<FurnitureGroup,T.Object3D[]>(),alternatives=new Map<FurnitureGroup,T.Group>(),families=new Map<string,T.MeshStandardMaterial>(),finishes=new Map<string,T.MeshStandardMaterial[]>();
  const textures=new Set<T.Texture>(),materials=new Set<T.Material>(),geometry=new Set<T.BufferGeometry>();
  const library=createCasaMaterials(renderer,request),surroundings=createCasaEnvironment(scene,renderer,library,touch,request),lightRig=createCasaLighting(scene,renderer,touch);
- let composer:EffectComposer|undefined,ao:GTAOPass|undefined;
- if(!touch){const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});composer=new EffectComposer(renderer,target);composer.addPass(new RenderPass(scene,camera));ao=new GTAOPass(scene,camera,1,1);ao.blendIntensity=1;ao.updateGtaoMaterial({radius:.7,distanceExponent:1.5,thickness:.5,scale:1,samples:12});composer.addPass(ao);composer.addPass(new UnrealBloomPass(new T.Vector2(1,1),.12,.3,1.8));composer.addPass(new OutputPass());}
+ let composer:EffectComposer|undefined,ao:GTAOPass|undefined,bloom:UnrealBloomPass|undefined;
+ if(!touch){const target=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,samples:4});composer=new EffectComposer(renderer,target);composer.addPass(new RenderPass(scene,camera));ao=new GTAOPass(scene,camera,1,1);ao.blendIntensity=1;ao.updateGtaoMaterial({radius:.7,distanceExponent:1.5,thickness:.5,scale:1,samples:12});composer.addPass(ao);bloom=new UnrealBloomPass(new T.Vector2(1,1),.12,.3,1.8);composer.addPass(bloom);composer.addPass(new OutputPass());}
  function request(){if(disposed||frame||document.hidden||!loaded)return;frame=requestAnimationFrame(draw);}
  function lighting(){
-  lightRig.set(hour,indoor,outdoor,camera);surroundings.lighting(hour);
+  lightRig.set(lightSettings);surroundings.lighting(lightSettings.hour,lightSettings.azimuth,lightSettings.solar);
   reflections?.schedule();
-  mount.dataset.hour=String(hour);mount.dataset.indoor=String(indoor);mount.dataset.outdoor=String(outdoor);request();
+  mount.dataset.hour=String(lightSettings.hour);mount.dataset.indoor=String(lightSettings.interior);mount.dataset.outdoor=String(lightSettings.exterior);mount.dataset.facade=String(lightSettings.facade);mount.dataset.solar=String(lightSettings.solar);mount.dataset.azimuth=String(lightSettings.azimuth);mount.dataset.lighting=JSON.stringify(lightRig.snapshot());request();
  }
  function look(target?:T.Vector3){
   if(target){const d=target.clone().sub(camera.position).normalize();targetYaw=yaw=Math.atan2(-d.x,-d.z);targetPitch=pitch=Math.asin(T.MathUtils.clamp(d.y,-1,1));}
@@ -49,7 +55,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  }
  function stop(){movement.x=movement.y=velocity.x=velocity.y=speed=0;keys.clear();route=[];}
  function select(id:string){
-  const v=manifest.views.find(v=>v.id===id);if(!v)return;stop();selected=id;planFloor=null;renderer.clippingPlanes=[];
+  const v=manifest.views.find(v=>v.id===id);if(!v)return;stop();selected=id;planFloor=null;cutPlane.constant=1000;
   walk=v.walk;controls.enabled=!walk;scene.traverse(o=>{if(o.userData.planHidden){o.visible=true;delete o.userData.planHidden;}if(o.userData.planShadow){o.receiveShadow=true;delete o.userData.planShadow;}});
   // Stay on verified walk surfaces: camera framing from the authoring model may sit inside trim.
   const dest=new T.Vector3(...v.position);if(walk){let floor=nav.projectToFloor({x:dest.x,y:dest.y-1.65,z:dest.z},.3);
@@ -57,8 +63,7 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
    if(floor)dest.copy(floor).y+=1.65;else events.hint('Vista de observação. Escolha outro ambiente para caminhar.');
   }
   camera.position.copy(dest);player.copy(dest);camera.fov=walk?62:48;camera.updateProjectionMatrix();controls.target.fromArray(v.target);if(walk)look(controls.target);else{camera.position.sub(controls.target).multiplyScalar(1/Math.min(1,camera.aspect)).add(controls.target);controls.update();}
-  surroundings.plan(false);lightRig.mode(walk,false,camera);reflections?.enable(quality!=='light');
-  if(loaded&&!matchMedia('(prefers-reduced-motion: reduce)').matches)mount.animate([{opacity:.5},{opacity:1}],{duration:180,easing:'ease-out'});
+  surroundings.plan(false);lightRig.mode(false);reflections?.enable(quality!=='light');
   mount.dataset.view=id;mount.dataset.mode=walk?'walk':'orbit';events.view(v);request();
  }
  function fitPlan(){if(planFloor===null)return;const distance=Math.max(46,36/(2*Math.tan(T.MathUtils.degToRad(24))*camera.aspect));controls.target.set(15,planFloor*4.02,-8);camera.position.copy(controls.target).add(new T.Vector3(0,.904,.428).multiplyScalar(distance));controls.update();}
@@ -76,8 +81,8 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
    yaw=dampMotion(yaw,targetYaw,dt,24);pitch=dampMotion(pitch,targetPitch,dt,24);
    look();
   }
-  lightRig.update(camera);const animate=surroundings.animate(now/1000,camera);renderer.info.reset();
-  if(composer&&quality!=='light'&&planFloor===null)composer.render();else renderer.render(scene,camera);
+  const animate=surroundings.animate(now/1000,camera);renderer.info.reset();
+  if(composer){if(ao)ao.enabled=quality!=='light'&&planFloor===null;if(bloom)bloom.enabled=quality!=='light';composer.render();}else renderer.render(scene,camera);
   mount.dataset.position=camera.position.toArray().map(x=>x.toFixed(3)).join(',');mount.dataset.drawCalls=String(renderer.info.render.calls);mount.dataset.triangles=String(renderer.info.render.triangles);
   mount.dataset.motionSpeed=Math.hypot(velocity.x,velocity.y).toFixed(3);mount.dataset.reflectionFrames=String(surroundings.reflectionFrames);
   if(keys.size||movement.x||movement.y||route.length||Math.hypot(velocity.x,velocity.y)>.05||Math.abs(yaw-targetYaw)+Math.abs(pitch-targetPitch)>.0002||Math.abs(player.y-camera.position.y)>.001&&walk||animate)request();
@@ -90,13 +95,16 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
   const entrance=new T.Group();entrance.position.set(9.55,0,-1.97);root.add(entrance);entrance.updateMatrixWorld(true);
   const leaves:T.Object3D[]=[];root.traverse(o=>{if(o.userData.door==='entry')leaves.push(o);});
   leaves.forEach(o=>entrance.attach(o));entrance.rotation.y=Math.PI/2;root.updateMatrixWorld(true);
-  const upgraded=new Map<T.Material,T.Material>(),exteriorLeds=new Map<T.Material,T.Material>();
+  const upgraded=new Map<T.Material,T.Material>(),circuitLeds=new Map<string,T.Material>();
   root.traverse(o=>{
    if(o.parent?.userData.vegetation)o.userData.vegetation=true;
    if(o instanceof T.Mesh){geometry.add(o.geometry);const source=Array.isArray(o.material)?o.material:[o.material];
-    const list=source.map(m=>{if(!upgraded.has(m)){materials.add(m);upgraded.set(m,m instanceof T.MeshStandardMaterial?library.upgrade(m):m);}const next=upgraded.get(m)!;
-     if(next.userData.casaLed){const center=new T.Box3().setFromObject(o).getCenter(new T.Vector3());if(center.x>19||center.z>-1.98||center.z<-12.15){if(!exteriorLeds.has(next)){const clone=next.clone();clone.userData={...next.userData,casaExteriorLed:true};exteriorLeds.set(next,clone);}return exteriorLeds.get(next)!;}}
-     return next;});o.material=Array.isArray(o.material)?list:list[0];
+    let list=source.map(m=>{if(!upgraded.has(m)){materials.add(m);upgraded.set(m,m instanceof T.MeshStandardMaterial?library.upgrade(m):m);}return upgraded.get(m)!;});
+    if(list.length===1&&list[0].userData.casaLed){
+     const led=list[0];o.geometry=casaLedGeometry(o.geometry,o.matrixWorld);geometry.add(o.geometry);
+     list=CASA_LED_CIRCUITS.map(circuit=>{const key=led.uuid+':'+circuit;if(!circuitLeds.has(key)){const clone=led.clone();clone.userData={...led.userData,casaCircuit:circuit};circuitLeds.set(key,clone);}return circuitLeds.get(key)!;});
+    }
+    o.material=list.length>1||Array.isArray(o.material)?list:list[0];
     list.forEach(m=>{materials.add(m);if(m instanceof T.MeshStandardMaterial){
      for(const value of Object.values(m))if(value instanceof T.Texture){value.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());textures.add(value);}
      const f=m.userData.finish as string|undefined;if(f){families.set(f,m);if(!finishes.has(f))finishes.set(f,[]);if(!finishes.get(f)!.includes(m))finishes.get(f)!.push(m);}
@@ -107,13 +115,15 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
    const group=o.userData.furnitureGroup as FurnitureGroup|undefined;if(group){if(!originals.has(group))originals.set(group,[]);originals.get(group)!.push(o);}
   });
   surroundings.populate(root);lightRig.register(materials);
+  scene.traverse(o=>{if(o instanceof T.Mesh)lightRig.register(Array.isArray(o.material)?o.material:[o.material]);});
   // Identical foliage meshes share one draw call per material, rather than one per plant.
   const instances=new Map<string,T.Mesh[]>();root.traverse(o=>{if(o instanceof T.Mesh&&o.userData.vegetation){const p=o.getWorldPosition(new T.Vector3());const key=o.geometry.uuid+':'+(Array.isArray(o.material)?o.material.map(m=>m.uuid).join():o.material.uuid)+':'+Math.floor(p.x/12)+':'+Math.floor(p.z/12);if(!instances.has(key))instances.set(key,[]);instances.get(key)!.push(o);}});
   for(const list of instances.values())if(list.length>1){const instanced=new T.InstancedMesh(list[0].geometry,list[0].material,list.length);list.forEach((o,i)=>{instanced.setMatrixAt(i,o.matrixWorld);o.removeFromParent();});instanced.castShadow=instanced.receiveShadow=true;instanced.userData.vegetation=true;scene.add(instanced);}
   events.progress('Preparando luz, reflexos e materiais…');await Promise.all([library.ready(),surroundings.ready]);if(disposed)return;lighting();
   camera.position.fromArray(manifest.views[0].position);camera.lookAt(...manifest.views[0].target);
-  try{await renderer.compileAsync(scene,camera);renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,-1,0),1.4)];await renderer.compileAsync(scene,camera);}catch{/* Render below reports unsupported GPU shaders in the browser. */}finally{renderer.clippingPlanes=[];}
-  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='2';select('facade');reflections.schedule();events.ready();request();
+  const previousTarget=renderer.getRenderTarget();
+  try{if(composer)renderer.setRenderTarget(composer.readBuffer);await renderer.compileAsync(scene,camera);}catch{/* Render below reports unsupported GPU shaders in the browser. */}finally{renderer.setRenderTarget(previousTarget);}
+  if(disposed)return;loaded=true;reflections=createCasaReflections(scene,renderer,upgraded.values(),request,touch);mount.dataset.ready='true';mount.dataset.revision='3';select('facade');reflections.schedule();events.ready();request();
  },e=>events.progress(e.total?`Carregando a casa · ${Math.round(e.loaded/e.total*100)}%`:'Carregando a casa…'),()=>{if(!disposed)events.error('Não foi possível carregar a Casa M. Atualize a página para tentar novamente.');});
 
  const ray=new T.Raycaster();
@@ -155,14 +165,15 @@ export function createCasaEngine(mount:HTMLDivElement,manifest:CasaManifest,even
  }
  return {
   view:select,
-  plan(floor){stop();walk=false;planFloor=floor;controls.enabled=true;scene.traverse(o=>{if(o.userData.vegetation&&o.visible){o.visible=false;o.userData.planHidden=true;}if(o.receiveShadow){o.receiveShadow=false;o.userData.planShadow=true;}});camera.fov=48;camera.updateProjectionMatrix();fitPlan();surroundings.plan(true);lightRig.mode(false,true,camera);reflections?.enable(false);renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,-1,0),floor*4.02+1.4)];mount.dataset.mode='plan';events.view(floor?'Planta do superior':'Planta do térreo');request();},
-  sun(value){hour=T.MathUtils.clamp(value,7,20);lighting();},lights(value){indoor=T.MathUtils.clamp(value,0,1);lighting();},
-  outdoorLights(value){outdoor=T.MathUtils.clamp(value,0,1);lighting();},
+  plan(floor){stop();walk=false;planFloor=floor;controls.enabled=true;scene.traverse(o=>{if(o.userData.vegetation&&o.visible){o.visible=false;o.userData.planHidden=true;}if(o.receiveShadow){o.receiveShadow=false;o.userData.planShadow=true;}});camera.fov=48;camera.updateProjectionMatrix();fitPlan();surroundings.plan(true);lightRig.mode(true);reflections?.enable(false);cutPlane.constant=floor*4.02+1.4;mount.dataset.mode='plan';events.view(floor?'Planta do superior':'Planta do térreo');request();},
+  sun(value){lightSettings.hour=T.MathUtils.clamp(value,7,20);lighting();},lights(value){lightSettings.interior=T.MathUtils.clamp(value,0,1.5);lighting();},
+  outdoorLights(value){lightSettings.exterior=T.MathUtils.clamp(value,0,1.5);lighting();},facadeLights(value){lightSettings.facade=T.MathUtils.clamp(value,0,1.5);lighting();},
+  solarIntensity(value){lightSettings.solar=T.MathUtils.clamp(value,0,1.5);lighting();},solarDirection(value){lightSettings.azimuth=T.MathUtils.clamp(value,-180,180);lighting();},
   move(x,y){movement.x=x;movement.y=y;request();},finish,
   furniture(group,id){
    const old=alternatives.get(group);if(old){scene.remove(old);disposeCasaObject(old);alternatives.delete(group);}
    originals.get(group)?.forEach(o=>o.visible=id==='original');
-   if(id!=='original'){const obj=createCasaFurniture(group,id,families);obj.position.set(group==='sofa'?15.9:13.5,0,group==='sofa'?-3.15:-7.38);obj.traverse(o=>o.userData.furnitureGroup=group);scene.add(obj);alternatives.set(group,obj);}
+   if(id!=='original'){const obj=createCasaFurniture(group,id,families);obj.position.set(group==='sofa'?15.9:13.5,0,group==='sofa'?-3.15:-7.38);obj.traverse(o=>{o.userData.furnitureGroup=group;if(o instanceof T.Mesh)lightRig.register(Array.isArray(o.material)?o.material:[o.material]);});scene.add(obj);alternatives.set(group,obj);}
    renderer.shadowMap.needsUpdate=true;reflections?.schedule();mount.dataset[group]=id;request();
   },
   quality(value){quality=value;surroundings.quality(value!=='light');reflections?.enable(value!=='light'&&planFloor===null);size();},reset(){select(selected);},
