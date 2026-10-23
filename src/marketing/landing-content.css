@@ -1,0 +1,107 @@
+/* Product-led content; the approved hero and its video retain their styling. */
+.ms-home .ms-product,
+.ms-home .ms-benefits,
+.ms-home .ms-process { padding-block: 96px; }
+.ms-home .ms-product-heading,
+.ms-home .ms-experience-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 36px; }
+.ms-home .ms-product-heading h2,
+.ms-home .ms-benefits h2,
+.ms-home .ms-process h2,
+.ms-home .ms-experience h2 { font-size: clamp(32px, 3.4vw, 50px); line-height: 1.13; max-width: 690px; }
+.ms-home .ms-eyebrow { margin-bottom: 18px; }
+.ms-home .ms-product-heading > p,
+.ms-home .ms-experience-heading > p { color: var(--ms-muted); font-size: 15px; line-height: 1.7; max-width: 340px; }
+.ms-product-stage { display: block; position: relative; aspect-ratio: 2.1; overflow: hidden; background: #253b32; color: var(--ms-ivory); border-radius: 6px; }
+.ms-product-stage > img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.ms-product-stage:hover > img { transform: scale(1.015); }
+.ms-product-stage-shade { position: absolute; inset: 0; background: linear-gradient(0deg,#0e241acc,transparent 40%); }
+.ms-product-stage-caption { position: absolute; bottom: 35px; left: 36px; font-size: 12px; }
+.ms-product-stage-action { position: absolute; bottom: 25px; right: 28px; display: inline-flex; align-items: center; gap: 28px; min-height: 50px; padding: 15px 22px; color: var(--ms-forest); background: var(--ms-ivory); border-radius: 40px; font-size: 13px; }
+.ms-product-stage-action svg { flex-shrink: 0; }
+.ms-product-note { display: flex; justify-content: space-between; gap: 20px; padding-top: 19px; color: var(--ms-muted); font-size: 12px; line-height: 1.6; }
+.ms-home .ms-benefits { padding-top: 0; padding-bottom: 88px; }
+.ms-benefits-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 50px; margin-top: 44px; }
+.ms-benefits-grid article { border-top: 1px solid var(--ms-line); padding-top: 25px; }
+.ms-benefits-grid svg { margin-bottom: 23px; }
+.ms-home .ms-benefits-grid h3 { font-size: clamp(22px,2vw,29px); line-height: 1.2; letter-spacing: -.045em; margin-bottom: 13px; }
+.ms-home .ms-benefits-grid p { max-width: 305px; color: var(--ms-muted); font-size: 14px; line-height: 1.65; }
+.ms-home .ms-benefits-note { margin-top: 30px; font-size: 11px; color: var(--ms-muted); line-height: 1.6; }
+.ms-home .ms-process { border-top: 1px solid var(--ms-line); border-bottom: 1px solid var(--ms-line); padding-block: 64px; }
+.ms-home .ms-process h2 { font-size: clamp(28px,2.6vw,38px); }
+.ms-process-steps { margin-top: 36px; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 40px; }
+.ms-process-steps li { display: flex; gap: 20px; padding: 0; }
+.ms-process-steps li + li { border: 0; padding: 0; }
+.ms-step-number { font-family: Arial,Helvetica,sans-serif; font-size: 13px; line-height: 1.6; letter-spacing: 0; min-width: 0; color: var(--ms-muted); padding-top: 4px; }
+.ms-process-steps h3 { font-size: 23px; line-height: 1.25; margin: 0 0 10px; }
+.ms-home .ms-process-steps p { color: var(--ms-muted); font-size: 13px; line-height: 1.6; }
+.ms-home .ms-experience { padding-block: 96px; background: var(--ms-ivory); color: var(--ms-ink); border: 0; }
+.ms-experience-heading .ms-eyebrow { color: var(--ms-muted); }
+.ms-experience-grid { gap: 42px; align-items: start; }
+.ms-experience-card,
+.ms-experience-signature { border: 0; border-top: 1px solid var(--ms-line); padding: 26px 0 0; background: transparent; }
+.ms-plan-number { font-size: 11px; color: var(--ms-muted); }
+.ms-experience-card h3 { font-size: clamp(30px,3vw,42px); margin: 22px 0 15px; }
+.ms-home .ms-experience-caption { color: var(--ms-muted); min-height: 48px; font-size: 14px; line-height: 1.6; max-width: 270px; }
+.ms-plan-details { margin-top: 15px; }
+.ms-plan-details summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; cursor: pointer; min-height: 48px; padding: 10px 0; font-size: 13px; list-style: none; }
+.ms-plan-details summary::-webkit-details-marker { display: none; }
+.ms-plan-details summary::after { content: '+'; font-size: 22px; font-weight: 300; }
+.ms-plan-details[open] summary::after { content: '−'; }
+.ms-experience-card .ms-plan-details ul { margin: 0; border: 0; padding: 10px 0 22px; }
+.ms-experience-card .ms-plan-details li { display: list-item; list-style: none; margin: 0; padding: 6px 0; color: var(--ms-muted); font-size: 13px; line-height: 1.6; }
+.ms-experience-card .ms-experience-link { border: 0; background: transparent; font-weight: 400; display: inline-flex; justify-content: space-between; align-items: center; gap: 20px; padding: 18px 0; margin-top: 12px; min-height: 50px; border-top: 1px solid var(--ms-line); color: var(--ms-ink); font-size: 13px; }
+.ms-experience-card .ms-experience-link:hover { background: transparent; color: #457154; }
+.ms-home .ms-experience-note { margin-top: 32px; color: var(--ms-muted); font-size: 12px; line-height: 1.6; }
+.ms-footer { padding-block: 72px 30px; }
+.ms-footer-invitation { gap: 40px; }
+.ms-footer-invitation h2 { font-size: clamp(34px,3.8vw,56px); max-width: 650px; }
+.ms-footer-invitation .ms-button { min-height: 52px; padding: 15px 23px; font-weight: 400; font-size: 13px; border-radius: 40px; }
+.ms-footer-brand { margin-top: 56px; }
+.ms-footer-bottom { margin-top: 24px; }
+@media(max-width:900px) {
+  .ms-home .ms-product,.ms-home .ms-experience { padding-block: 68px; }
+  .ms-home .ms-benefits { padding-bottom: 64px; }
+  .ms-product-stage { aspect-ratio: 1.65; }
+  .ms-benefits-grid,.ms-experience-grid { gap: 26px; }
+  .ms-process-steps { gap: 25px; }
+  .ms-home .ms-experience-caption { min-height: 67px; }
+}
+@media(max-width:700px) {
+  .ms-home .ms-product,.ms-home .ms-experience { padding-block: 52px; }
+  .ms-home .ms-product-heading,.ms-home .ms-experience-heading { display: block; margin-bottom: 27px; }
+  .ms-home .ms-product-heading > p,.ms-home .ms-experience-heading > p { margin-top: 17px; font-size: 14px; }
+  .ms-desktop-break { display: none; }
+  .ms-product-stage { aspect-ratio: 1; }
+  .ms-product-stage > img { object-position: 40% center; }
+  .ms-product-stage-shade { background: linear-gradient(0deg,#0e241acc,transparent 65%); }
+  .ms-product-stage-caption { top: 20px; bottom: auto; left: 20px; font-size: 10px; padding: 6px 9px; background: #102f27bf; border-radius: 20px; }
+  .ms-product-stage-action { left: 20px; bottom: 20px; right: auto; min-height: 48px; padding: 13px 19px; font-size: 12px; gap: 20px; }
+  .ms-product-note { gap: 12px; flex-wrap: wrap; font-size: 11px; padding-top: 14px; }
+  .ms-home .ms-benefits { padding-bottom: 52px; }
+  .ms-benefits-grid { grid-template-columns: 1fr; gap: 26px; margin-top: 28px; }
+  .ms-benefits-grid article { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 8px 20px; padding-top: 23px; }
+  .ms-benefits-grid svg { margin: 2px 0 0; grid-row: 1 / 3; }
+  .ms-home .ms-benefits-grid h3 { font-size: 23px; margin: 0; }
+  .ms-home .ms-benefits-grid p { grid-column: 2; font-size: 13px; }
+  .ms-home .ms-benefits-note { margin-top: 24px; }
+  .ms-home .ms-process { padding-block: 45px; }
+  .ms-process-steps { grid-template-columns: 1fr; margin-top: 28px; gap: 26px; }
+  .ms-process-steps li { align-items: flex-start; gap: 22px; }
+  .ms-step-number { padding-top: 3px; }
+  .ms-process-steps h3 { font-size: 22px; margin-bottom: 6px; }
+  .ms-experience-grid { grid-template-columns: 1fr; gap: 30px; }
+  .ms-experience-card,.ms-experience-signature { padding: 23px 0 0; }
+  .ms-experience-card h3 { font-size: 34px; margin-top: 15px; }
+  .ms-home .ms-experience-caption { min-height: 0; max-width: none; }
+  .ms-plan-details { margin-top: 13px; }
+  .ms-experience-link { margin-top: 5px; }
+  .ms-home .ms-experience-note { font-size: 11px; margin-top: 23px; }
+  .ms-footer { padding-block: 48px 28px; }
+  .ms-footer-invitation { gap: 26px; }
+  .ms-footer-invitation h2 { font-size: 36px; }
+  .ms-footer-brand { margin-top: 37px; }
+  .ms-footer-bottom { gap: 14px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ms-product-stage > img { transition: none; }
+}
