@@ -51,8 +51,9 @@ export default function HomeLanding() {
           <a href="#possibilidades" onClick={() => setMenuOpen(false)}>Possibilidades</a>
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
           <a href="#planos" onClick={() => setMenuOpen(false)}>Planos</a>
-          <a className="ms-header-cta" href="/criar-projeto">Começar meu projeto <ArrowUpRight size={14}/></a>
+          <a className="ms-header-cta ms-mobile-start" href="/criar-projeto">Começar meu projeto <ArrowUpRight size={14}/></a>
         </nav>
+        <a className="ms-header-cta ms-header-start" href="/criar-projeto">Começar meu projeto <ArrowUpRight size={14}/></a>
       </div>
     </header>
 
@@ -60,11 +61,15 @@ export default function HomeLanding() {
       <section className="ms-hero" id="experiencia" aria-labelledby="ms-hero-title">
         <HeroVideo/>
         <div className="ms-hero-copy">
-          <p className="ms-eyebrow">3D IMERSIVO</p>
-          <h1 id="ms-hero-title">Seu projeto.<br/>Uma nova perspectiva.</h1>
-          <p className="ms-hero-description">Explore cada espaço, antes de existir.</p>
-          <div className="ms-hero-actions">
-            <a className="ms-button" href="#experimentar">Conhecer a experiência <ArrowUpRight size={18}/></a>
+          <div className="ms-hero-heading">
+            <p className="ms-eyebrow">3D IMERSIVO</p>
+            <h1 id="ms-hero-title">Seu projeto.<br/>Uma nova perspectiva.</h1>
+          </div>
+          <div className="ms-hero-details">
+            <p className="ms-hero-description">Explore cada espaço, antes de existir.</p>
+            <div className="ms-hero-actions">
+              <a className="ms-button" href="#experimentar">Conhecer a experiência <ArrowUpRight size={18}/></a>
+            </div>
           </div>
         </div>
       </section>

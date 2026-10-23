@@ -7,7 +7,7 @@ export default function LandingVideo({kind, label}: {kind: 'hero' | 'product'; l
   const videoRef = useRef<HTMLVideoElement>(null);
   // Pick once: rotating the phone must not restart or download a second film.
   const [compact] = useState(() => window.matchMedia(compactMedia).matches);
-  const asset = `/assets/marketing/spatial-${kind}-${compact ? 'mobile-v3' : 'v2'}`;
+  const asset = `/assets/marketing/spatial-${kind}-${compact ? 'mobile-v5' : 'v5'}`;
   useEffect(() => {
     const video = videoRef.current;
     if (video) return observeLandingVideo(video, `${asset}.mp4`);
@@ -16,5 +16,5 @@ export default function LandingVideo({kind, label}: {kind: 'hero' | 'product'; l
   return <video ref={videoRef} autoPlay muted loop playsInline
     preload={kind === 'hero' ? 'auto' : 'metadata'}
     poster={`${asset}-poster.webp`} aria-label={label}
-    width="1280" height="720" disablePictureInPicture disableRemotePlayback/>;
+    width="1920" height="1080" disablePictureInPicture disableRemotePlayback/>;
 }
