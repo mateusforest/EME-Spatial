@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ArrowRight, ArrowUpRight, Footprints, Menu, SlidersHorizontal, X} from 'lucide-react';
 import {offerings as experiences} from './data';
 import './home-landing.css';
@@ -10,11 +10,35 @@ function Brand() {
 
 function HeroVideo() {
   return <div className="ms-hero-film">
-    <video autoPlay muted loop playsInline preload="metadata" poster="/assets/marketing/spatial-immersive-poster.webp" aria-label="Demonstração do EME Spatial: exterior, interiores e varanda em 3D">
-      <source src="/assets/marketing/spatial-immersive-mobile.mp4" type="video/mp4" media="(max-width: 700px)"/>
-      <source src="/assets/marketing/spatial-immersive.mp4" type="video/mp4"/>
+    <video autoPlay muted loop playsInline preload="metadata" poster="/assets/marketing/spatial-hero-v2-poster.webp" aria-label="EME Spatial: fachadas, interiores e perspectivas em 3D">
+      <source src="/assets/marketing/spatial-hero-v2-mobile.mp4" type="video/mp4" media="(max-width: 700px)"/>
+      <source src="/assets/marketing/spatial-hero-v2.mp4" type="video/mp4"/>
     </video>
     <div className="ms-film-shade" aria-hidden="true"/>
+  </div>;
+}
+
+function ProductVideo() {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (!('IntersectionObserver' in window)) { setReady(true); return; }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        setReady(true);
+        observer.disconnect();
+      }
+    }, {rootMargin: '100px'});
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
+  return <div className="ms-product-stage" ref={stageRef}>
+    {ready ? <video autoPlay muted loop playsInline preload="metadata" poster="/assets/marketing/spatial-product-v2-poster.webp" aria-label="Percurso por ambientes, interiores e vistas aéreas em 3D">
+      <source src="/assets/marketing/spatial-product-v2-mobile.mp4" type="video/mp4" media="(max-width: 700px)"/>
+      <source src="/assets/marketing/spatial-product-v2.mp4" type="video/mp4"/>
+    </video> : <img src="/assets/marketing/spatial-product-v2-poster.webp" alt="Interior apresentado na sequência de vídeos do EME Spatial." loading="lazy" decoding="async" width="1920" height="1080"/>}
   </div>;
 }
 
@@ -70,13 +94,8 @@ export default function HomeLanding() {
           <div><p className="ms-eyebrow">DO PROJETO À EXPERIÊNCIA</p><h2 id="ms-product-title">O espaço ganha vida.</h2></div>
           <p>Um ambiente que você pode percorrer,<br className="ms-desktop-break"/> transformar e apresentar.</p>
         </div>
-        <a className="ms-product-stage" href="/apresentar/m" aria-label="Experimentar a demonstração em 3D">
-          <img src="/assets/marketing/spatial-interior-preview.webp" alt="Sala e varanda da demonstração interativa em 3D." loading="lazy" decoding="async" width="1540" height="650"/>
-          <span className="ms-product-stage-shade" aria-hidden="true"/>
-          <span className="ms-product-stage-caption">Demonstração do produto</span>
-          <span className="ms-product-stage-action">Experimentar em 3D <ArrowUpRight size={19}/></span>
-        </a>
-        <div className="ms-product-note"><span>Você escolhe o caminho.</span><span>No navegador. Sem instalar.</span></div>
+        <ProductVideo/>
+        <div className="ms-product-note"><span>Exterior. Interior. Novas perspectivas.</span><span>Uma nova forma de apresentar.</span></div>
       </section>
 
       <section className="ms-benefits ms-container" id="possibilidades" aria-labelledby="ms-benefits-title">

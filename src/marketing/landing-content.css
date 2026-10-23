@@ -11,13 +11,8 @@
 .ms-home .ms-eyebrow { margin-bottom: 18px; }
 .ms-home .ms-product-heading > p,
 .ms-home .ms-experience-heading > p { color: var(--ms-muted); font-size: 15px; line-height: 1.7; max-width: 340px; }
-.ms-product-stage { display: block; position: relative; aspect-ratio: 2.1; overflow: hidden; background: #253b32; color: var(--ms-ivory); border-radius: 6px; }
-.ms-product-stage > img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
-.ms-product-stage:hover > img { transform: scale(1.015); }
-.ms-product-stage-shade { position: absolute; inset: 0; background: linear-gradient(0deg,#0e241acc,transparent 40%); }
-.ms-product-stage-caption { position: absolute; bottom: 35px; left: 36px; font-size: 12px; }
-.ms-product-stage-action { position: absolute; bottom: 25px; right: 28px; display: inline-flex; align-items: center; gap: 28px; min-height: 50px; padding: 15px 22px; color: var(--ms-forest); background: var(--ms-ivory); border-radius: 40px; font-size: 13px; }
-.ms-product-stage-action svg { flex-shrink: 0; }
+.ms-product-stage { display: block; position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #253b32; color: var(--ms-ivory); border-radius: 6px; }
+.ms-product-stage > img, .ms-product-stage > video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .ms-product-note { display: flex; justify-content: space-between; gap: 20px; padding-top: 19px; color: var(--ms-muted); font-size: 12px; line-height: 1.6; }
 .ms-home .ms-benefits { padding-top: 0; padding-bottom: 88px; }
 .ms-benefits-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 50px; margin-top: 44px; }
@@ -61,7 +56,6 @@
 @media(max-width:900px) {
   .ms-home .ms-product,.ms-home .ms-experience { padding-block: 68px; }
   .ms-home .ms-benefits { padding-bottom: 64px; }
-  .ms-product-stage { aspect-ratio: 1.65; }
   .ms-benefits-grid,.ms-experience-grid { gap: 26px; }
   .ms-process-steps { gap: 25px; }
   .ms-home .ms-experience-caption { min-height: 67px; }
@@ -71,11 +65,6 @@
   .ms-home .ms-product-heading,.ms-home .ms-experience-heading { display: block; margin-bottom: 27px; }
   .ms-home .ms-product-heading > p,.ms-home .ms-experience-heading > p { margin-top: 17px; font-size: 14px; }
   .ms-desktop-break { display: none; }
-  .ms-product-stage { aspect-ratio: 1; }
-  .ms-product-stage > img { object-position: 40% center; }
-  .ms-product-stage-shade { background: linear-gradient(0deg,#0e241acc,transparent 65%); }
-  .ms-product-stage-caption { top: 20px; bottom: auto; left: 20px; font-size: 10px; padding: 6px 9px; background: #102f27bf; border-radius: 20px; }
-  .ms-product-stage-action { left: 20px; bottom: 20px; right: auto; min-height: 48px; padding: 13px 19px; font-size: 12px; gap: 20px; }
   .ms-product-note { gap: 12px; flex-wrap: wrap; font-size: 11px; padding-top: 14px; }
   .ms-home .ms-benefits { padding-bottom: 52px; }
   .ms-benefits-grid { grid-template-columns: 1fr; gap: 26px; margin-top: 28px; }
@@ -101,7 +90,4 @@
   .ms-footer-invitation h2 { font-size: 36px; }
   .ms-footer-brand { margin-top: 37px; }
   .ms-footer-bottom { gap: 14px; }
-}
-@media(prefers-reduced-motion:reduce) {
-  .ms-product-stage > img { transition: none; }
 }
