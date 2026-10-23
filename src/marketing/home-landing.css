@@ -454,12 +454,12 @@
 .ms-footer-bottom nav a { min-height: 44px; }
 .ms-home .ms-footer-bottom > p { font-size: 12px; }
 @media (max-width: 900px) {
-  .ms-home section, .ms-home [id] { scroll-margin-top: 94px; }
+  .ms-home section, .ms-home [id] { scroll-margin-top: 79px; }
   .ms-navigation { max-height: calc(100dvh - 79px); overflow-y: auto; }
   .ms-home .ms-live-demo-heading h2 { max-width: 420px; }
 }
 @media (max-width: 700px) {
-  .ms-home section, .ms-home [id] { scroll-margin-top: 90px; }
+  .ms-home section, .ms-home [id] { scroll-margin-top: 75px; }
   .ms-hero-copy { padding-top: 34px; padding-bottom: 26px; }
   .ms-hero h1 { font-size: clamp(35px,10vw,58px); }
   .ms-scene { height: auto; }
@@ -501,17 +501,32 @@
 .ms-hero-film{position:absolute;inset:0;z-index:0;background:#102f27}
 .ms-hero-film video{width:100%;height:100%;display:block;object-fit:cover;object-position:65% center}
 .ms-film-shade{position:absolute;inset:0;background:linear-gradient(90deg,#102f27ed 0%,#102f27a8 30%,#102f2729 62%,#102f270d 100%),linear-gradient(0deg,#102f274d,transparent 25%);pointer-events:none}
-.ms-film-toggle{position:absolute;bottom:28px;right:5%;display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffff70;border-radius:50%;background:#102f2780;color:#fff;cursor:pointer;z-index:3}
-.ms-film-toggle:hover{background:#102f27}
 .ms-live-demo{padding-block:64px}
 .ms-home .ms-live-demo-heading h2{font-size:clamp(30px,3vw,44px)}
 .ms-home .ms-live-demo-features h3{font-size:22px}
-@media(max-width:900px){.ms-header-inner{min-height:78px}.ms-hero{height:calc(90svh - 78px);min-height:550px}.ms-hero h1{font-size:clamp(40px,5.6vw,58px)}}
+@media(max-width:900px){.ms-header-inner{min-height:78px}}
+/* Landscape footage gets its own full-width frame on phones and tablets. */
+@media(max-width:900px), (max-height:600px) and (pointer:coarse){
+ .ms-hero{height:auto;min-height:0;max-height:none;display:flex;flex-direction:column;align-items:stretch}
+ .ms-hero-copy{order:0;padding:44px 6% 36px}
+ .ms-hero h1{font-size:clamp(36px,6.2vw,52px);line-height:1.13;max-width:650px;margin-bottom:19px}
+ .ms-hero-film{order:1;position:relative;inset:auto;width:100%;aspect-ratio:16 / 9;flex:none}
+ .ms-hero-film video{object-fit:contain;object-position:center}
+ .ms-film-shade{background:linear-gradient(180deg,#102f2766,transparent 18%)}
+ .ms-hero-actions{margin-top:24px}
+}
 @media(max-width:700px){
- .ms-header-inner{min-height:74px}.ms-hero{height:calc(100svh - 74px);min-height:570px;max-height:820px;display:flex;align-items:flex-start}
- .ms-hero-copy{padding:52px 6% 60px}.ms-hero h1{font-size:clamp(36px,8.8vw,56px);line-height:1.13;max-width:600px;margin-bottom:19px}
+ .ms-header-inner{min-height:74px}
+ .ms-hero-copy{padding:38px 6% 32px}.ms-hero h1{font-size:clamp(34px,8.8vw,52px)}
  .ms-home .ms-hero-copy .ms-eyebrow{margin-bottom:21px}.ms-home .ms-hero-description{font-size:14px}
- .ms-hero-actions{margin-top:24px}.ms-hero-film video{object-position:59% center}
- .ms-film-shade{background:linear-gradient(180deg,#102f27f2 0%,#102f27bd 30%,#102f2733 62%,#102f2726 100%)}
- .ms-film-toggle{bottom:22px;right:6%}.ms-live-demo{padding-block:42px}
+ .ms-live-demo{padding-block:42px}
+}
+@media(max-width:900px) and (orientation:landscape) and (max-height:600px), (pointer:coarse) and (orientation:landscape) and (max-height:600px){
+ .ms-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center}
+ .ms-hero-copy{padding:28px 8%}
+ .ms-hero h1{font-size:clamp(28px,4vw,38px)}
+ .ms-home .ms-hero-copy .ms-eyebrow{margin-bottom:14px}
+ .ms-home .ms-hero-description{font-size:13px}
+ .ms-hero .ms-button{font-size:12px;padding-inline:17px;gap:18px}
+ .ms-film-shade{display:none}
 }
