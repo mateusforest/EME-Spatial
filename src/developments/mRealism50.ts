@@ -1,3 +1,4 @@
+import {fetchMAsset87} from './mAsset87';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import type {Own} from './mSurfaces';
@@ -6,7 +7,7 @@ import type {Own} from './mSurfaces';
 export async function loadMRealism50(scene:T.Scene,crown:T.Group,own:Own,
  finishes:{finishWood:(m:T.MeshStandardMaterial)=>void;finishStone:(m:T.MeshStandardMaterial)=>void;finishLinen:(m:T.MeshStandardMaterial)=>void},signal?:AbortSignal){
  const [asset,manifest]=await Promise.all([
-  fetch('/assets/m/model/m-realism-v50.glb',{signal}),fetch('/assets/m/model/m-realism-v50.json',{signal})
+  fetchMAsset87('/assets/m/model/m-realism-v50.glb',{signal}),fetch('/assets/m/model/m-realism-v50.json',{signal})
  ]);
  if(!asset.ok||!manifest.ok)throw new Error('Blender50 details unavailable');
  const info=await manifest.json() as {revision:number;treePlaces:{position:number[];scale:number[];angle:number}[];poolLevel:number;poolDepth:number};

@@ -1,3 +1,4 @@
+import TorreMPresentation from './TorreMPresentation';
 import {Component,lazy,Suspense,useEffect,useRef,useState} from 'react';
 import type {ReactNode} from 'react';
 import {createRoot} from 'react-dom/client';
@@ -36,7 +37,7 @@ function App({p}:{p:ClientDelivery}){
     return()=>{document.body.style.overflow=previous;launch.current?.focus();};
   },[opened]);
   useEffect(()=>{if(shareOpen)dialog.current?.showModal();else dialog.current?.close();},[shareOpen]);
-  function enter(){setFrameLoaded(false);history.pushState({emeDelivery:true},'',location.pathname+location.search+'#experiencia');setOpened(true);}
+  function enter(index?:number){if(typeof index==='number')setEntry(index);setFrameLoaded(false);history.pushState({emeDelivery:true},'',location.pathname+location.search+'#experiencia');setOpened(true);}
   function close(){if(history.state?.emeDelivery)history.back();else setOpened(false);}
   async function share(){
     setNotice('');
@@ -52,13 +53,14 @@ function App({p}:{p:ClientDelivery}){
       <section className="delivery-hero">
         <div className="delivery-copy"><a className="delivery-back" href="/#projetos"><ArrowLeft size={14}/>Todos os projetos</a><p className="delivery-eyebrow">{p.category||p.eyebrow}{p.stage&&' · '+p.stage}</p><h1>{p.title}</h1><p className="delivery-description">{p.description}</p>
           {entries.length>1&&<fieldset className="delivery-entry-picker"><legend>Por onde quer começar?</legend>{entries.map((e,i)=><button key={e.label} aria-pressed={entry===i} onClick={()=>chooseEntry(i)}><span><strong>{e.label}</strong><small>{e.description}</small></span>{entry===i?<Check size={18}/>:<ArrowRight size={18}/>}</button>)}</fieldset>}
-          <div className="delivery-actions"><button ref={launch} className="delivery-primary" onClick={enter}><Box size={19}/>Entrar na experiência<ArrowRight size={19}/></button>{p.pdf&&<a className="delivery-pdf" href={p.pdf} target="_blank" rel="noopener"><FileText size={18}/>Ver apresentação em PDF<ArrowRight size={16}/></a>}</div>
+          <div className="delivery-actions"><button ref={launch} className="delivery-primary" onClick={()=>enter()}><Box size={19}/>Entrar na experiência<ArrowRight size={19}/></button>{p.pdf&&<a className="delivery-pdf" href={p.pdf} target="_blank" rel="noopener"><FileText size={18}/>Ver apresentação em PDF<ArrowRight size={16}/></a>}</div>
           <div className="delivery-welcome"><span className="delivery-dot"/>Sem cadastro. No seu próprio ritmo.<small>O cenário 3D só carrega quando você entra na experiência.</small></div>
         </div>
         <figure className="delivery-visual"><img src={p.cover} alt={p.title+' · '+p.coverCredit} fetchPriority="high"/><span className="delivery-image-shade"/><figcaption><span>O PROJETO, POR OUTRO OLHAR</span><small>{p.coverCredit}</small></figcaption></figure>
       </section>
       {!!p.highlights?.length&&<section className="delivery-highlights" aria-label="Destaques do projeto"><span>NESTA EXPERIÊNCIA</span>{p.highlights.map(h=><p key={h}><Check size={16}/>{h}</p>)}</section>}
       {!!p.gallery?.length&&<section className="delivery-gallery" aria-labelledby="gallery-title"><div className="delivery-section-heading"><p className="delivery-eyebrow">O PROJETO EM PERSPECTIVA</p><h2 id="gallery-title">Um olhar antes da visita.</h2><p>Imagens e referências que ajudam a conhecer a proposta.</p></div><div>{p.gallery.map(g=><figure key={g.image}><img src={g.image} alt={g.caption} width="1000" height="650" loading="lazy" decoding="async"/><figcaption>{g.caption}</figcaption></figure>)}</div></section>}
+      {p.slug==='torre-m-apresentacao'&&<TorreMPresentation active={!opened} onApartment={()=>enter(0)}/>}
       <section className="delivery-guide" aria-label="Como aproveitar a apresentação"><div><span>01</span><Box size={23}/><h2>Entre no espaço</h2><p>Conheça os ambientes e escolha suas perspectivas.</p></div><div><span>02</span>{p.viewer==='botanique'?<SwatchBook size={23}/>:<Sun size={23}/>}<h2>{p.viewer==='botanique'?'Explore as possibilidades':'Descubra os detalhes'}</h2><p>{p.viewer==='botanique'?'Experimente materiais, móveis e diferentes cenários de luz.':'Observe o projeto e conheça os recursos disponíveis na visita.'}</p></div><div><span>03</span><Share2 size={23}/><h2>Continue a conversa</h2><p>Encaminhe este mesmo link para seus clientes ou sua equipe.</p></div></section>
       {!!related.length&&<section className="delivery-related" aria-labelledby="related-title"><div className="delivery-section-heading"><p className="delivery-eyebrow">CONTINUE EXPLORANDO</p><h2 id="related-title">Outras formas de viver o espaço.</h2></div><div>{related.map(r=><a href={r.href} key={r.slug}><img src={r.image} alt={r.alt} width="600" height="400" loading="lazy" decoding="async"/><small>{r.category}</small><h3>{r.name}<ArrowRight size={18}/></h3></a>)}</div><a className="delivery-all" href="/#projetos">Ver todos os projetos <ArrowRight size={16}/></a></section>}
     </main>

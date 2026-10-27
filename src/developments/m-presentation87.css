@@ -1,0 +1,24 @@
+.m-meeting-header{padding:20px 28px;align-items:center}
+.m-meeting-header span{display:block;font-size:10px;letter-spacing:2px}
+.m-meeting-header button{font-size:12px}
+.m-meeting-rooms{position:absolute;top:80px;left:28px;right:28px;display:flex;gap:7px;overflow:auto;scrollbar-width:none;z-index:5;padding:2px 0 6px}
+.m-meeting-rooms button{border:1px solid #d5dbcc;background:#f8f7efee;border-radius:24px;padding:11px 16px;font-size:12px;white-space:nowrap}
+.m-meeting-rooms button[aria-pressed=true]{background:#284f40;color:#fff;border-color:#284f40}
+.m-experience--presentation .m-room-title{top:132px;left:28px;right:auto;text-align:left;border-radius:12px;max-width:300px;padding:14px 18px}
+.m-experience--presentation .m-room-title p{display:none}
+.m-experience--presentation .m-room-title strong{font-size:25px}
+.m-experience--presentation .m-click-walk63{top:auto;bottom:205px;left:28px;transform:none;padding:10px 12px}
+.m-experience--presentation .m-click-walk63 small{display:none}
+.m-experience--presentation .m-view-direction{display:none}
+.m-status[role=alert]{z-index:25;left:50%;top:50%;transform:translate(-50%,-50%);width:min(390px,calc(100% - 32px));max-width:none;border-radius:14px;box-shadow:0 18px 65px #16352633;line-height:1.5}
+.m-status[role=alert] strong{font-size:18px}.m-status[role=alert] p{font-size:14px}
+.m-status[role=alert] button,.m-status[role=alert] a{display:block;text-align:center;padding:12px 16px;border:1px solid #c9d3c7;border-radius:7px;background:#294f40;color:#fff;text-decoration:none;font-size:13px;width:100%;margin-top:8px}
+.m-status[role=alert] a{background:#f4f5ec;color:#294f40}
+@media(max-width:700px){
+ .m-meeting-header{padding:14px 12px;flex-wrap:nowrap;gap:10px}.m-meeting-header span{font-size:8px;letter-spacing:1px;max-width:140px}.m-meeting-header button{font-size:11px;padding:10px 12px}
+ .m-meeting-rooms{top:66px;left:12px;right:12px}.m-meeting-rooms button{padding:10px 13px;font-size:11px}
+ .m-experience--presentation .m-room-title{top:114px;left:12px;padding:10px 13px;max-width:calc(100% - 24px)}.m-experience--presentation .m-room-title span{font-size:8px;letter-spacing:.6px}.m-experience--presentation .m-room-title strong{font-size:22px;margin-top:4px}
+ .m-experience--presentation .m-click-walk63{left:12px;bottom:234px;max-width:190px;width:auto;font-size:10px;padding:8px}
+ .m-experience--presentation .m-walk{right:12px;bottom:234px;transform:none;padding:8px}.m-experience--presentation .m-walk>span{display:none}
+ .m-experience--presentation .m-footer{left:12px;right:12px;justify-content:flex-end}.m-experience--presentation .m-footer button{padding:10px 13px;font-size:12px}
+}

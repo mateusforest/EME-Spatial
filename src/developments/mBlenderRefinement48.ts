@@ -1,3 +1,4 @@
+import {fetchMAsset87} from './mAsset87';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import type {Own} from './mSurfaces';
@@ -10,7 +11,7 @@ export async function loadMBlenderRefinement48(
  finishes:{finishWood:(m:T.MeshStandardMaterial)=>void;finishStone:(m:T.MeshStandardMaterial)=>void;finishLinen:(m:T.MeshStandardMaterial)=>void},
  signal?:AbortSignal,
 ){
- const response=await fetch('/assets/m/model/m-crafted-details-v48.glb',{signal});
+ const response=await fetchMAsset87('/assets/m/model/m-crafted-details-v48.glb',{signal});
  if(!response.ok)throw new Error('Blender48 finishing kit unavailable');
  const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),'/assets/m/model/');
  const resources=new Set<{dispose:()=>void}>(),meshes:T.Mesh[]=[];

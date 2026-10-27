@@ -1,3 +1,4 @@
+import {fetchMAsset87} from './mAsset87';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {addMGalleryFoliage} from './mGalleryFoliage';
@@ -7,7 +8,7 @@ import type {Own} from './mSurfaces';
  * The export contains five material batches, no tower or replacement podium. */
 export async function loadMArrivalBlender(site:T.Group,own:Own,
  finishes:{finishStone:(m:T.MeshStandardMaterial)=>void;finishWood:(m:T.MeshStandardMaterial)=>void},signal?:AbortSignal){
- const response=await fetch('/assets/m/model/m-arrival-details-v28.glb',{signal});
+ const response=await fetchMAsset87('/assets/m/model/m-arrival-details-v28.glb',{signal});
  if(!response.ok)throw new Error('Arrival detail kit unavailable');
  const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),'/assets/m/model/');
  const resources=new Set<{dispose:()=>void}>(),materials=new Set<T.MeshStandardMaterial>();

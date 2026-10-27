@@ -1,3 +1,4 @@
+import {fetchMAsset87} from './mAsset87';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import type {Own} from './mSurfaces';
@@ -5,7 +6,7 @@ import type {Own} from './mSurfaces';
 /** Reference-driven Blender details; all placements inherit the current site/crown handles. */
 export async function loadMReferenceRefinement49(scene:T.Scene,site:T.Group,crown:T.Group,own:Own,
  finishes:{finishWood:(m:T.MeshStandardMaterial)=>void;finishStone:(m:T.MeshStandardMaterial)=>void;finishLinen:(m:T.MeshStandardMaterial)=>void},signal?:AbortSignal){
- const response=await fetch('/assets/m/model/m-reference-refinement-v49.glb',{signal});
+ const response=await fetchMAsset87('/assets/m/model/m-reference-refinement-v49.glb',{signal});
  if(!response.ok)throw new Error('Blender49 reference details unavailable');
  const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),'/assets/m/model/');
  const resources=new Set<{dispose:()=>void}>(),meshes:T.Mesh[]=[];

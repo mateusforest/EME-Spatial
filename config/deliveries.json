@@ -214,6 +214,55 @@
           "caption": "Piscina · material de apresentação do empreendimento"
         }
       ]
+    },
+    {
+      "slug": "torre-m-apresentacao",
+      "status": "unlisted",
+      "title": "Torre M",
+      "eyebrow": "Uma experiência para o seu próximo lançamento",
+      "description": "Explore a arquitetura, conheça o lazer e visite um apartamento. Uma demonstração de como apresentar seu próximo empreendimento, do primeiro olhar às escolhas de cada cliente.",
+      "cover": "/assets/torre.webp",
+      "coverCredit": "Projeto conceitual · EME Spatial",
+      "viewer": "embedded",
+      "experience": "/apresentar/m?apartamento=14&apresentacao=1",
+      "note": "Torre M · projeto conceitual EME Spatial. Estoque comercial não conectado. Percurso solar ilustrativo. Vídeos e imagens renderizados têm tratamento visual diferente da navegação em tempo real.",
+      "category": "Edifícios",
+      "stage": "Apresentação demonstrativa",
+      "highlights": [
+        "Visita por ambientes",
+        "Consulta de andares",
+        "Materiais e iluminação"
+      ],
+      "entries": [
+        {
+          "label": "Apartamento modelo",
+          "description": "Ambientes, materiais e iluminação do Apartamento 14.",
+          "experience": "/apresentar/m?apartamento=14&apresentacao=1"
+        },
+        {
+          "label": "Edifício e lazer",
+          "description": "Arquitetura, jardim, piscina e áreas de convivência.",
+          "experience": "/apresentar/m?apresentacao=1"
+        }
+      ],
+      "gallery": [
+        {
+          "image": "/assets/m/cycles74/cozinha-jantar.webp",
+          "caption": "Cozinha e jantar · render do Apartamento 14"
+        },
+        {
+          "image": "/assets/m/cycles74/sacada.webp",
+          "caption": "Sacada · render do Apartamento 14"
+        },
+        {
+          "image": "/assets/m/editorial61/01-Piscina-e-marmore.jpg",
+          "caption": "Piscina e materiais · render editorial do estudo"
+        },
+        {
+          "image": "/assets/m/editorial61/03-Rooftop-infinito.jpg",
+          "caption": "Rooftop · render editorial do estudo"
+        }
+      ]
     }
   ]
 }
