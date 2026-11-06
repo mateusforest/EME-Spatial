@@ -1,0 +1,28 @@
+{
+  "sourceFolder": "C:/Users/EME/Downloads/moradas",
+  "received": "2026-11-06",
+  "reviewedImages": 21,
+  "individualPlansAvailable": false,
+  "architecturalModelProvided": false,
+  "newGalleryFiles": {
+    "aerial-context.jpg": "WhatsApp Image 2026-11-06 at 16.52.58 (1).jpeg",
+    "rooftop.jpg": "WhatsApp Image 2026-11-06 at 16.52.59 (3).jpeg",
+    "bedroom-detail.jpg": "WhatsApp Image 2026-11-06 at 16.52.59 (4).jpeg",
+    "leisure-plan-reference.jpg": "WhatsApp Image 2026-11-06 at 16.53.01.jpeg"
+  },
+  "planConnection": "Public development config: units[].tower=a and numeric label; units[].planId points to plans[].id with imageUrl. No inferred mapping from bedroom count or area.",
+  "blenderSource": "moradas-detail-kit.blend",
+  "blenderGenerator": "tools/moradas-detail-kit.py",
+  "modelScope": "Conceptual massing with Blender-authored vegetation and beveled geometry. Two conceptual cutaway interior studies trace the commercial illustration, not measured unit plans.",
+  "stock": "Snapshot supplied by user, dated 2026-11-04. Not live inventory.",
+  "interiorStudies": {
+    "generator": "tools/moradas-floorplans.py",
+    "sources": [
+      "moradas-plan-2bed.blend",
+      "moradas-plan-3bed.blend"
+    ],
+    "reference": "public/assets/developments/moradas-da-serra/plans.jpg",
+    "mapping": "Bedroom-count typology reference only. Explicit unit plan links remain separate and take precedence in the 2D tab.",
+    "limitations": "No measured CAD, wall dimensions, structural details or confirmed per-unit orientation supplied."
+  }
+}

@@ -9,7 +9,7 @@
 .development-page button:focus-visible,.development-page a:focus-visible,.moradas-dialog button:focus-visible{outline:3px solid #d9b766;outline-offset:3px}
 .development-page.development-page{height:100svh;min-height:730px;max-height:none;background:#153f31;border:1px solid #e6d49b40}
 .development-page .development-stage{inset:10px;border-radius:14px;background:#23483b}
-.development-page .development-image-world>img{object-position:53% center}
+.development-page .development-image-world>img{object-position:50% center}
 .development-page .development-stage--sunset .development-image-world>img{filter:brightness(.97) saturate(.91) contrast(1.04)}
 .development-page .development-stage--day .development-image-world>img{filter:brightness(1.05) saturate(.85)}
 .development-page .development-stage--night .development-image-world>img{filter:brightness(.48) saturate(.68) hue-rotate(8deg)}

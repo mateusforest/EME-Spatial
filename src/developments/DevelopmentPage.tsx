@@ -1,7 +1,7 @@
 import SceneOverlay from './SceneOverlay';
 import MoradasStockPanel from './MoradasStockPanel';
 import DecodedImage from './DecodedImage';
-import { emptyDevelopment, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
+import { emptyDevelopment, validateDevelopment, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan } from 'lucide-react';
 import { Dialog } from '../ui';
@@ -12,16 +12,19 @@ import './development.css';
 import './moradas-refinement.css';
 import './moradas-stock-panel.css';
 
+const MoradasUnitExperience=lazy(()=>import('./MoradasUnitExperience'));
 const DevelopmentModel = lazy(() => import('./DevelopmentModel'));
 
 export default function DevelopmentPage() {
   const [config,setConfig]=useState<DevelopmentConfig>(emptyDevelopment);
+  const [selectedUnit,setSelectedUnit]=useState<number|null>(null);
   const [selectedPlan,setSelectedPlan]=useState<DevelopmentPlan|null>(null);
-  useEffect(()=>{const controller=new AbortController();fetch('/api/public/developments/moradas-da-serra',{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Disponibilidade temporariamente indisponível. Consulte a equipe.');const data=await response.json();setConfig(data.config);}).catch(e=>{if(e.name!=='AbortError')setNotice('Os detalhes do empreendimento não puderam ser atualizados. O espelho exibido é de 04/11/2026.');});return()=>controller.abort();},[]);
-  const [tower, setTower] = useState<TowerId>('a');
-  const [floor, setFloor] = useState(6);
+  useEffect(()=>{const controller=new AbortController();fetch('/api/public/developments/moradas-da-serra',{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Disponibilidade temporariamente indisponível. Consulte a equipe.');const data=await response.json();setConfig(validateDevelopment(data.config));}).catch(e=>{if(e.name!=='AbortError')setNotice('Os detalhes do empreendimento não puderam ser atualizados. O espelho exibido é de 04/11/2026.');});return()=>controller.abort();},[]);
+  const [entry]=useState(()=>{const q=new URLSearchParams(window.location.search);const tower:TowerId=q.get('tower')==='b'?'b':'a';const floor=Number(q.get('floor'));return {tower,floor:Math.max(1,Math.min(tower==='a'?8:9,Number.isInteger(floor)&&floor>0?floor:6)),selected:q.has('floor')};});
+  const [tower, setTower] = useState<TowerId>(entry.tower);
+  const [floor, setFloor] = useState(entry.floor);
   const [lighting, setLighting] = useState<Lighting>('sunset');
-  const [place, setPlace] = useState<Place>('overview');
+  const [place, setPlace] = useState<Place>(entry.selected?'floors':'overview');
   const [mode, setMode] = useState<'image' | 'model'>('image');
   const [gallery, setGallery] = useState<GalleryId | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
@@ -29,7 +32,7 @@ export default function DevelopmentPage() {
   const [notice, setNotice] = useState('');
   const [ready, setReady] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(entry.selected);
   const pageRef = useRef<HTMLElement>(null);
   const controls = useRef<ModelControls | null>(null);
   const media = gallery ? galleries[gallery] : null;
@@ -62,7 +65,7 @@ export default function DevelopmentPage() {
           <button className="development-hotspot development-hotspot--entrance" onClick={() => openGallery('entrance')}><span>Acesso <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
           <button className="development-hotspot development-hotspot--leisure" onClick={() => openGallery('leisure')}><span>Lazer <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
         </div>
-      </div> : <Suspense fallback={<div className="development-loading" role="status">Preparando a maquete 3D…</div>}><DevelopmentModel ref={controls} tower={tower} floor={floor} lighting={lighting} onSelectFloor={selectFloor} onArea={openGallery} onReady={() => setReady(true)} onFail={() => { setModelFailed(true); setReady(false); }} /></Suspense>}
+      </div> : <Suspense fallback={null}><DevelopmentModel ref={controls} showFloor={place==='floors'} tower={tower} floor={floor} lighting={lighting} onSelectFloor={selectFloor} onArea={openGallery} onReady={() => setReady(true)} onFail={() => { setModelFailed(true); setReady(false); }} /></Suspense>}
       {mode === 'model' && !ready && !modelFailed && <div className="development-loading" role="status">Preparando a maquete 3D…</div>}
       {mode === 'model' && modelFailed && <div className="development-model-error"><h2>A vista ilustrada continua disponível.</h2><p>Este navegador não conseguiu abrir a maquete 3D.</p><button className="primary-button" onClick={() => setMode('image')}>Voltar à apresentação <ArrowRight size={16} /></button></div>}
     </div>
@@ -79,7 +82,7 @@ export default function DevelopmentPage() {
       <span className="development-model-note">{mode === 'model' ? 'Maquete conceitual · gire para descobrir' : 'Uma experiência EME Select · estudo de apresentação'}</span>
     </section>
     {<><button className="development-panel-toggle" aria-expanded={toolsOpen} onClick={()=>setToolsOpen(v=>!v)}>{toolsOpen?'Recolher disponibilidade':'Consultar unidades'} {toolsOpen?<Minus size={14}/>:<Plus size={14}/>}</button>
-    {toolsOpen && <MoradasStockPanel tower={tower==='a'?'A':'B'} floor={floor} setTower={t=>{setTower(t==='A'?'a':'b');setFloor(8);}} setFloor={selectFloor} onClose={()=>setToolsOpen(false)}/>}</>}
+    {toolsOpen && <MoradasStockPanel tower={tower==='a'?'A':'B'} floor={floor} setTower={t=>{setTower(t==='A'?'a':'b');setFloor(8);}} setFloor={selectFloor} onClose={()=>setToolsOpen(false)} onUnit={setSelectedUnit}/>}</>}
     <div className="development-bottom">
       <div className="development-navigation"><p className="eyebrow">Explore o empreendimento</p><div role="group" aria-label="Áreas do empreendimento">{([{ id: 'overview', label: 'Visão geral', icon:Scan }, { id: 'floors', label: 'Andares', icon:Layers3 }, { id: 'leisure', label: 'Lazer', icon:Trees }, { id: 'surroundings', label: 'Fachadas', icon:Building2 }] as const).map(item => <button key={item.id} aria-pressed={place === item.id} onClick={() => choosePlace(item.id)}><item.icon size={16}/>{item.label}</button>)}</div></div>
       <div className="development-lighting" role="group" aria-label="Luz do cenário"><span>Luz do cenário<small>Simulação visual</small></span>{([{ id: 'day', label: 'Dia', icon:Sun }, { id: 'sunset', label: 'Entardecer', icon:Sunset }, { id: 'night', label: 'Noite', icon:Moon }] as const).map(item => <button key={item.id} aria-pressed={lighting === item.id} onClick={() => setLighting(item.id)}><item.icon size={16}/>{item.label}</button>)}</div>
@@ -87,6 +90,7 @@ export default function DevelopmentPage() {
     </div>
     <p className="development-footnote">Estudo visual · Arquitetura e disponibilidade sujeitas à validação da incorporadora.</p>
     {notice && <div className="development-notice" role="status"><Check size={14} />{notice}</div>}
+    {selectedUnit!==null&&<Suspense fallback={<div className="development-notice" role="status">Abrindo a unidade…</div>}><MoradasUnitExperience number={selectedUnit} config={config} onClose={()=>setSelectedUnit(null)}/></Suspense>}
     {selectedPlan&&<Dialog className="moradas-dialog" title={selectedPlan.title} onClose={()=>setSelectedPlan(null)} wide><img className="development-selected-plan" src={selectedPlan.imageUrl} alt={'Planta '+selectedPlan.title}/><p>{selectedPlan.area} m² · {selectedPlan.bedrooms??'—'} dormitórios · {selectedPlan.suites??'—'} suítes · {selectedPlan.parking??'—'} vagas</p></Dialog>}
     {media && <Dialog className="moradas-dialog" title={media.title} onClose={() => setGallery(null)} wide><div className="development-gallery" onKeyDown={event => { if (event.key === 'ArrowRight') setImageIndex(value => (value + 1) % media.images.length); if (event.key === 'ArrowLeft') setImageIndex(value => (value - 1 + media.images.length) % media.images.length); }}>
       <div className={`development-gallery-image${gallery === 'plans' ? ' is-plan' : ''}`}>

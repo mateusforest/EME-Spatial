@@ -21,11 +21,13 @@ export const galleries: Record<GalleryId, { title: string; note: string; images:
     { file: 'living.jpg', caption: 'Estar e jantar integrados' }, { file: 'kitchen.jpg', caption: 'Cozinha integrada' },
     { file: 'suite.jpg', caption: 'Dormitório' }, { file: 'bedroom.jpg', caption: 'Um espaço para descansar' },
     { file: 'single-bedroom.jpg', caption: 'Dormitório individual' }, { file: 'bathroom.jpg', caption: 'Banheiro' },
+    { file: 'bedroom-detail.jpg', caption: 'Dormitório · outro ângulo' },
   ] },
   leisure: { title: 'Tempo para viver lá fora', note: 'Perspectivas fornecidas pela DeVille. Áreas, equipamentos e acabamentos sujeitos ao projeto e memorial.', images: [
     { file: 'pool.jpg', caption: 'Piscina e espaço de convivência' }, { file: 'lounge.jpg', caption: 'Convivência ao entardecer' }, { file: 'court.jpg', caption: 'Quadra e playground' },
+    { file: 'leisure-plan-reference.jpg', caption: 'Lazer · planta no material comercial' },
   ] },
   court: { title: 'Espaço para se encontrar', note: 'Perspectiva fornecida pela DeVille. Consulte o projeto e memorial do empreendimento.', images: [{ file: 'court.jpg', caption: 'Quadra e playground' }] },
-  entrance: { title: 'Sua chegada ao Moradas da Serra', note: 'Perspectivas fornecidas pela DeVille. Apresentação do acesso e das fachadas.', images: [{ file: 'front.jpg', caption: 'Acesso ao condomínio' }, { file: 'facade.jpg', caption: 'Volumes e fachadas' }] },
+  entrance: { title: 'Sua chegada ao Moradas da Serra', note: 'Perspectivas fornecidas pela DeVille. Apresentação do acesso e das fachadas.', images: [{ file: 'front.jpg', caption: 'Acesso ao condomínio' }, { file: 'facade.jpg', caption: 'Volumes e fachadas' }, {file:'rooftop.jpg',caption:'Cobertura e detalhes da fachada'}, {file:'aerial-context.jpg',caption:'O empreendimento e seu entorno'}] },
   plans: { title: 'Plantas para diferentes momentos', note: 'Material comercial fornecido pela DeVille: 2 dormitórios a partir de 52 m² e 3 dormitórios com 71 m² e suíte. Vinculação a torres, andares e unidades a confirmar.', images: [{ file: 'plans.jpg', caption: 'Tipologias do empreendimento · material da incorporadora' }] },
 };

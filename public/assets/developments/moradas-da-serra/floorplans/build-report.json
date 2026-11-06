@@ -1,0 +1,16 @@
+{
+  "blender": "5.2.3 LTS",
+  "basis": "Proportional tracing of the supplied commercial illustration; conceptual, no measured dimensions or unit mapping.",
+  "models": [
+    {
+      "bedrooms": 2,
+      "bytes": 744584,
+      "meshes": 32
+    },
+    {
+      "bedrooms": 3,
+      "bytes": 1026388,
+      "meshes": 34
+    }
+  ]
+}

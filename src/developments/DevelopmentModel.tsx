@@ -1,8 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { floorStatus } from './moradas-stock';
+import { floorColors } from './moradas-floor-geometry';
 import type { GalleryId, Lighting, TowerId } from './moradas';
 
 export interface ModelControls { zoom: (direction: number) => void; reset: () => void }
-interface Props { tower: TowerId; floor: number; lighting: Lighting; onSelectFloor: (floor: number, tower: TowerId) => void; onArea: (area: GalleryId) => void; onReady: () => void; onFail: () => void }
+interface Props { showFloor:boolean; tower: TowerId; floor: number; lighting: Lighting; onSelectFloor: (floor: number, tower: TowerId) => void; onArea: (area: GalleryId) => void; onReady: () => void; onFail: () => void }
 
 // Deliberately a reference-based massing study, not a surveyed/BIM representation.
 const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentModel(props, ref) {
@@ -11,21 +13,23 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
   latest.current = props;
   const api = useRef<ModelControls & { update: () => void } | null>(null);
   useImperativeHandle(ref, () => ({ zoom: value => api.current?.zoom(value), reset: () => api.current?.reset() }), []);
-  useEffect(() => { api.current?.update(); }, [props.floor, props.tower, props.lighting]);
+  useEffect(() => { api.current?.update(); }, [props.floor, props.tower, props.lighting, props.showFloor]);
   useEffect(() => {
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     async function setup() {
       const THREE = await import('three');
-      const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
-      if (cancelled || !host.current) return;
+      const [{OrbitControls},{GLTFLoader},{RoomEnvironment}]=await Promise.all([import('three/addons/controls/OrbitControls.js'),import('three/addons/loaders/GLTFLoader.js'),import('three/addons/environments/RoomEnvironment.js')]);
+      const kit=await new GLTFLoader().loadAsync('/assets/developments/moradas-da-serra/detail-kit/moradas-detail-kit.glb').catch(()=>null);
+      const disposeKit=()=>kit?.scene.traverse(o=>{if(o instanceof THREE.Mesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});
+      if (cancelled || !host.current) {disposeKit();return;}
       const mount = host.current;
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(38, 1, .1, 600);
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.22;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -49,18 +53,28 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       camera.position.copy(home); controls.target.copy(homeTarget); controls.update();
       const resources = new Set<{ dispose: () => void }>();
       const own = <T extends { dispose: () => void }>(resource: T) => { resources.add(resource); return resource; };
+      const pmrem=new THREE.PMREMGenerator(renderer);const studio=new RoomEnvironment();const environment=own(pmrem.fromScene(studio,.04));studio.dispose();pmrem.dispose();scene.environment=environment.texture;scene.environmentIntensity=.45;
+      const block=kit?.scene.getObjectByName('ArchitecturalBlock') as import('three').Mesh|undefined;
+      const landscapeTree=kit?.scene.getObjectByName('LandscapeTree');
+      kit?.scene.traverse(o=>{if(o instanceof THREE.Mesh){own(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material]){own(m);m.side=THREE.DoubleSide;if(m instanceof THREE.MeshStandardMaterial&&m.name.startsWith('Leaf')){m.color.multiplyScalar(.78);m.roughness=.9;}}}});
+      mount.dataset.detailKit=kit?'blender-5.2':'fallback';
       const material = (color: string, roughness = .8) => own(new THREE.MeshStandardMaterial({ color, roughness }));
       const ivory = material('#e8e6df'), side = material('#d9d9d0'), charcoal = material('#51565a');
       const timber = material('#7a5b40'), stone = material('#b0aca0'), paving = material('#c1bfb3');
       const metal = material('#414b49', .45), glass = material('#5f7e86', .18), frameMat = material('#f6f5ec');
-      const trunk = material('#74614b'), leaves = material('#526b42'), lawn = material('#708755');
+      const trunk = material('#74614b'), leaves = material('#526b42'), lawn = material('#738065');
       const white = material('#f5f0e4'), asphalt = material('#747a77');
       const warmGlass = own(new THREE.MeshStandardMaterial({ color: '#ddd4a2', emissive: '#ffbd68', emissiveIntensity: .25, roughness: .32 }));
       const commonGlass = own(new THREE.MeshStandardMaterial({ color: '#dbc89e', emissive: '#ffd08a', emissiveIntensity: 0, roughness: .3 }));
       const fixture = own(new THREE.MeshStandardMaterial({ color: '#fff0ca', emissive: '#ffd48b', emissiveIntensity: 0 }));
       const nightLights: import('three').PointLight[] = [];
       const water = own(new THREE.MeshStandardMaterial({ color: '#609fa5', metalness: .18, roughness: .2 }));
-      const boxGeo = own(new THREE.BoxGeometry(1, 1, 1));
+      const surfaceCanvas=document.createElement('canvas');surfaceCanvas.width=surfaceCanvas.height=128;const surfaceContext=surfaceCanvas.getContext('2d')!;const pixels=surfaceContext.createImageData(128,128);
+      for(let i=0;i<pixels.data.length;i+=4){const v=190+((i*137+Math.floor(i/512)*73)%51);pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=v;pixels.data[i+3]=255;}surfaceContext.putImageData(pixels,0,0);
+      const grain=own(new THREE.CanvasTexture(surfaceCanvas));grain.wrapS=grain.wrapT=THREE.RepeatWrapping;grain.repeat.set(12,12);
+      for(const surface of [ivory,side,stone,paving]){surface.bumpMap=grain;surface.bumpScale=.018;surface.roughnessMap=grain;}
+      glass.metalness=.35;glass.roughness=.14;glass.envMapIntensity=1.1;warmGlass.metalness=.2;warmGlass.roughness=.22;
+      const boxGeo = block?.geometry || own(new THREE.BoxGeometry(1, 1, 1));
       const leafGeo = own(new THREE.IcosahedronGeometry(1, 2));
       const trunkGeo = own(new THREE.CylinderGeometry(.16, .24, 1, 6));
       const hitTargets: import('three').Object3D[] = [];
@@ -68,6 +82,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         const mesh = new THREE.Mesh(boxGeo, mat); mesh.position.set(x, y, z); mesh.scale.set(w, h, d); mesh.castShadow = shadow; mesh.receiveShadow = true; parent.add(mesh); return mesh;
       }
       function tree(x: number, z: number, scale = 1) {
+        if(landscapeTree){const specimen=landscapeTree.clone(true);specimen.position.set(x,0,z);specimen.scale.setScalar(scale);specimen.rotation.y=(x+z)*.27;specimen.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}});scene.add(specimen);return;}
         const stem = new THREE.Mesh(trunkGeo, trunk); stem.position.set(x, 1.7 * scale, z); stem.scale.set(scale, 3.4 * scale, scale); stem.castShadow = true; scene.add(stem);
         for (let j = 0; j < 3; j++) { const crown = new THREE.Mesh(leafGeo, leaves); crown.position.set(x + Math.sin(j * 2.2) * .65 * scale, (3.4 + j * .38) * scale, z + Math.cos(j * 2.2) * .65 * scale); crown.scale.set(1.7 * scale, 1.55 * scale, 1.5 * scale); crown.castShadow = true; scene.add(crown); }
       }
@@ -83,12 +98,35 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       for (let x = -28; x <= 29; x += 9) { tree(x, 29, .85); tree(x, -27, 1.1); }
       for (let z = -18; z < 25; z += 9) { tree(-30, z); tree(31, z); }
 
+      // Garden islands, stone edging and paving joints give the arrival scale.
+      const garden=material('#5e704d'), hedge=material('#435d39');
+      for(const [x,z,w,d] of [[-28,0,5,49],[29,-12,5,27],[0,-27,49,5],[-12,-10,16,14],[8,0,16,14]] as number[][]){
+        box(scene,x,-.01,z,w,.18,d,stone);
+        box(scene,x,.09,z,w-.3,.06,d-.3,garden);
+      }
+      const shrubGeo=own(new THREE.IcosahedronGeometry(1,1));
+      for(let i=0;i<42;i++){
+        const x=i<21?-28:30,z=-23+(i%21)*2.35;
+        const shrub=new THREE.Mesh(shrubGeo,hedge);shrub.position.set(x,.45,z);shrub.scale.set(.7,.48,.8);shrub.rotation.y=i*1.31;shrub.castShadow=true;scene.add(shrub);
+      }
+      const jointPoints:number[]=[];
+      for(let x=-33;x<=33;x+=2.2)jointPoints.push(x,-.027,-30,x,-.027,31);
+      for(let z=-30;z<=31;z+=2.2)jointPoints.push(-33,-.027,z,33,-.027,z);
+      const jointGeometry=own(new THREE.BufferGeometry());jointGeometry.setAttribute('position',new THREE.Float32BufferAttribute(jointPoints,3));
+      scene.add(new THREE.LineSegments(jointGeometry,own(new THREE.LineBasicMaterial({color:'#918f83',transparent:true,opacity:.24}))));
+      for(const x of [-27,-4]){
+        for(let slat=0;slat<5;slat++)box(scene,x,.55,27+slat*.16,2.6,.09,.12,timber,true);
+        for(const dx of [-1,1])box(scene,x+dx,.27,27.32,.10,.5,.8,metal,true);
+      }
       const towerCenters = { a: new THREE.Vector3(-12, 0, -10), b: new THREE.Vector3(8, 0, 0) };
       function windowAt(parent: import('three').Object3D, x: number, y: number, z: number, rotate: number, index: number, wide = 1.4) {
         const window = new THREE.Group(); window.position.set(x, y, z); window.rotation.y = rotate; parent.add(window);
         box(window, 0, 0, 0, wide + .14, 1.4, .12, frameMat);
         box(window, 0, 0, .07, wide, 1.25, .045, index % 4 !== 0 ? warmGlass : glass);
         box(window, 0, 0, .11, .045, 1.27, .035, frameMat);
+        for(const sx of [-1,1])box(window,sx*(wide/2+.04),0,.12,.065,1.45,.12,frameMat,true);
+        for(const sy of [-1,1])box(window,0,sy*.7,.12,wide+.15,.06,.12,frameMat,true);
+        box(window,0,-.15,.10,wide,.035,.045,metal);
         box(window, 0, -.73, .1, wide + .22, .07, .32, frameMat, true);
       }
       function tower(id: TowerId) {
@@ -117,6 +155,9 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
           box(level, 7.3, y - .8, 1.3, .15, .96, 3.7, charcoal, true);
           box(level, 6.55, y - .8, 3.15, 1.6, .96, .15, charcoal, true);
           windowAt(level, 6.02, y + .1, 1.3, Math.PI / 2, f, 2.25);
+          box(level,7.32,y-.25,1.3,.06,.055,3.75,metal,true);
+          for(let rail=-.45;rail<3.1;rail+=.45)box(level,7.32,y-.55,rail,.035,.6,.035,metal);
+          box(level,0,y-story/2+.02,-4.92,11.8,.045,.04,stone);
           hitTargets.push(...level.children);
           level.children.forEach(child => { child.userData = { tower: id, floor: f }; });
         }
@@ -179,9 +220,9 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       }
       const ambient = new THREE.HemisphereLight('#fff4db', '#a1ac93', 2.5); scene.add(ambient);
       const sun = new THREE.DirectionalLight('#ffe3af', 3.1); sun.position.set(-28, 46, 24); sun.castShadow = true;
-      sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -52; sun.shadow.camera.right = 52; sun.shadow.camera.top = 52; sun.shadow.camera.bottom = -52; sun.shadow.camera.near = .5; sun.shadow.camera.far = 130; sun.shadow.bias = -.0004; sun.shadow.normalBias = .025; scene.add(sun);
+      sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -52; sun.shadow.camera.right = 52; sun.shadow.camera.top = 52; sun.shadow.camera.bottom = -52; sun.shadow.camera.near = .5; sun.shadow.camera.far = 130; sun.shadow.bias = -.0002; sun.shadow.normalBias = .02; sun.shadow.radius=3; scene.add(sun);
       const fill = new THREE.DirectionalLight('#bed1df', .8); fill.position.set(35, 28, -30); scene.add(fill);
-      const highlightMat = own(new THREE.MeshBasicMaterial({ color: '#e6d49b', transparent: true, opacity: .2, depthWrite: false }));
+      const highlightMat = own(new THREE.MeshBasicMaterial({ color: '#edc76e', transparent: true, opacity: .16, depthWrite: false }));
       // Trace the real model footprint, including the recessed front and balcony.
       const footprint = [[-5.92, -4.92], [5.92, -4.92], [5.92, -.57], [7.4, -.57], [7.4, 3.25], [5.92, 3.25], [5.92, 4.92], [5.82, 5.5], [1.6, 5.5], [1.6, 5.16], [-1.6, 5.16], [-1.6, 5.5], [-5.82, 5.5], [-5.92, 4.92]];
       const positions: number[] = [], edgePositions: number[] = [];
@@ -193,8 +234,20 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const bandGeometry = own(new THREE.BufferGeometry()); bandGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       highlightMat.side = THREE.DoubleSide;
       const highlight = new THREE.Mesh(bandGeometry, highlightMat); scene.add(highlight);
+      // Lift the luminous outline clear of sills and balcony surfaces. This
+      // traces one selected floor without recolouring the building materials.
+      highlight.scale.set(1.018,1,1.018);
+      const rimMat=own(new THREE.MeshBasicMaterial({color:'#ffe4a2',toneMapped:false,transparent:true,opacity:.95,depthWrite:false}));
+      const haloMat=own(new THREE.MeshBasicMaterial({color:'#efca72',toneMapped:false,transparent:true,opacity:.1,depthWrite:false}));
+      for(let i=0;i<edgePositions.length;i+=6){
+        const from=new THREE.Vector3(...edgePositions.slice(i,i+3) as [number,number,number]);
+        const to=new THREE.Vector3(...edgePositions.slice(i+3,i+6) as [number,number,number]);
+        const line=new THREE.LineCurve3(from,to);
+        highlight.add(new THREE.Mesh(own(new THREE.TubeGeometry(line,1,.035,6,false)),rimMat));
+        highlight.add(new THREE.Mesh(own(new THREE.TubeGeometry(line,1,.11,6,false)),haloMat));
+      }
       const edges = own(new THREE.BufferGeometry()); edges.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
-      const outline = new THREE.LineSegments(edges, own(new THREE.LineBasicMaterial({ color: '#e8efd6', transparent: true, opacity: .85 }))); scene.add(outline);
+      const outline = new THREE.LineSegments(edges, own(new THREE.LineBasicMaterial({ color: '#ffe4a2', transparent: true, opacity: .85 }))); outline.scale.copy(highlight.scale); scene.add(outline);
       const pinLayer = document.createElement('div'); pinLayer.className = 'development-model-pins'; mount.appendChild(pinLayer);
       const pinInfo = [{ area: 'court' as const, text: 'Quadra', position: new THREE.Vector3(-16, 1, 16) }, { area: 'leisure' as const, text: 'Lazer', position: new THREE.Vector3(24, 2, 18) }, { area: 'entrance' as const, text: 'Acesso', position: new THREE.Vector3(8, 4, 27) }];
       const pinButtons = pinInfo.map(pin => { const button = document.createElement('button'); button.type = 'button'; button.className = 'development-model-pin'; button.textContent = `${pin.text} ＋`; button.onclick = () => latest.current.onArea(pin.area); pinLayer.appendChild(button); return button; });
@@ -211,24 +264,31 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         mount.dataset.camera = camera.position.toArray().map(value => value.toFixed(2)).join(',');
         if (settling-- > 0) schedule();
       }
+      function highlightFloor(tower:TowerId,floor:number){
+        const center=towerCenters[tower];highlight.visible=true;outline.visible=true;
+        const status=tower==='b'?'sold':floorStatus(floor)==='available'?'available':floorStatus(floor)==='negotiation'?'negotiation':'sold';
+        const color=floorColors[status];
+        highlight.position.set(center.x,3.4+(floor-.5)*2.85,center.z);outline.position.copy(highlight.position);
+        for(const material of [highlightMat,rimMat,haloMat,outline.material])material.color.set(color);
+        mount.dataset.highlightStatus=status;mount.dataset.highlightFloor=`${tower}-${floor}`;
+      }
       function update() {
-        const state = latest.current; const center = towerCenters[state.tower];
-        highlight.position.set(center.x, 3.4 + (state.floor - .5) * 2.85, center.z); outline.position.copy(highlight.position);
+        const state = latest.current; highlightFloor(state.tower,state.floor);highlight.visible=state.showFloor;outline.visible=state.showFloor;
         const night = state.lighting === 'night', day = state.lighting === 'day';
         scene.background = new THREE.Color(night ? '#162e37' : day ? '#dbe8e8' : '#d9cbb7');
         scene.fog = new THREE.Fog(scene.background, 105, 220);
-        ambient.intensity = night ? .65 : day ? 1.9 : 1.15;
-        sun.intensity = night ? .4 : day ? 3.2 : 2.8;
-        fill.intensity = night ? .4 : day ? .75 : .65;
+        ambient.intensity = night ? .45 : day ? 1.1 : .65;
+        sun.intensity = night ? .35 : day ? 2.5 : 2.1;
+        fill.intensity = night ? .25 : day ? .5 : .4;
         sun.color.set(night ? '#a4bfe1' : day ? '#fff4de' : '#ffd5a0');
         sun.position.set(day ? -18 : -36, day ? 65 : 30, 30);
-        warmGlass.color.set(day ? '#789093' : '#ddd4a2');
-        warmGlass.emissiveIntensity = day ? 0 : night ? 2.6 : 1.4;
-        commonGlass.emissiveIntensity = day ? 0 : night ? 2.2 : 1.1;
+        warmGlass.color.set(day ? '#657a7c' : night ? '#ddd4a2' : '#748481');
+        warmGlass.emissiveIntensity = day ? 0 : night ? 1.3 : .045;
+        commonGlass.emissiveIntensity = day ? 0 : night ? 1.2 : .2;
         fixture.emissiveIntensity = day ? 0 : night ? 4 : 2;
         water.emissive.set('#4dced9'); water.emissiveIntensity = day ? 0 : night ? .4 : .12;
         nightLights.forEach(light => { light.intensity = day ? 0 : night ? 65 : 35; });
-        renderer.toneMappingExposure = night ? 1 : day ? 1.06 : 1.12;
+        renderer.toneMappingExposure = night ? 1 : day ? .95 : .96;
         mount.dataset.lighting = state.lighting; mount.dataset.selectedFloor = `${state.tower}-${state.floor}`;
         mount.dataset.windowEmission = String(warmGlass.emissiveIntensity);
         mount.dataset.activeLights = String(nightLights.filter(light => light.intensity > 0).length); schedule();
@@ -245,7 +305,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         const rect=canvas.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
         const hit=raycaster.intersectObjects(hitTargets,true)[0]; let object:import('three').Object3D|null=hit?.object||null;
         while(object&&!object.userData.floor)object=object.parent;
-        if(object?.userData.floor){const c=towerCenters[object.userData.tower as TowerId];highlight.position.set(c.x,3.4+(object.userData.floor-.5)*2.85,c.z);outline.position.copy(highlight.position);canvas.style.cursor='pointer';schedule();}
+        if(object?.userData.floor){highlightFloor(object.userData.tower as TowerId,object.userData.floor);canvas.style.cursor='pointer';schedule();}
         else {canvas.style.cursor='grab';update();}
       };
       const leaveFloor=()=>{canvas.style.cursor='grab';update();};
