@@ -1,4 +1,3 @@
-import {floorStatus} from './moradas-stock';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { GalleryId, Lighting, TowerId } from './moradas';
 
@@ -194,13 +193,6 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const bandGeometry = own(new THREE.BufferGeometry()); bandGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       highlightMat.side = THREE.DoubleSide;
       const highlight = new THREE.Mesh(bandGeometry, highlightMat); scene.add(highlight);
-      const statusColor=(id:TowerId,level:number)=>id==='b'?'#c64747':floorStatus(level)==='available'?'#32a37a':floorStatus(level)==='negotiation'?'#e89432':'#c64747';
-      for(const id of ['a','b'] as const) for(let level=1;level<=(id==='a'?8:9);level++){
-        const mat=own(new THREE.MeshBasicMaterial({color:statusColor(id,level),transparent:true,opacity:.24,depthWrite:false,side:THREE.DoubleSide}));
-        const band=new THREE.Mesh(bandGeometry,mat); const center=towerCenters[id];
-        band.position.set(center.x,3.4+(level-.5)*2.85,center.z);scene.add(band);
-      }
-
       const edges = own(new THREE.BufferGeometry()); edges.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
       const outline = new THREE.LineSegments(edges, own(new THREE.LineBasicMaterial({ color: '#e8efd6', transparent: true, opacity: .85 }))); scene.add(outline);
       const pinLayer = document.createElement('div'); pinLayer.className = 'development-model-pins'; mount.appendChild(pinLayer);
@@ -221,7 +213,6 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       }
       function update() {
         const state = latest.current; const center = towerCenters[state.tower];
-        highlightMat.color.set(statusColor(state.tower,state.floor));
         highlight.position.set(center.x, 3.4 + (state.floor - .5) * 2.85, center.z); outline.position.copy(highlight.position);
         const night = state.lighting === 'night', day = state.lighting === 'day';
         scene.background = new THREE.Color(night ? '#162e37' : day ? '#dbe8e8' : '#d9cbb7');
@@ -249,6 +240,15 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const observer = new ResizeObserver(resize); observer.observe(mount);
       const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
       let down = { x: 0, y: 0 };
+      const hoverFloor = (event:PointerEvent) => {
+        if(event.buttons || event.pointerType==='touch') return;
+        const rect=canvas.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
+        const hit=raycaster.intersectObjects(hitTargets,true)[0]; let object:import('three').Object3D|null=hit?.object||null;
+        while(object&&!object.userData.floor)object=object.parent;
+        if(object?.userData.floor){const c=towerCenters[object.userData.tower as TowerId];highlight.position.set(c.x,3.4+(object.userData.floor-.5)*2.85,c.z);outline.position.copy(highlight.position);canvas.style.cursor='pointer';schedule();}
+        else {canvas.style.cursor='grab';update();}
+      };
+      const leaveFloor=()=>{canvas.style.cursor='grab';update();};
       const pointerDown = (event: PointerEvent) => { down = { x: event.clientX, y: event.clientY }; };
       const pointerUp = (event: PointerEvent) => { if (Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || event.button !== 0) return; const rect = canvas.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1); raycaster.setFromCamera(pointer, camera); const hit = raycaster.intersectObjects(hitTargets, true)[0]; if (!hit) return; let object: import('three').Object3D | null = hit.object; while (object && !object.userData.floor && !object.userData.area) object = object.parent; if (object?.userData.floor) latest.current.onSelectFloor(object.userData.floor, object.userData.tower); else if (object?.userData.area) latest.current.onArea(object.userData.area); };
       const keydown = (event: KeyboardEvent) => { if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', 'Home'].includes(event.key)) return; event.preventDefault(); if (event.key === 'Home') return reset(); if (['+', '=', '-'].includes(event.key)) return zoom(event.key === '-' ? -1 : 1); const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target)); spherical.theta += event.key === 'ArrowLeft' ? -.14 : event.key === 'ArrowRight' ? .14 : 0; spherical.phi = THREE.MathUtils.clamp(spherical.phi + (event.key === 'ArrowUp' ? -.1 : event.key === 'ArrowDown' ? .1 : 0), controls.minPolarAngle, controls.maxPolarAngle); camera.position.copy(new THREE.Vector3().setFromSpherical(spherical).add(controls.target)); controls.update(); schedule(); };
@@ -256,9 +256,9 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const visibility = () => { if (!document.hidden) schedule(); };
       const change = () => schedule();
       controls.addEventListener('change', change); controls.addEventListener('end', () => { settling = 30; schedule(); });
-      canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp); canvas.addEventListener('keydown', keydown); canvas.addEventListener('webglcontextlost', contextLost);
+      canvas.addEventListener('pointermove', hoverFloor);canvas.addEventListener('pointerleave',leaveFloor);canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp); canvas.addEventListener('keydown', keydown); canvas.addEventListener('webglcontextlost', contextLost);
       document.addEventListener('visibilitychange', visibility);
-      cleanup = () => { api.current = null; cancelAnimationFrame(frame); observer.disconnect(); controls.dispose(); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('keydown', keydown); canvas.removeEventListener('webglcontextlost', contextLost); document.removeEventListener('visibilitychange', visibility); resources.forEach(resource => resource.dispose()); renderer.dispose(); renderer.forceContextLoss(); canvas.remove(); pinLayer.remove(); };
+      cleanup = () => { api.current = null; cancelAnimationFrame(frame); observer.disconnect(); controls.dispose(); canvas.removeEventListener('pointermove',hoverFloor);canvas.removeEventListener('pointerleave',leaveFloor);canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('keydown', keydown); canvas.removeEventListener('webglcontextlost', contextLost); document.removeEventListener('visibilitychange', visibility); resources.forEach(resource => resource.dispose()); renderer.dispose(); renderer.forceContextLoss(); canvas.remove(); pinLayer.remove(); };
       update(); resize(); renderer.render(scene, camera); latest.current.onReady();
     }
     void setup().catch(error => { cleanup?.(); if (!cancelled) { console.warn('Maquete conceitual indisponível.', error); latest.current.onFail(); } });

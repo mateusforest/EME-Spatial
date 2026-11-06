@@ -1,3 +1,4 @@
+import SceneOverlay from './SceneOverlay';
 import MoradasStockPanel from './MoradasStockPanel';
 import DecodedImage from './DecodedImage';
 import { emptyDevelopment, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
@@ -41,7 +42,7 @@ export default function DevelopmentPage() {
     setPlace(next);
     if (next === 'leisure') openGallery('leisure');
     if (next === 'surroundings') openGallery('entrance');
-    if (next === 'floors') { if(mode !== 'model') startModel(); setToolsOpen(true); }
+    if (next === 'floors') { setToolsOpen(true); }
     if (next === 'overview') { setZoom(1); controls.current?.reset(); }
   }
   function changeZoom(direction: number) { if (mode === 'model') controls.current?.zoom(direction); else setZoom(value => Math.max(1, Math.min(1.7, value + direction * .15))); }
@@ -55,6 +56,7 @@ export default function DevelopmentPage() {
       {mode === 'image' ? <div className="development-image-world" style={{ transform: `scale(${zoom})` }}>
         <img src={`${ASSETS}hero.webp`} alt="Reconstrução visual conceitual das duas torres do Moradas da Serra, com áreas de convivência" fetchPriority="high" />
 
+        <SceneOverlay tower={tower} floor={floor} lighting={lighting} showFloor={place==='floors'} onSelectFloor={selectFloor}/>
         <div className="development-hotspots">
           <button className="development-hotspot development-hotspot--court" onClick={() => openGallery('court')}><span>Quadra <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
           <button className="development-hotspot development-hotspot--entrance" onClick={() => openGallery('entrance')}><span>Acesso <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
@@ -76,12 +78,12 @@ export default function DevelopmentPage() {
       </div>
       <span className="development-model-note">{mode === 'model' ? 'Maquete conceitual · gire para descobrir' : 'Uma experiência EME Select · estudo de apresentação'}</span>
     </section>
-    {mode === 'model' && <><button className="development-panel-toggle" aria-expanded={toolsOpen} onClick={()=>setToolsOpen(v=>!v)}>{toolsOpen?'Recolher disponibilidade':'Consultar unidades'} {toolsOpen?<Minus size={14}/>:<Plus size={14}/>}</button>
+    {<><button className="development-panel-toggle" aria-expanded={toolsOpen} onClick={()=>setToolsOpen(v=>!v)}>{toolsOpen?'Recolher disponibilidade':'Consultar unidades'} {toolsOpen?<Minus size={14}/>:<Plus size={14}/>}</button>
     {toolsOpen && <MoradasStockPanel tower={tower==='a'?'A':'B'} floor={floor} setTower={t=>{setTower(t==='A'?'a':'b');setFloor(8);}} setFloor={selectFloor} onClose={()=>setToolsOpen(false)}/>}</>}
     <div className="development-bottom">
       <div className="development-navigation"><p className="eyebrow">Explore o empreendimento</p><div role="group" aria-label="Áreas do empreendimento">{([{ id: 'overview', label: 'Visão geral', icon:Scan }, { id: 'floors', label: 'Andares', icon:Layers3 }, { id: 'leisure', label: 'Lazer', icon:Trees }, { id: 'surroundings', label: 'Fachadas', icon:Building2 }] as const).map(item => <button key={item.id} aria-pressed={place === item.id} onClick={() => choosePlace(item.id)}><item.icon size={16}/>{item.label}</button>)}</div></div>
       <div className="development-lighting" role="group" aria-label="Luz do cenário"><span>Luz do cenário<small>Simulação visual</small></span>{([{ id: 'day', label: 'Dia', icon:Sun }, { id: 'sunset', label: 'Entardecer', icon:Sunset }, { id: 'night', label: 'Noite', icon:Moon }] as const).map(item => <button key={item.id} aria-pressed={lighting === item.id} onClick={() => setLighting(item.id)}><item.icon size={16}/>{item.label}</button>)}</div>
-      <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Entre no 3D para escolher seu andar.'}</small></div>
+      <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Passe o mouse ou toque em um andar.'}</small></div>
     </div>
     <p className="development-footnote">Estudo visual · Arquitetura e disponibilidade sujeitas à validação da incorporadora.</p>
     {notice && <div className="development-notice" role="status"><Check size={14} />{notice}</div>}

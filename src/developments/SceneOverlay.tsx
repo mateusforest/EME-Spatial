@@ -4,12 +4,12 @@ import type { Lighting, TowerId } from './moradas';
 // Pixel coordinates measured on hero.webp (1672 × 941). Image, lights and
 // selection share one cover projection and one zoom transform at every size.
 const facades = {
-  a: { x: [807, 1012, 1150], roof: [222, 222, 216], base: [670, 706, 636] },
-  b: { x: [481, 615, 764], roof: [219, 219, 216], base: [566, 590, 537] },
+  b: { x: [807, 1012, 1150], roof: [222, 222, 216], base: [670, 706, 636] },
+  a: { x: [481, 615, 764], roof: [219, 219, 216], base: [566, 590, 537] },
 };
 export function floorOutline(tower: TowerId, floor: number) {
   const facade = facades[tower];
-  const boundary = (level: number) => facade.x.map((x, i) => [x, facade.base[i] + (facade.roof[i] - facade.base[i]) * level / 9]);
+  const boundary = (level: number) => facade.x.map((x, i) => [x, facade.base[i] + (facade.roof[i] - facade.base[i]) * level / (tower === 'a' ? 8 : 9)]);
   const upper = boundary(floor), lower = boundary(floor - 1).reverse();
   return [...upper, ...lower].map(point => point.map(value => Number(value.toFixed(2))).join(',')).join(' ');
 }
@@ -65,9 +65,9 @@ export default function SceneOverlay({ tower, floor, lighting, showFloor, onSele
       </g>
     </g>
     {showFloor && <polygon className="development-floor-band" data-testid="floor-band" data-selected-floor={`${tower}-${floor}`} points={floorOutline(tower, floor)} aria-hidden="true" />}
-    {(['b','a'] as const).flatMap(id=>Array.from({length:9},(_,index)=>{
+    {(['b','a'] as const).flatMap(id=>Array.from({length:id==='a'?8:9},(_,index)=>{
       const level=index+1,disabled=unavailable.includes(`${id}-${level}`);
-      return <polygon key={`${id}-${level}`} className="development-floor-hit" points={floorOutline(id,level)} role="button" tabIndex={disabled?-1:0} aria-label={`Selecionar torre ${id==='a'?'1':'2'}, ${level}º andar no prédio`} aria-disabled={disabled} aria-pressed={showFloor&&tower===id&&floor===level} onClick={()=>{if(!disabled)onSelectFloor(level,id);}} onKeyDown={e=>{if(!disabled&&['Enter',' '].includes(e.key)){e.preventDefault();onSelectFloor(level,id);}}}><title>{`${level}º andar${disabled?' · indisponível':''}`}</title></polygon>;
+      return <polygon key={`${id}-${level}`} className="development-floor-hit" points={floorOutline(id,level)} role="button" tabIndex={disabled?-1:0} aria-label={`Selecionar torre ${id==='a'?'A':'B'}, ${level}º andar no prédio`} aria-disabled={disabled} aria-pressed={showFloor&&tower===id&&floor===level} onClick={()=>{if(!disabled)onSelectFloor(level,id);}} onKeyDown={e=>{if(!disabled&&['Enter',' '].includes(e.key)){e.preventDefault();onSelectFloor(level,id);}}}><title>{`${level}º andar${disabled?' · indisponível':''}`}</title></polygon>;
     }))}
   </svg>;
 }
