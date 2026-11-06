@@ -1,3 +1,4 @@
+import {floorStatus} from './moradas-stock';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { GalleryId, Lighting, TowerId } from './moradas';
 
@@ -83,7 +84,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       for (let x = -28; x <= 29; x += 9) { tree(x, 29, .85); tree(x, -27, 1.1); }
       for (let z = -18; z < 25; z += 9) { tree(-30, z); tree(31, z); }
 
-      const towerCenters = { a: new THREE.Vector3(8, 0, 0), b: new THREE.Vector3(-12, 0, -10) };
+      const towerCenters = { a: new THREE.Vector3(-12, 0, -10), b: new THREE.Vector3(8, 0, 0) };
       function windowAt(parent: import('three').Object3D, x: number, y: number, z: number, rotate: number, index: number, wide = 1.4) {
         const window = new THREE.Group(); window.position.set(x, y, z); window.rotation.y = rotate; parent.add(window);
         box(window, 0, 0, 0, wide + .14, 1.4, .12, frameMat);
@@ -96,7 +97,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         const podium = 3.4, story = 2.85;
         for (const x of [-5, 0, 5]) for (const z of [-4, 4]) box(root, x, podium / 2, z, .45, podium, .45, ivory, true);
         box(root, 0, podium / 2, -1, 2.8, podium, 3.2, timber, true);
-        for (let f = 1; f <= 9; f++) {
+        for (let f = 1; f <= (id === 'a' ? 8 : 9); f++) {
           const y = podium + (f - .5) * story;
           const level = new THREE.Group(); level.userData = { tower: id, floor: f }; root.add(level);
           box(level, 0, y, 0, 11.8, story, 9.8, side, true);
@@ -120,7 +121,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
           hitTargets.push(...level.children);
           level.children.forEach(child => { child.userData = { tower: id, floor: f }; });
         }
-        const roof = podium + 9 * story;
+        const roof = podium + (id === 'a' ? 8 : 9) * story;
         box(root, 0, roof + .16, 0, 12.6, .35, 10.5, ivory, true);
         box(root, 0, roof + 1.8, -.8, 5.6, 3.3, 5.5, charcoal, true);
         const labelCanvas = document.createElement('canvas'); labelCanvas.width = 256; labelCanvas.height = 128;
@@ -193,6 +194,13 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const bandGeometry = own(new THREE.BufferGeometry()); bandGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       highlightMat.side = THREE.DoubleSide;
       const highlight = new THREE.Mesh(bandGeometry, highlightMat); scene.add(highlight);
+      const statusColor=(id:TowerId,level:number)=>id==='b'?'#c64747':floorStatus(level)==='available'?'#32a37a':floorStatus(level)==='negotiation'?'#e89432':'#c64747';
+      for(const id of ['a','b'] as const) for(let level=1;level<=(id==='a'?8:9);level++){
+        const mat=own(new THREE.MeshBasicMaterial({color:statusColor(id,level),transparent:true,opacity:.24,depthWrite:false,side:THREE.DoubleSide}));
+        const band=new THREE.Mesh(bandGeometry,mat); const center=towerCenters[id];
+        band.position.set(center.x,3.4+(level-.5)*2.85,center.z);scene.add(band);
+      }
+
       const edges = own(new THREE.BufferGeometry()); edges.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
       const outline = new THREE.LineSegments(edges, own(new THREE.LineBasicMaterial({ color: '#e8efd6', transparent: true, opacity: .85 }))); scene.add(outline);
       const pinLayer = document.createElement('div'); pinLayer.className = 'development-model-pins'; mount.appendChild(pinLayer);
@@ -213,6 +221,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       }
       function update() {
         const state = latest.current; const center = towerCenters[state.tower];
+        highlightMat.color.set(statusColor(state.tower,state.floor));
         highlight.position.set(center.x, 3.4 + (state.floor - .5) * 2.85, center.z); outline.position.copy(highlight.position);
         const night = state.lighting === 'night', day = state.lighting === 'day';
         scene.background = new THREE.Color(night ? '#162e37' : day ? '#dbe8e8' : '#d9cbb7');

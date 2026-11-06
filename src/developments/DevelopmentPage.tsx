@@ -1,24 +1,22 @@
+import MoradasStockPanel from './MoradasStockPanel';
 import DecodedImage from './DecodedImage';
-import { emptyDevelopment, unitStatuses, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
+import { emptyDevelopment, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Share2, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan, LayoutTemplate, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan } from 'lucide-react';
 import { Dialog } from '../ui';
 import { whatsappUrl } from '../data';
-import { ASSETS, floorState, floors, galleries, type GalleryId, type Lighting, type Place, type TowerId } from './moradas';
-import SceneOverlay from './SceneOverlay';
+import { ASSETS, galleries, type GalleryId, type Lighting, type Place, type TowerId } from './moradas';
 import type { ModelControls } from './DevelopmentModel';
 import './development.css';
 import './moradas-refinement.css';
+import './moradas-stock-panel.css';
 
 const DevelopmentModel = lazy(() => import('./DevelopmentModel'));
 
 export default function DevelopmentPage() {
   const [config,setConfig]=useState<DevelopmentConfig>(emptyDevelopment);
   const [selectedPlan,setSelectedPlan]=useState<DevelopmentPlan|null>(null);
-  const [stockError,setStockError]=useState('');
-  useEffect(()=>{const controller=new AbortController();fetch('/api/public/developments/moradas-da-serra',{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Disponibilidade temporariamente indisponível. Consulte a equipe.');const data=await response.json();setConfig(data.config);}).catch(e=>{if(e.name!=='AbortError')setStockError('Disponibilidade temporariamente indisponível. Consulte a equipe.');});return()=>controller.abort();},[]);
-  const units=config.units.map(u=>({...u,typology:config.plans.find(p=>p.id===u.planId)?.title||'Planta a confirmar'}));
-  const unavailable=config.towers.flatMap(t=>floors.filter(f=>floorState(t.id,f,units)==='unavailable').map(f=>`${t.id}-${f}`));
+  useEffect(()=>{const controller=new AbortController();fetch('/api/public/developments/moradas-da-serra',{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Disponibilidade temporariamente indisponível. Consulte a equipe.');const data=await response.json();setConfig(data.config);}).catch(e=>{if(e.name!=='AbortError')setNotice('Os detalhes do empreendimento não puderam ser atualizados. O espelho exibido é de 04/11/2026.');});return()=>controller.abort();},[]);
   const [tower, setTower] = useState<TowerId>('a');
   const [floor, setFloor] = useState(6);
   const [lighting, setLighting] = useState<Lighting>('sunset');
@@ -26,26 +24,24 @@ export default function DevelopmentPage() {
   const [mode, setMode] = useState<'image' | 'model'>('image');
   const [gallery, setGallery] = useState<GalleryId | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [notice, setNotice] = useState('');
   const [ready, setReady] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const pageRef = useRef<HTMLElement>(null);
   const controls = useRef<ModelControls | null>(null);
   const media = gallery ? galleries[gallery] : null;
-  const visibleFloors = floors.filter(level => !onlyAvailable || floorState(tower, level, units) === 'available');
-  const selectedUnits = units.filter(unit => unit.tower === tower && unit.floor === floor);
   const openGallery = (id: GalleryId) => { setGallery(id); setImageIndex(0); };
-  const selectFloor = (level: number, selectedTower = tower) => { if(floorState(selectedTower,level,units)==='unavailable')return;setSelectedPlan(null);setTower(selectedTower); setFloor(level); setPlace('floors'); };
-  const contact = whatsappUrl(`Olá! Gostaria de conhecer o Moradas da Serra, da DeVille, em Vacaria. Estou explorando a torre ${tower === 'a' ? '1' : '2'}, ${floor}º andar na apresentação conceitual. Podemos confirmar as plantas e a disponibilidade?`);
+  const selectFloor = (level: number, selectedTower = tower) => { setToolsOpen(true);setSelectedPlan(null);setTower(selectedTower); setFloor(level); setPlace('floors'); };
+  const contact = whatsappUrl(`Olá! Gostaria de conhecer o Moradas da Serra, da DeVille, em Vacaria. Estou explorando a torre ${tower === 'a' ? 'A' : 'B'}, ${floor}º andar na apresentação conceitual. Podemos confirmar as plantas e a disponibilidade?`);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4500); return () => clearTimeout(timer); }, [notice]);
   useEffect(() => { document.documentElement.dataset.developmentView = mode; return () => { delete document.documentElement.dataset.developmentView; }; }, [mode]);
   function choosePlace(next: Place) {
     setPlace(next);
     if (next === 'leisure') openGallery('leisure');
     if (next === 'surroundings') openGallery('entrance');
+    if (next === 'floors') { if(mode !== 'model') startModel(); setToolsOpen(true); }
     if (next === 'overview') { setZoom(1); controls.current?.reset(); }
   }
   function changeZoom(direction: number) { if (mode === 'model') controls.current?.zoom(direction); else setZoom(value => Math.max(1, Math.min(1.7, value + direction * .15))); }
@@ -53,16 +49,12 @@ export default function DevelopmentPage() {
     try { if (document.fullscreenElement) await document.exitFullscreen(); else await pageRef.current?.requestFullscreen(); }
     catch { setNotice('Use a opção de tela cheia do seu navegador para ampliar a experiência.'); }
   }
-  async function share() {
-    try { await navigator.clipboard.writeText(`${location.origin}/apresentar/moradas-da-serra`); setNotice('Link do empreendimento copiado.'); }
-    catch { setNotice('Você pode compartilhar o endereço desta página.'); }
-  }
   function startModel() { setMode('model'); setReady(false); setModelFailed(false); }
   return <main id="conteudo" className={`development-page development-page--${mode}`} ref={pageRef}>
     <div className={`development-stage development-stage--${lighting}`} data-testid="development-stage">
       {mode === 'image' ? <div className="development-image-world" style={{ transform: `scale(${zoom})` }}>
         <img src={`${ASSETS}hero.webp`} alt="Reconstrução visual conceitual das duas torres do Moradas da Serra, com áreas de convivência" fetchPriority="high" />
-        <SceneOverlay tower={tower} floor={floor} lighting={lighting} showFloor={place === 'floors'} onSelectFloor={selectFloor} unavailable={unavailable} />
+
         <div className="development-hotspots">
           <button className="development-hotspot development-hotspot--court" onClick={() => openGallery('court')}><span>Quadra <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
           <button className="development-hotspot development-hotspot--entrance" onClick={() => openGallery('entrance')}><span>Acesso <ArrowUpRight size={12} /></span><i><Plus size={16} /></i></button>
@@ -84,28 +76,12 @@ export default function DevelopmentPage() {
       </div>
       <span className="development-model-note">{mode === 'model' ? 'Maquete conceitual · gire para descobrir' : 'Uma experiência EME Select · estudo de apresentação'}</span>
     </section>
-    <button className="development-panel-toggle" aria-expanded={toolsOpen} aria-controls="development-floor-panel" onClick={() => setToolsOpen(value => !value)}>{toolsOpen ? 'Recolher andares' : 'Escolher andar'} {toolsOpen ? <Minus size={14} /> : <Plus size={14} />}</button>
-    {toolsOpen && <aside className="development-panel" id="development-floor-panel" aria-label="Escolher torre e andar">
-      <p className="development-panel-kicker"><Layers3 size={14}/> Explore as possibilidades</p>
-      <div className="development-panel-heading"><h2>Escolha seu andar</h2><button aria-label="Compartilhar empreendimento" onClick={share}><Share2 size={17} /></button></div>
-      <div className="development-towers" role="group" aria-label="Torres">{config.towers.map(({id,label}) => <button key={id} aria-pressed={tower === id} onClick={() => { setTower(id); setPlace('floors'); }}>{label}</button>)}</div>
-      <label className="development-stock-filter"><input type="checkbox" checked={onlyAvailable} onChange={event => setOnlyAvailable(event.target.checked)} /> Só disponibilidade confirmada</label>
-      <div className="development-floors" role="group" aria-label="Andares">
-        {visibleFloors.map(level => { const state = floorState(tower, level, units); return <button key={level} disabled={state === 'unavailable'} aria-pressed={floor === level && place === 'floors'} onClick={() => selectFloor(level)} aria-label={`${level}º andar, ${state === 'unknown' ? 'disponibilidade a confirmar' : state === 'available' ? 'com unidades disponíveis' : 'sem unidades disponíveis'}`}><span>{level}<small>º andar</small></span><span className={`development-stock-dot development-stock-dot--${state}`} /><ChevronRight size={14} /></button>; })}
-        {!visibleFloors.length && <p className="development-stock-empty">{units.some(u=>u.tower===tower)?'Nenhuma unidade disponível nesta torre.':'O estoque ainda não foi confirmado pela incorporadora.'} Desmarque o filtro para explorar os andares.</p>}
-      </div>
-      <div className="development-floor-detail" aria-live="polite"><h3>{config.towers.find(t=>t.id===tower)?.label} · {floor}º andar</h3><span>{floorState(tower,floor,units)==='available'?'Unidades disponíveis':floorState(tower,floor,units)==='unavailable'?'Sem unidades disponíveis':'Disponibilidade a confirmar'}</span></div>
-      {stockError&&<p role="status" className="development-stock-note">{stockError}</p>}
-      {selectedUnits.length>0?<div className="development-unit-list">{selectedUnits.map(unit=>{const plan=config.plans.find(p=>p.id===unit.planId);return <article className="development-unit-card" key={unit.id}><strong>{unit.label} · {unitStatuses[unit.status]}</strong><span>{plan?.title||'Planta a confirmar'}</span><small>{[plan?.area!=null?plan.area+' m²':null,plan?.bedrooms!=null?plan.bedrooms+' dormitórios':null,plan?.suites!=null?plan.suites+' suítes':null,plan?.parking!=null?plan.parking+' vagas':null,unit.orientation||null].filter(Boolean).join(' · ')}</small>{unit.price!=null&&unit.price>0&&<span>{unit.price.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>}{plan?.imageUrl&&<button onClick={()=>setSelectedPlan(plan)}><img src={plan.imageUrl} alt={'Planta '+plan.title}/><span>Ampliar planta ↗</span></button>}{unit.status==='available'&&<a href={whatsappUrl('Olá! Tenho interesse na unidade '+unit.label+', '+config.name+', '+config.towers.find(t=>t.id===unit.tower)?.label+'.')} target="_blank" rel="noreferrer">Consultar esta unidade ↗</a>}</article>;})}</div>:<p className="development-stock-note">Plantas e metragens deste andar a confirmar. Explore as tipologias abaixo.</p>}
-      <button className="development-primary" onClick={() => openGallery('interiors')}><ImageIcon size={17}/>Conhecer os interiores <ArrowUpRight size={17} /></button>
-      <button className="development-plan-link" onClick={() => openGallery('plans')}><LayoutTemplate size={16}/>Ver tipologias e plantas <ArrowRight size={13} /></button>
-      <a className="development-consult" href={contact} target="_blank" rel="noopener noreferrer"><MessageCircle size={16}/>Conversar com a EME <ArrowUpRight size={13} /></a>
-      <small className="development-disclaimer">{config.notes}</small>
-    </aside>}
+    {mode === 'model' && <><button className="development-panel-toggle" aria-expanded={toolsOpen} onClick={()=>setToolsOpen(v=>!v)}>{toolsOpen?'Recolher disponibilidade':'Consultar unidades'} {toolsOpen?<Minus size={14}/>:<Plus size={14}/>}</button>
+    {toolsOpen && <MoradasStockPanel tower={tower==='a'?'A':'B'} floor={floor} setTower={t=>{setTower(t==='A'?'a':'b');setFloor(8);}} setFloor={selectFloor} onClose={()=>setToolsOpen(false)}/>}</>}
     <div className="development-bottom">
       <div className="development-navigation"><p className="eyebrow">Explore o empreendimento</p><div role="group" aria-label="Áreas do empreendimento">{([{ id: 'overview', label: 'Visão geral', icon:Scan }, { id: 'floors', label: 'Andares', icon:Layers3 }, { id: 'leisure', label: 'Lazer', icon:Trees }, { id: 'surroundings', label: 'Fachadas', icon:Building2 }] as const).map(item => <button key={item.id} aria-pressed={place === item.id} onClick={() => choosePlace(item.id)}><item.icon size={16}/>{item.label}</button>)}</div></div>
       <div className="development-lighting" role="group" aria-label="Luz do cenário"><span>Luz do cenário<small>Simulação visual</small></span>{([{ id: 'day', label: 'Dia', icon:Sun }, { id: 'sunset', label: 'Entardecer', icon:Sunset }, { id: 'night', label: 'Noite', icon:Moon }] as const).map(item => <button key={item.id} aria-pressed={lighting === item.id} onClick={() => setLighting(item.id)}><item.icon size={16}/>{item.label}</button>)}</div>
-      <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Clique no prédio para escolher um andar.'}</small></div>
+      <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Entre no 3D para escolher seu andar.'}</small></div>
     </div>
     <p className="development-footnote">Estudo visual · Arquitetura e disponibilidade sujeitas à validação da incorporadora.</p>
     {notice && <div className="development-notice" role="status"><Check size={14} />{notice}</div>}
