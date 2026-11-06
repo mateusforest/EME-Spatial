@@ -25,7 +25,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.22;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -181,7 +181,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
       const sun = new THREE.DirectionalLight('#ffe3af', 3.1); sun.position.set(-28, 46, 24); sun.castShadow = true;
       sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -52; sun.shadow.camera.right = 52; sun.shadow.camera.top = 52; sun.shadow.camera.bottom = -52; sun.shadow.camera.near = .5; sun.shadow.camera.far = 130; sun.shadow.bias = -.0004; sun.shadow.normalBias = .025; scene.add(sun);
       const fill = new THREE.DirectionalLight('#bed1df', .8); fill.position.set(35, 28, -30); scene.add(fill);
-      const highlightMat = own(new THREE.MeshBasicMaterial({ color: '#a9c594', transparent: true, opacity: .29, depthWrite: false }));
+      const highlightMat = own(new THREE.MeshBasicMaterial({ color: '#e6d49b', transparent: true, opacity: .2, depthWrite: false }));
       // Trace the real model footprint, including the recessed front and balcony.
       const footprint = [[-5.92, -4.92], [5.92, -4.92], [5.92, -.57], [7.4, -.57], [7.4, 3.25], [5.92, 3.25], [5.92, 4.92], [5.82, 5.5], [1.6, 5.5], [1.6, 5.16], [-1.6, 5.16], [-1.6, 5.5], [-5.82, 5.5], [-5.92, 4.92]];
       const positions: number[] = [], edgePositions: number[] = [];
@@ -215,11 +215,11 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         const state = latest.current; const center = towerCenters[state.tower];
         highlight.position.set(center.x, 3.4 + (state.floor - .5) * 2.85, center.z); outline.position.copy(highlight.position);
         const night = state.lighting === 'night', day = state.lighting === 'day';
-        scene.background = new THREE.Color(night ? '#263949' : day ? '#d9e6eb' : '#e8dfcf');
-        scene.fog = new THREE.Fog(scene.background, 120, 245);
-        ambient.intensity = night ? .55 : day ? 2.8 : 1.4;
-        sun.intensity = night ? .25 : day ? 3 : 1.8;
-        fill.intensity = night ? .25 : .8;
+        scene.background = new THREE.Color(night ? '#162e37' : day ? '#dbe8e8' : '#d9cbb7');
+        scene.fog = new THREE.Fog(scene.background, 105, 220);
+        ambient.intensity = night ? .65 : day ? 1.9 : 1.15;
+        sun.intensity = night ? .4 : day ? 3.2 : 2.8;
+        fill.intensity = night ? .4 : day ? .75 : .65;
         sun.color.set(night ? '#a4bfe1' : day ? '#fff4de' : '#ffd5a0');
         sun.position.set(day ? -18 : -36, day ? 65 : 30, 30);
         warmGlass.color.set(day ? '#789093' : '#ddd4a2');
@@ -228,7 +228,7 @@ const DevelopmentModel = forwardRef<ModelControls, Props>(function DevelopmentMo
         fixture.emissiveIntensity = day ? 0 : night ? 4 : 2;
         water.emissive.set('#4dced9'); water.emissiveIntensity = day ? 0 : night ? .4 : .12;
         nightLights.forEach(light => { light.intensity = day ? 0 : night ? 65 : 35; });
-        renderer.toneMappingExposure = night ? .88 : 1.16;
+        renderer.toneMappingExposure = night ? 1 : day ? 1.06 : 1.12;
         mount.dataset.lighting = state.lighting; mount.dataset.selectedFloor = `${state.tower}-${state.floor}`;
         mount.dataset.windowEmission = String(warmGlass.emissiveIntensity);
         mount.dataset.activeLights = String(nightLights.filter(light => light.intensity > 0).length); schedule();

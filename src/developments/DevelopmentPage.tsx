@@ -1,13 +1,14 @@
 import DecodedImage from './DecodedImage';
 import { emptyDevelopment, unitStatuses, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Share2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Share2, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan, LayoutTemplate, MessageCircle } from 'lucide-react';
 import { Dialog } from '../ui';
 import { whatsappUrl } from '../data';
-import { ASSETS, floorState, floors, galleries, MORADAS_ROUTE, type GalleryId, type Lighting, type Place, type TowerId } from './moradas';
+import { ASSETS, floorState, floors, galleries, type GalleryId, type Lighting, type Place, type TowerId } from './moradas';
 import SceneOverlay from './SceneOverlay';
 import type { ModelControls } from './DevelopmentModel';
 import './development.css';
+import './moradas-refinement.css';
 
 const DevelopmentModel = lazy(() => import('./DevelopmentModel'));
 
@@ -21,7 +22,7 @@ export default function DevelopmentPage() {
   const [tower, setTower] = useState<TowerId>('a');
   const [floor, setFloor] = useState(6);
   const [lighting, setLighting] = useState<Lighting>('sunset');
-  const [place, setPlace] = useState<Place>('floors');
+  const [place, setPlace] = useState<Place>('overview');
   const [mode, setMode] = useState<'image' | 'model'>('image');
   const [gallery, setGallery] = useState<GalleryId | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
@@ -53,7 +54,7 @@ export default function DevelopmentPage() {
     catch { setNotice('Use a opção de tela cheia do seu navegador para ampliar a experiência.'); }
   }
   async function share() {
-    try { await navigator.clipboard.writeText(`${location.origin}/${MORADAS_ROUTE}`); setNotice('Link do empreendimento copiado.'); }
+    try { await navigator.clipboard.writeText(`${location.origin}/apresentar/moradas-da-serra`); setNotice('Link do empreendimento copiado.'); }
     catch { setNotice('Você pode compartilhar o endereço desta página.'); }
   }
   function startModel() { setMode('model'); setReady(false); setModelFailed(false); }
@@ -73,9 +74,9 @@ export default function DevelopmentPage() {
     </div>
     <div className="development-veil" aria-hidden="true" />
     <section className="development-intro" aria-labelledby="development-title">
-      <a className="development-back" href="#/"><ArrowLeft size={13} /> Voltar à coleção</a>
+      <a className="development-back" href="https://www.emeselect.com/" target="_blank" rel="noopener noreferrer"><ArrowLeft size={13} /> EME Select</a>
       <p className="eyebrow"><span className="tiny-rule" /> {config.developer} · {config.location}</p>
-      <h1 id="development-title">{config.name}.<em>Seu lugar, por{' '}<br />outro ângulo.</em></h1>
+      <h1 id="development-title">{config.name}<em>Seu lugar, por outro ângulo.</em></h1>
       <p>{config.description}</p>
       <div className="development-view-switch" role="group" aria-label="Visualização do empreendimento">
         <button aria-pressed={mode === 'image'} onClick={() => setMode('image')}><ImageIcon size={14} /> Apresentação</button>
@@ -85,7 +86,8 @@ export default function DevelopmentPage() {
     </section>
     <button className="development-panel-toggle" aria-expanded={toolsOpen} aria-controls="development-floor-panel" onClick={() => setToolsOpen(value => !value)}>{toolsOpen ? 'Recolher andares' : 'Escolher andar'} {toolsOpen ? <Minus size={14} /> : <Plus size={14} />}</button>
     {toolsOpen && <aside className="development-panel" id="development-floor-panel" aria-label="Escolher torre e andar">
-      <div className="development-panel-heading"><h2>Escolha seu andar</h2><button aria-label="Compartilhar empreendimento" onClick={share}><Share2 size={15} /></button></div>
+      <p className="development-panel-kicker"><Layers3 size={14}/> Explore as possibilidades</p>
+      <div className="development-panel-heading"><h2>Escolha seu andar</h2><button aria-label="Compartilhar empreendimento" onClick={share}><Share2 size={17} /></button></div>
       <div className="development-towers" role="group" aria-label="Torres">{config.towers.map(({id,label}) => <button key={id} aria-pressed={tower === id} onClick={() => { setTower(id); setPlace('floors'); }}>{label}</button>)}</div>
       <label className="development-stock-filter"><input type="checkbox" checked={onlyAvailable} onChange={event => setOnlyAvailable(event.target.checked)} /> Só disponibilidade confirmada</label>
       <div className="development-floors" role="group" aria-label="Andares">
@@ -94,21 +96,21 @@ export default function DevelopmentPage() {
       </div>
       <div className="development-floor-detail" aria-live="polite"><h3>{config.towers.find(t=>t.id===tower)?.label} · {floor}º andar</h3><span>{floorState(tower,floor,units)==='available'?'Unidades disponíveis':floorState(tower,floor,units)==='unavailable'?'Sem unidades disponíveis':'Disponibilidade a confirmar'}</span></div>
       {stockError&&<p role="status" className="development-stock-note">{stockError}</p>}
-      {selectedUnits.length>0?<div className="development-unit-list">{selectedUnits.map(unit=>{const plan=config.plans.find(p=>p.id===unit.planId);return <article className="development-unit-card" key={unit.id}><strong>{unit.label} · {unitStatuses[unit.status]}</strong><span>{plan?.title||'Planta a confirmar'}</span><small>{[plan?.area!=null?plan.area+' m²':null,plan?.bedrooms!=null?plan.bedrooms+' dormitórios':null,plan?.suites!=null?plan.suites+' suítes':null,plan?.parking!=null?plan.parking+' vagas':null,unit.orientation||null].filter(Boolean).join(' · ')}</small>{unit.price!=null&&unit.price>0&&<span>{unit.price.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>}{plan?.imageUrl&&<button onClick={()=>setSelectedPlan(plan)}><img src={plan.imageUrl} alt={'Planta '+plan.title}/><span>Ampliar planta ↗</span></button>}{unit.status==='available'&&<a href={whatsappUrl('Olá! Tenho interesse na unidade '+unit.label+', '+config.name+', '+config.towers.find(t=>t.id===unit.tower)?.label+'.')} target="_blank" rel="noreferrer">Consultar esta unidade ↗</a>}</article>;})}</div>:<p className="development-stock-note">As plantas e metragens deste andar ainda não foram cadastradas. Consulte as tipologias do empreendimento abaixo.</p>}
-      <button className="development-primary" onClick={() => openGallery('interiors')}>Conhecer os interiores <ArrowUpRight size={17} /></button>
-      <button className="development-plan-link" onClick={() => openGallery('plans')}>Ver tipologias e plantas <ArrowRight size={13} /></button>
-      <a className="development-consult" href={contact} target="_blank" rel="noopener noreferrer">Consultar a EME <ArrowUpRight size={13} /></a>
+      {selectedUnits.length>0?<div className="development-unit-list">{selectedUnits.map(unit=>{const plan=config.plans.find(p=>p.id===unit.planId);return <article className="development-unit-card" key={unit.id}><strong>{unit.label} · {unitStatuses[unit.status]}</strong><span>{plan?.title||'Planta a confirmar'}</span><small>{[plan?.area!=null?plan.area+' m²':null,plan?.bedrooms!=null?plan.bedrooms+' dormitórios':null,plan?.suites!=null?plan.suites+' suítes':null,plan?.parking!=null?plan.parking+' vagas':null,unit.orientation||null].filter(Boolean).join(' · ')}</small>{unit.price!=null&&unit.price>0&&<span>{unit.price.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>}{plan?.imageUrl&&<button onClick={()=>setSelectedPlan(plan)}><img src={plan.imageUrl} alt={'Planta '+plan.title}/><span>Ampliar planta ↗</span></button>}{unit.status==='available'&&<a href={whatsappUrl('Olá! Tenho interesse na unidade '+unit.label+', '+config.name+', '+config.towers.find(t=>t.id===unit.tower)?.label+'.')} target="_blank" rel="noreferrer">Consultar esta unidade ↗</a>}</article>;})}</div>:<p className="development-stock-note">Plantas e metragens deste andar a confirmar. Explore as tipologias abaixo.</p>}
+      <button className="development-primary" onClick={() => openGallery('interiors')}><ImageIcon size={17}/>Conhecer os interiores <ArrowUpRight size={17} /></button>
+      <button className="development-plan-link" onClick={() => openGallery('plans')}><LayoutTemplate size={16}/>Ver tipologias e plantas <ArrowRight size={13} /></button>
+      <a className="development-consult" href={contact} target="_blank" rel="noopener noreferrer"><MessageCircle size={16}/>Conversar com a EME <ArrowUpRight size={13} /></a>
       <small className="development-disclaimer">{config.notes}</small>
     </aside>}
     <div className="development-bottom">
-      <div className="development-navigation"><p className="eyebrow">01 / Explore o empreendimento</p><div role="group" aria-label="Áreas do empreendimento">{([{ id: 'overview', label: 'Visão geral' }, { id: 'floors', label: 'Andares' }, { id: 'leisure', label: 'Lazer' }, { id: 'surroundings', label: 'Fachadas' }] as const).map(item => <button key={item.id} aria-pressed={place === item.id} onClick={() => choosePlace(item.id)}>{item.label}</button>)}</div></div>
-      <div className="development-lighting" role="group" aria-label="Luz do cenário"><span>Luz do cenário<small>Simulação visual</small></span>{([{ id: 'day', label: 'Dia' }, { id: 'sunset', label: 'Entardecer' }, { id: 'night', label: 'Noite' }] as const).map(item => <button key={item.id} aria-pressed={lighting === item.id} onClick={() => setLighting(item.id)}>{item.label}</button>)}</div>
+      <div className="development-navigation"><p className="eyebrow">Explore o empreendimento</p><div role="group" aria-label="Áreas do empreendimento">{([{ id: 'overview', label: 'Visão geral', icon:Scan }, { id: 'floors', label: 'Andares', icon:Layers3 }, { id: 'leisure', label: 'Lazer', icon:Trees }, { id: 'surroundings', label: 'Fachadas', icon:Building2 }] as const).map(item => <button key={item.id} aria-pressed={place === item.id} onClick={() => choosePlace(item.id)}><item.icon size={16}/>{item.label}</button>)}</div></div>
+      <div className="development-lighting" role="group" aria-label="Luz do cenário"><span>Luz do cenário<small>Simulação visual</small></span>{([{ id: 'day', label: 'Dia', icon:Sun }, { id: 'sunset', label: 'Entardecer', icon:Sunset }, { id: 'night', label: 'Noite', icon:Moon }] as const).map(item => <button key={item.id} aria-pressed={lighting === item.id} onClick={() => setLighting(item.id)}><item.icon size={16}/>{item.label}</button>)}</div>
       <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Clique no prédio para escolher um andar.'}</small></div>
     </div>
     <p className="development-footnote">Estudo visual · Arquitetura e disponibilidade sujeitas à validação da incorporadora.</p>
     {notice && <div className="development-notice" role="status"><Check size={14} />{notice}</div>}
-    {selectedPlan&&<Dialog title={selectedPlan.title} onClose={()=>setSelectedPlan(null)} wide><img className="development-selected-plan" src={selectedPlan.imageUrl} alt={'Planta '+selectedPlan.title}/><p>{selectedPlan.area} m² · {selectedPlan.bedrooms??'—'} dormitórios · {selectedPlan.suites??'—'} suítes · {selectedPlan.parking??'—'} vagas</p></Dialog>}
-    {media && <Dialog title={media.title} onClose={() => setGallery(null)} wide><div className="development-gallery" onKeyDown={event => { if (event.key === 'ArrowRight') setImageIndex(value => (value + 1) % media.images.length); if (event.key === 'ArrowLeft') setImageIndex(value => (value - 1 + media.images.length) % media.images.length); }}>
+    {selectedPlan&&<Dialog className="moradas-dialog" title={selectedPlan.title} onClose={()=>setSelectedPlan(null)} wide><img className="development-selected-plan" src={selectedPlan.imageUrl} alt={'Planta '+selectedPlan.title}/><p>{selectedPlan.area} m² · {selectedPlan.bedrooms??'—'} dormitórios · {selectedPlan.suites??'—'} suítes · {selectedPlan.parking??'—'} vagas</p></Dialog>}
+    {media && <Dialog className="moradas-dialog" title={media.title} onClose={() => setGallery(null)} wide><div className="development-gallery" onKeyDown={event => { if (event.key === 'ArrowRight') setImageIndex(value => (value + 1) % media.images.length); if (event.key === 'ArrowLeft') setImageIndex(value => (value - 1 + media.images.length) % media.images.length); }}>
       <div className={`development-gallery-image${gallery === 'plans' ? ' is-plan' : ''}`}>
         <DecodedImage src={`${ASSETS}${media.images[imageIndex].file}`} alt={media.images[imageIndex].caption}/>
         {media.images.length > 1 && <><button className="gallery-prev" aria-label="Imagem anterior" onClick={() => setImageIndex(value => (value - 1 + media.images.length) % media.images.length)}><ChevronLeft size={22} /></button><button className="gallery-next" aria-label="Próxima imagem" onClick={() => setImageIndex(value => (value + 1) % media.images.length)}><ChevronRight size={22} /></button></>}
