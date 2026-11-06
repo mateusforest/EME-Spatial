@@ -6,8 +6,8 @@ export type Place = 'overview' | 'floors' | 'leisure' | 'surroundings';
 export type GalleryId = 'interiors' | 'leisure' | 'court' | 'entrance' | 'plans';
 export type UnitStatus = 'available' | 'reserved' | 'sold' | 'unknown';
 export interface DevelopmentUnit { id: string; tower: TowerId; floor: number; label: string; typology: string; status: UnitStatus }
-// No live stock, floor plans or unit numbering has been supplied by DeVille.
-// Empty inventory is deliberately unknown, never interpreted as sold or available.
+// Legacy live-inventory adapter. The supplied sales-sheet snapshot lives in
+// moradas-stock.ts; an empty live feed is never interpreted as sold/available.
 export const units: DevelopmentUnit[] = [];
 export const floors = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 export function floorState(tower: TowerId, floor: number, inventory: DevelopmentUnit[] = units) {
@@ -29,5 +29,10 @@ export const galleries: Record<GalleryId, { title: string; note: string; images:
   ] },
   court: { title: 'Espaço para se encontrar', note: 'Perspectiva fornecida pela DeVille. Consulte o projeto e memorial do empreendimento.', images: [{ file: 'court.jpg', caption: 'Quadra e playground' }] },
   entrance: { title: 'Sua chegada ao Moradas da Serra', note: 'Perspectivas fornecidas pela DeVille. Apresentação do acesso e das fachadas.', images: [{ file: 'front.jpg', caption: 'Acesso ao condomínio' }, { file: 'facade.jpg', caption: 'Volumes e fachadas' }, {file:'rooftop.jpg',caption:'Cobertura e detalhes da fachada'}, {file:'aerial-context.jpg',caption:'O empreendimento e seu entorno'}] },
-  plans: { title: 'Plantas para diferentes momentos', note: 'Material comercial fornecido pela DeVille: 2 dormitórios a partir de 52 m² e 3 dormitórios com 71 m² e suíte. Vinculação a torres, andares e unidades a confirmar.', images: [{ file: 'plans.jpg', caption: 'Tipologias do empreendimento · material da incorporadora' }] },
+  plans: { title: 'Encontre seu espaço', note: 'Plantas dos quatro tipos, atualizadas pela equipe. Mobiliário ilustrativo; consulte o memorial descritivo.', images: [
+    {file:'floorplans/moradas-type-1.png',caption:'Tipo 1 · 53,97 m² · 2 dormitórios'},
+    {file:'floorplans/moradas-type-2.png',caption:'Tipo 2 · 70,82 m² · 3 dormitórios'},
+    {file:'floorplans/moradas-type-3.png',caption:'Tipo 3 · 52,56 m² · 2 dormitórios'},
+    {file:'floorplans/moradas-type-4.png',caption:'Tipo 4 · 56,21 m² · 2 dormitórios'},
+  ] },
 };

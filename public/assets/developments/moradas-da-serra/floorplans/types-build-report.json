@@ -1,0 +1,270 @@
+{
+  "blender": "5.2.3 LTS",
+  "basis": "Four independently traced owner-labeled plans. Image proportions; illustrative furniture and elevations, not a measured project.",
+  "models": [
+    {
+      "type": 1,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "bytes": 2664296,
+      "meshes": 44,
+      "sourceImage": "moradas-type-1.png",
+      "sourceSha256": "aac4ee268b0cca8eaa4e8a273e92b8258abab6a42442a4104834f9fe9f304508",
+      "footprintPixels": [
+        [
+          8,
+          174
+        ],
+        [
+          953,
+          174
+        ],
+        [
+          953,
+          18
+        ],
+        [
+          1563,
+          18
+        ],
+        [
+          1563,
+          900
+        ],
+        [
+          953,
+          900
+        ],
+        [
+          953,
+          708
+        ],
+        [
+          8,
+          708
+        ]
+      ],
+      "rooms": [
+        "bedroom",
+        "single",
+        "bathroom",
+        "living",
+        "kitchen",
+        "balcony"
+      ]
+    },
+    {
+      "type": 2,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "bytes": 3278444,
+      "meshes": 55,
+      "sourceImage": "moradas-type-2.png",
+      "sourceSha256": "500f559f99aca888587f0625b3d7523b0ecec5e86a2898c7629c041a60b1d4ed",
+      "footprintPixels": [
+        [
+          8,
+          330
+        ],
+        [
+          218,
+          330
+        ],
+        [
+          218,
+          10
+        ],
+        [
+          788,
+          10
+        ],
+        [
+          788,
+          171
+        ],
+        [
+          1294,
+          171
+        ],
+        [
+          1294,
+          523
+        ],
+        [
+          1494,
+          523
+        ],
+        [
+          1494,
+          775
+        ],
+        [
+          1294,
+          775
+        ],
+        [
+          1294,
+          902
+        ],
+        [
+          789,
+          902
+        ],
+        [
+          789,
+          775
+        ],
+        [
+          8,
+          775
+        ]
+      ],
+      "rooms": [
+        "bedroom",
+        "suite",
+        "suite-bath",
+        "single",
+        "bathroom",
+        "living",
+        "kitchen",
+        "laundry",
+        "balcony"
+      ]
+    },
+    {
+      "type": 3,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "bytes": 2653836,
+      "meshes": 44,
+      "sourceImage": "moradas-type-3.png",
+      "sourceSha256": "4308c3652fc7dac468fb878c1901d8c09395309b727a2995ef479e180b9c5070",
+      "footprintPixels": [
+        [
+          10,
+          12
+        ],
+        [
+          626,
+          12
+        ],
+        [
+          626,
+          173
+        ],
+        [
+          1383,
+          173
+        ],
+        [
+          1383,
+          710
+        ],
+        [
+          1009,
+          710
+        ],
+        [
+          1009,
+          887
+        ],
+        [
+          877,
+          887
+        ],
+        [
+          877,
+          905
+        ],
+        [
+          10,
+          905
+        ]
+      ],
+      "rooms": [
+        "living",
+        "kitchen",
+        "single",
+        "bedroom",
+        "bathroom",
+        "balcony"
+      ]
+    },
+    {
+      "type": 4,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "bytes": 2893440,
+      "meshes": 44,
+      "sourceImage": "moradas-type-4.png",
+      "sourceSha256": "2ab08419a3b9f428dde4a2c463e6a47b5b5e6aa014f8e44131253e5476604c83",
+      "footprintPixels": [
+        [
+          244,
+          12
+        ],
+        [
+          1090,
+          12
+        ],
+        [
+          1090,
+          44
+        ],
+        [
+          1218,
+          44
+        ],
+        [
+          1218,
+          201
+        ],
+        [
+          1586,
+          201
+        ],
+        [
+          1586,
+          726
+        ],
+        [
+          846,
+          726
+        ],
+        [
+          846,
+          886
+        ],
+        [
+          244,
+          886
+        ],
+        [
+          244,
+          726
+        ],
+        [
+          10,
+          726
+        ],
+        [
+          10,
+          430
+        ],
+        [
+          244,
+          430
+        ]
+      ],
+      "rooms": [
+        "living",
+        "kitchen",
+        "bathroom",
+        "single",
+        "bedroom",
+        "balcony",
+        "laundry"
+      ]
+    }
+  ]
+}

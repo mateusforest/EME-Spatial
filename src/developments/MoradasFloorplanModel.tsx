@@ -1,11 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowRight,ArrowUpRight,Box,Minus,Plus,RotateCcw,View} from 'lucide-react';
 import {ASSETS} from './moradas';
-
-const rooms=[{id:'living',label:'Estar e jantar',photo:0},{id:'kitchen',label:'Cozinha',photo:1},{id:'bedroom',label:'Dormitório',photo:2},{id:'single',label:'Dormitório individual',photo:4},{id:'bathroom',label:'Banheiro',photo:5}];
+import {moradasPlanForType} from './moradas-plans';
 type Controls={zoom:(d:number)=>void;rotate:(d:number)=>void;reset:()=>void;top:()=>void;room:(id:string)=>void};
 
-export default function MoradasFloorplanModel({bedrooms,onPhoto}:{bedrooms:number;onPhoto:(index:number)=>void}){
+export default function MoradasFloorplanModel({type,onPhoto}:{type:number;onPhoto:(index:number)=>void}){
+ const plan=moradasPlanForType(type);
+ const rooms=plan.rooms;
  const host=useRef<HTMLDivElement>(null);
  const api=useRef<Controls|null>(null);
  const [ready,setReady]=useState(false);
@@ -18,7 +19,7 @@ export default function MoradasFloorplanModel({bedrooms,onPhoto}:{bedrooms:numbe
   async function setup(){
    const THREE=await import('three');
    const [{GLTFLoader},{OrbitControls},{RoomEnvironment}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/controls/OrbitControls.js'),import('three/addons/environments/RoomEnvironment.js')]);
-   const model=await new GLTFLoader().loadAsync(ASSETS+`floorplans/moradas-plan-${bedrooms===3?3:2}bed.glb`);
+   const model=await new GLTFLoader().loadAsync(ASSETS+moradasPlanForType(type).modelFile);
    const resources=new Set<{dispose:()=>void}>();
    cleanup=()=>resources.forEach(r=>r.dispose());
    model.scene.traverse(o=>{if(o instanceof THREE.Mesh){resources.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])resources.add(m);o.castShadow=true;o.receiveShadow=true;}});
@@ -29,7 +30,7 @@ export default function MoradasFloorplanModel({bedrooms,onPhoto}:{bedrooms:numbe
    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
    renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.outputColorSpace=THREE.SRGBColorSpace;
-   const canvas=renderer.domElement;canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`Estudo 3D de ${bedrooms} dormitórios. Arraste para girar, use dois dedos para aproximar. As setas do teclado giram a planta; mais e menos aproximam; Home restaura.`);mount.appendChild(canvas);
+   const canvas=renderer.domElement;canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`Planta 3D do Tipo ${type}. Arraste para girar, use dois dedos para aproximar. As setas do teclado giram a planta; mais e menos aproximam; Home restaura.`);mount.appendChild(canvas);
    const controls=new OrbitControls(camera,canvas);controls.enableDamping=false;controls.enablePan=true;controls.maxPolarAngle=1.35;controls.minPolarAngle=.01;controls.minDistance=5;controls.maxDistance=38;controls.rotateSpeed=.55;controls.zoomSpeed=.65;
    cleanup=()=>{api.current=null;controls.dispose();resources.forEach(r=>r.dispose());renderer.dispose();renderer.forceContextLoss();canvas.remove();};
    const bounds=new THREE.Box3().setFromObject(model.scene);const center=bounds.getCenter(new THREE.Vector3());center.y=.1;
@@ -71,16 +72,16 @@ export default function MoradasFloorplanModel({bedrooms,onPhoto}:{bedrooms:numbe
    const visibility=()=>{if(!document.hidden)schedule();};
    controls.addEventListener('change',schedule);canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('keydown',keydown);canvas.addEventListener('webglcontextlost',lostContext);document.addEventListener('visibilitychange',visibility);
    cleanup=()=>{api.current=null;cancelAnimationFrame(frame);observer.disconnect();controls.dispose();canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('keydown',keydown);canvas.removeEventListener('webglcontextlost',lostContext);document.removeEventListener('visibilitychange',visibility);resources.forEach(r=>r.dispose());renderer.dispose();renderer.forceContextLoss();canvas.remove();};
-   resize();mount.dataset.model=`${bedrooms===3?3:2}-bedroom-reference`;mount.dataset.engine='blender-gltf';setReady(true);
+   resize();mount.dataset.model=`moradas-type-${type}`;mount.dataset.engine='blender-gltf';setReady(true);
   }
   void setup().catch(()=>{cleanup?.();if(!cancelled)setFailed(true);});
   return()=>{cancelled=true;cleanup?.();};
- },[bedrooms]);
+ },[type]);
  return <div className="moradas-plan-experience">
-  <div className="moradas-plan-heading"><span><Box size={16}/>Planta em 3D</span><small>Estudo · {bedrooms} dormitórios</small></div>
+  <div className="moradas-plan-heading"><span><Box size={16}/>Tipo {type} em 3D</span><small>{plan.bedrooms} dormitórios · {plan.bathrooms} {plan.bathrooms===1?'banheiro':'banheiros'}</small></div>
   <div className="moradas-plan-model" ref={host} data-testid="floorplan-model" hidden={failed}/>
   {!ready&&!failed&&<p className="moradas-plan-loading" role="status">Preparando os ambientes…</p>}
-  {failed&&<div className="moradas-unit-pending"><Box size={32}/><h3>A vista 3D não pôde ser aberta.</h3><p>Use as abas Planta, Ambientes ou Referência para continuar.</p></div>}
+  {failed&&<div className="moradas-unit-pending"><Box size={32}/><h3>A vista 3D não pôde ser aberta.</h3><p>Use as abas Planta ou Ambientes para continuar.</p></div>}
   <div className="moradas-plan-controls" aria-label="Controles da planta 3D">
    <button disabled={!ready||failed} onClick={()=>api.current?.rotate(-1)} aria-label="Girar planta para a esquerda"><ArrowLeft size={17}/></button>
    <button disabled={!ready||failed} onClick={()=>api.current?.rotate(1)} aria-label="Girar planta para a direita"><ArrowRight size={17}/></button>
@@ -90,6 +91,6 @@ export default function MoradasFloorplanModel({bedrooms,onPhoto}:{bedrooms:numbe
    <button disabled={!ready||failed} onClick={()=>{api.current?.reset();api.current?.room('');}} aria-label="Restaurar planta"><RotateCcw size={17}/></button>
   </div>
   <div className="moradas-plan-room-picker" aria-label="Ambientes da planta">{rooms.map(r=><button key={r.id} disabled={!ready||failed} aria-pressed={selected===r.id} onClick={()=>api.current?.room(r.id)}>{r.label}</button>)}</div>
-  <div className="moradas-plan-help" aria-live="polite">{currentRoom?<><span>{currentRoom.label}</span><button onClick={()=>onPhoto(currentRoom.photo)}>Ver perspectiva <ArrowUpRight size={15}/></button></>:<span>Arraste para girar. Aproxime com dois dedos ou pelos controles.</span>}</div>
+  <div className="moradas-plan-help" aria-live="polite">{currentRoom?<><span>{currentRoom.label}</span>{currentRoom.photo!==undefined&&<button onClick={()=>onPhoto(currentRoom.photo!)}>Ver imagem ilustrativa <ArrowUpRight size={15}/></button>}</>:<span>Arraste para girar. Aproxime com dois dedos ou pelos controles.</span>}</div>
  </div>;
 }

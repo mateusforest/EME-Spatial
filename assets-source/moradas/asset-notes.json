@@ -2,7 +2,7 @@
   "sourceFolder": "C:/Users/EME/Downloads/moradas",
   "received": "2026-11-06",
   "reviewedImages": 21,
-  "individualPlansAvailable": false,
+  "individualPlansAvailable": true,
   "architecturalModelProvided": false,
   "newGalleryFiles": {
     "aerial-context.jpg": "WhatsApp Image 2026-11-06 at 16.52.58 (1).jpeg",
@@ -10,19 +10,27 @@
     "bedroom-detail.jpg": "WhatsApp Image 2026-11-06 at 16.52.59 (4).jpeg",
     "leisure-plan-reference.jpg": "WhatsApp Image 2026-11-06 at 16.53.01.jpeg"
   },
-  "planConnection": "Public development config: units[].tower=a and numeric label; units[].planId points to plans[].id with imageUrl. No inferred mapping from bedroom count or area.",
+  "planConnection": "Owner explicitly supplied Types 1, 2, 3 and 4 on 06/11/2026; mapped to Tower A apartment finals 01/02/03/04 from the sales sheet. A specifically linked management plan takes precedence in the original-image tab.",
   "blenderSource": "moradas-detail-kit.blend",
   "blenderGenerator": "tools/moradas-detail-kit.py",
   "modelScope": "Conceptual massing with Blender-authored vegetation and beveled geometry. Two conceptual cutaway interior studies trace the commercial illustration, not measured unit plans.",
   "stock": "Snapshot supplied by user, dated 2026-11-04. Not live inventory.",
   "interiorStudies": {
-    "generator": "tools/moradas-floorplans.py",
+    "generator": "tools/moradas-typology-floorplans.py",
+    "coordinates": "tools/moradas-plan-layouts.json",
     "sources": [
-      "moradas-plan-2bed.blend",
-      "moradas-plan-3bed.blend"
+      "moradas-type-1.blend",
+      "moradas-type-2.blend",
+      "moradas-type-3.blend",
+      "moradas-type-4.blend"
     ],
-    "reference": "public/assets/developments/moradas-da-serra/plans.jpg",
-    "mapping": "Bedroom-count typology reference only. Explicit unit plan links remain separate and take precedence in the 2D tab.",
-    "limitations": "No measured CAD, wall dimensions, structural details or confirmed per-unit orientation supplied."
+    "reference": [
+      "public/assets/developments/moradas-da-serra/floorplans/moradas-type-1.png",
+      "public/assets/developments/moradas-da-serra/floorplans/moradas-type-2.png",
+      "public/assets/developments/moradas-da-serra/floorplans/moradas-type-3.png",
+      "public/assets/developments/moradas-da-serra/floorplans/moradas-type-4.png"
+    ],
+    "mapping": "Explicit four-type mapping; never inferred from bedroom count. Original images copied byte-for-byte.",
+    "limitations": "Room layout and orientation traced from labeled images. Wall heights, finishes and furniture are illustrative. No dimensioned CAD/BIM was provided."
   }
 }
