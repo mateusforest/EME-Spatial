@@ -90,8 +90,8 @@ export interface Environment {
 }
 
 export const CONTACT = {
-  phone: '5554991578029',
-  display: '(54) 99157-8029',
+  phone: '5554984007919',
+  display: '(54) 98400-7919',
   brand: 'EME Select',
 };
 
