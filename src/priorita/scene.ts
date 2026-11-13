@@ -4,14 +4,13 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {canopy51} from '../developments/mCanopy51';
 import {areas,areaById,plan,canWalk, containsPoint, lotById, lots, solarPosition, statusInfo, terrainHeight} from './model';
 import type {LotStatus, ViewMode} from './model';
 import {createAnnotations} from './annotations';
 import {frameBounds} from './camera-layout';
 import {createRoadNavigator} from './navigation';
 import {createSolarGuide} from './solar-gizmo';
-import {createContextGeometry,createDistantGroves,createHorizonSky} from './horizon';
+import {createContextGeometry,createHorizonSky} from './horizon';
 import {demoStatus} from './demo-stock';
 import {openingHour} from './visual-profile';
 import {createStreetLighting,streetLampLayout} from './street-lighting';
@@ -133,7 +132,10 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         float variation=mix(.88,1.12,smoothstep(.09,.155,lawnPatch));
         float mowing=.5+.5*sin(prWorldXZ.x*.46+prWorldXZ.y*.12);
         vec3 lawnFinish=mix(vec3(.97,1.02,.87),vec3(1.09,1.04,.89),smoothstep(.09,.16,lawnPatch));
-        lawnMix.rgb*=mix(vec3(1.0),lawnFinish*fibers*variation*(.95+mowing*.10),siteMask);
+        // Quiet, dry meadow outside; layered living grass only inside the development.
+        float meadow=dot(lawnMix.rgb,vec3(.2126,.7152,.0722));
+        vec3 contextGrass=mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70);
+        lawnMix.rgb=mix(contextGrass,lawnMix.rgb*lawnFinish*fibers*variation*(.97+mowing*.06),siteMask);
         diffuseColor*=lawnMix;
       #endif`);
     };
@@ -152,7 +154,6 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
-  const barkMat=new T.MeshStandardMaterial({color:'#63564a',roughness:.95});
   const overlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
   const borders=new Map<string,T.LineLoop<T.BufferGeometry,T.LineBasicMaterial>>();
   const areaOverlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
@@ -184,7 +185,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();return geo;
   }
   function mesh(geo:T.BufferGeometry,material:T.Material){const m=new T.Mesh(geo,material);m.receiveShadow=true;scene.add(m);return m;}
-  scene.add(createDistantGroves(terrainHeight));
+  // Keep the unreferenced horizon quiet; detailed planting belongs to the site.
   new GLTFLoader().setDRACOLoader(draco).load('/assets/priorita/production-v4/site.glb',gltf=>{
     if(disposed){disposeObject(gltf.scene);return;}
     gltf.scene.updateMatrixWorld(true);
@@ -262,11 +263,6 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   let sunlightAmount=1;
   let vegetationDirty=true;
   let lightQuality=false;
-  function batch(geo:T.BufferGeometry,mat:T.Material,instances:number[][],shadows=true){
-    const m=new T.InstancedMesh(geo,mat,instances.length);
-    instances.forEach(([x,y,z,sx,sy,sz,rotation=0],i)=>{dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(0,rotation,0);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);});
-    m.castShadow=shadows;m.receiveShadow=true;m.computeBoundingSphere();scene.add(m);return m;
-  }
   // Shared placements keep the light footprint aligned with every v7 fixture.
   // The v7 library supplies the actual lamp geometry; the placements are reused.
   // Sparse traffic markings. All geometries follow the ground rather than a
@@ -276,7 +272,6 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   for(let z=-110;z<127;z+=8){if(z>-31&&z<-15||z>24&&z<44||z>84&&z<100)continue;paintGeos.push(surface([[1.1,z],[1.25,z],[1.25,z+3],[1.1,z+3]],.028));}
   for(const z of [-26,22,82])for(let x=-3;x<7;x+=1.2)paintGeos.push(surface([[x,z],[x+.65,z],[x+.65,z+2.6],[x,z+2.6]],.03));
   const mergedPaint=mergeGeometries(paintGeos);if(mergedPaint)mesh(mergedPaint,paint);paintGeos.forEach(g=>g.dispose());
-  const treePositions:number[][]=[];
   let seed=2314;const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
   new GLTFLoader().load('/assets/priorita/production-v4/grass-tuft.glb',gltf=>{
     if(disposed){disposeObject(gltf.scene);return;}
@@ -320,8 +315,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       ...lampLayout.map(({x,z})=>({x,z,radius:.65,strength:.75})),
     ]);
     const positionsByKind:Record<string,number[][]>={
-      tree:trees.filter(([x,z])=>!areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h,a]),
-      shade:trees.filter(([x,z])=>areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h*1.05,a]),
+      tree:trees.map(([x,z,h,a])=>[x,z,h,a]),
+      shade:[],
       shrub0:gardens.filter((_,i)=>i%3===0).map(([x,z,h,a])=>[x,z,h*.78,a]),
       shrub1:gardens.filter((_,i)=>i%3!==0).map(([x,z,h,a])=>[x,z,h*.42,a]),
       bench:[[-48,-80,1,0],[-64,-47,1,0],[-40,-68,1,0],[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]],
@@ -333,7 +328,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const a=angle+i*2.39996,r=.4+(i%3)*.24,px=x+Math.cos(a)*r,pz=z+Math.sin(a)*r;
       if(!canWalk(px,pz))positionsByKind.shrub1.push([px,pz,.32+(i%3)*.065,a]);
     }
-    new GLTFLoader().setDRACOLoader(draco).load('/assets/priorita/production-v7/landscape.glb',gltf=>{
+    const loadPlantLibrary=(url:string,photographic=false)=>new GLTFLoader().setDRACOLoader(draco).load(url,gltf=>{
       if(disposed){disposeObject(gltf.scene);return;}
       gltf.scene.updateMatrixWorld(true);
       const materialCache=new Map<string,T.MeshStandardMaterial>();
@@ -341,16 +336,16 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         if(!(o instanceof T.Mesh))return;
         const metadata=o.userData.plant_kind?o.userData:o.parent?.userData;
         const kind=metadata?.plant_kind as string,level=metadata?.detail_level as string;
-        if(!kind||!level||!positionsByKind[kind])return;
+        if(!kind||!level||!positionsByKind[kind]?.length||(!photographic&&(kind==='tree'||kind==='shade')))return;
         const geo=o.geometry.clone();geo.applyMatrix4(o.matrixWorld);
         const materials=(Array.isArray(o.material)?o.material:[o.material]).map(m=>{
           if(materialCache.has(m.uuid))return materialCache.get(m.uuid)!;
           const mat=m as T.MeshStandardMaterial;mat.side=T.DoubleSide;mat.envMapIntensity=.55;
-          if(/folh|leaf|forra/i.test(mat.name)){
-            mat.transparent=false;mat.alphaTest=0;mat.roughness=.69;mat.normalScale.set(.48,.48);
+          if(/folh|leaf|leav|forra/i.test(mat.name)){
+            mat.transparent=false;mat.depthWrite=true;mat.alphaTest=photographic?.35:0;mat.roughness=photographic?.82:.69;mat.normalScale.set(.48,.48);
             // The supplied leaf image is very dark. Correct its albedo rather
             // than brightening the whole scene or making the trees emissive.
-            mat.color.setRGB(2.05,1.92,1.60);
+            if(photographic)mat.color.setRGB(2.65,2.5,1.65);else mat.color.setRGB(2.05,1.92,1.60);
             mat.onBeforeCompile=shader=>{
               // Gentle crown normals remove the harsh planar facets in the
               // supplied leaf mesh without subdividing or adding draw calls.
@@ -368,34 +363,25 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
                 #undef RE_Direct
                 #define RE_Direct RE_Direct_Leaf`);
             };
-            mat.customProgramCacheKey=()=> 'priorita-leaf-v15';
-            mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.035*sunlightAmount;foliageMaterials.push(mat);
+            mat.customProgramCacheKey=()=> 'priorita-leaf-v16';
+            mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.065*sunlightAmount;foliageMaterials.push(mat);
           }
-          if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
+          if(mat.emissiveIntensity>0&&!/folh|leaf|leav|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
           for(const value of Object.values(mat))if(value instanceof T.Texture)value.anisotropy=4;
           streetLighting.apply(mat);materialCache.set(m.uuid,mat);return mat;
         });
         const positions=positionsByKind[kind];
-        const fullerCrown=(kind==='tree'||kind==='shade')&&materials.every(m=>/folh|leaf/i.test(m.name));
+        const fullerCrown=!photographic&&(kind==='tree'||kind==='shade')&&materials.every(m=>/folh|leaf|leav/i.test(m.name));
         const inst=new T.InstancedMesh(geo,Array.isArray(o.material)?materials:materials[0],positions.length*(fullerCrown?2:1));
-        inst.count=0;inst.visible=false;inst.castShadow=kind!=='shrub1';inst.receiveShadow=true;inst.name=`v7 ${kind} · ${level}`;
+        inst.count=0;inst.visible=false;inst.castShadow=kind!=='shrub1';inst.receiveShadow=true;inst.name=`${photographic?'v16':'v7'} ${kind} · ${level}`;
         scene.add(inst);plantLevels.push({mesh:inst,kind,level,positions,fullerCrown});
         if(!plantStates.has(kind))plantStates.set(kind,positions.map(()=>''));o.geometry.dispose();
       });
-      host.dataset.landscape='Blender v7';vegetationDirty=true;renderer.shadowMap.needsUpdate=true;invalidate();
+      if(photographic)host.dataset.landscape='Blender v16 · photographic foliage';vegetationDirty=true;renderer.shadowMap.needsUpdate=true;invalidate();
     },undefined,()=>events.onNotice('O paisagismo não terminou de carregar. Reabra a visita para tentar novamente.'));
+    loadPlantLibrary('/assets/priorita/production-v7/landscape.glb');
+    loadPlantLibrary('/assets/priorita/production-v16/trees.glb?v=4',true);
   }).catch(()=>events.onNotice('Não foi possível carregar o paisagismo nesta conexão.'));
-  for(let i=0;i<96;i++){
-    const a=i*2.399963,r=190+random()*95,x=Math.cos(a)*r,z=Math.sin(a)*r;
-    if(Math.abs(x)<25&&z<-110)continue;treePositions.push([x,z,7+random()*5,random()*6.28]);
-  }
-  const canopy=canopy51(resource=>resource),canopyInstances:number[][]=[],stemInstances:number[][]=[];
-  canopy.material.color.set('#829574');horizon(canopy.material);
-  for(const [x,z,h,a] of treePositions){
-    const y=terrainHeight(x,z);stemInstances.push([x,y+h*.25,z,.3,h*.5,.3]);
-    for(let j=0;j<3;j++){const angle=j*2.399;canopyInstances.push([x+Math.cos(angle)*h*.18,y+h*(.6+j*.055),z+Math.sin(angle)*h*.18,h*.62,h*.64,h*.62,a+angle]);}
-  }
-  batch(canopy.geometry,canopy.material,canopyInstances,false);batch(new T.CylinderGeometry(.6,1,1,5),horizon(barkMat),stemInstances,false);
   function updateVegetation(){
     if(!vegetationDirty&&camera.position.distanceToSquared(vegetationViewer)<9)return;
     vegetationViewer.copy(camera.position);vegetationDirty=false;
@@ -414,7 +400,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       positions.forEach(([x,z,h,a],i)=>{
         if(states[i]!==level)return;
         const isTree=kind==='tree'||kind==='shade';
-        dummy.position.set(x,terrainHeight(x,z)+(isTree?0:.06),z);dummy.scale.set(h*(isTree?1.22:1),h,h*(isTree?1.22:1));dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count,dummy.matrix);
+        dummy.position.set(x,terrainHeight(x,z)+(isTree?0:.06),z);dummy.scale.set(h*(isTree?1.04:1),h,h*(isTree?1.04:1));dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count,dummy.matrix);
         const tint=.5+.5*Math.sin(x*1.71+z*.83);
         const color=new T.Color().setRGB(.86+tint*.14,.91+tint*.09,.78+tint*.18);
         inst.setColorAt(count,color);count++;
@@ -462,8 +448,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const solar=solarPosition(hour,date),dir=new T.Vector3(...solar.direction);
 
     const daylight=T.MathUtils.smoothstep(solar.elevation,-7,15),gold=1-T.MathUtils.smoothstep(solar.elevation,6,55);
-    sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.035*daylight;
-    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(3.8-gold*.3)*T.MathUtils.smoothstep(solar.elevation,-1,9);
+    sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.065*daylight;
+    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(4.05-gold*.3)*T.MathUtils.smoothstep(solar.elevation,-1,9);
     sun.color.set('#fff7eb').lerp(new T.Color('#ffd9ad'),gold*.62);
     hemi.intensity=.25+daylight*.75;hemi.color.set('#bcd4ed');hemi.groundColor.set('#92917b');scene.environmentIntensity=.08+daylight*.34;
     const haze=new T.Color('#90b5cd').lerp(new T.Color('#ccb28c'),gold*.38).lerp(new T.Color('#24364d'),1-daylight);
@@ -481,15 +467,17 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.fov=['walk','lot','area'].includes(mode)?walkFieldOfView(camera.aspect,walkZoom):47;camera.updateProjectionMatrix();invalidate();}
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);resize();
-  // Frame portrait screens vertically instead of shrinking the site into a
-  // narrow horizontal strip. Keep both the search bar and thumb controls clear.
-  if(camera.aspect<.85){
-    controls.maxDistance=850;
-    const bounds=new T.Box3().setFromPoints([...lots,...areas].flatMap(l=>l.polygon.map(([x,z])=>new T.Vector3(x,terrainHeight(x,z),z))));
+  // Fit the development itself, never the much larger illustrative context.
+  const sitePoints=[...lots,...areas].flatMap(l=>l.polygon.map(([x,z])=>new T.Vector3(x,terrainHeight(x,z),z)));
+  const siteBounds=new T.Box3().setFromPoints(sitePoints);
+  function overviewFrame(){
     const w=host.clientWidth,h=host.clientHeight;
-    const frame=frameBounds(bounds,camera.aspect,camera.fov,{width:w,height:h},{left:22,top:170,right:w-22,bottom:h-150});
-    camera.position.copy(frame.position);controls.target.copy(frame.target);
+    return frameBounds(siteBounds,camera.aspect,47,{width:w,height:h},{left:w<700?18:60,top:w<700?145:80,right:w-(w<700?18:60),bottom:h-(w<700?100:90)},false,1.04,sitePoints);
   }
+  const openingFrame=overviewFrame();
+  camera.position.copy(openingFrame.position);controls.target.copy(openingFrame.target);
+  controls.maxDistance=openingFrame.position.distanceTo(openingFrame.target)*1.12;
+  controls.update();
   function stopWalk(){route=[];walkPicking=false;destination.visible=false;events.onWalkState('idle');invalidate();}
   function setMode(value:ViewMode){stopWalk();mode=value;camera.fov=['walk','lot','area'].includes(mode)?walkFieldOfView(camera.aspect,walkZoom):47;camera.updateProjectionMatrix();controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
   function fly(to:T.Vector3,target:T.Vector3,done?:()=>void){
@@ -523,7 +511,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   function overview(flat=false){
     selectedArea='';events.onArea('');focusedBlock='';selected='';events.onSelect('');events.onBlock('Todas');setMode(flat?'plan':'aerial');
-    focusPoints(lots.flatMap(l=>l.polygon),flat);
+    if(flat)focusPoints([...lots,...areas].flatMap(l=>l.polygon),true);
+    else {const frame=overviewFrame();controls.maxDistance=frame.position.distanceTo(frame.target)*1.12;fly(frame.position,frame.target,()=>{controls.enabled=true;controls.target.copy(frame.target);controls.update();});}
   }
   function select(id:string,focus=false){
     if(id&&!lotById.has(id))return;selectedArea='';events.onArea('');selected=id;if(id)focusedBlock='';updateLotColors();

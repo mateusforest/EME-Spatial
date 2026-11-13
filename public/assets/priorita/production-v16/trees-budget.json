@@ -1,0 +1,28 @@
+{
+  "source": "https://polyhaven.com/a/tree_small_02",
+  "license": "CC0",
+  "credit": "Rico Cilliers / Poly Haven",
+  "objects": [
+    {
+      "level": "near",
+      "leaves": false,
+      "triangles": 3008
+    },
+    {
+      "level": "near",
+      "leaves": true,
+      "triangles": 12776
+    },
+    {
+      "level": "far",
+      "leaves": false,
+      "triangles": 884
+    },
+    {
+      "level": "far",
+      "leaves": true,
+      "triangles": 5042
+    }
+  ],
+  "bytes": 1972692
+}
