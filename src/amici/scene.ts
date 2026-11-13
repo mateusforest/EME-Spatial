@@ -67,7 +67,7 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
   textures.forEach(t=>t.dispose());geometries.forEach(g=>g.dispose());
  };
  let model:T.Group|undefined;
- loader.load(asset('amici-walk-v5.glb'),gltf=>{
+ loader.load(asset('amici-walk-v6.glb'),gltf=>{
   if(disposed){disposeModel(gltf.scene);return;}
   model=gltf.scene;
   model.traverse(o=>{if(o.userData.walkDoor)doors.push({object:o,sign:Number(o.userData.walkDoor),origin:o.position.x});});

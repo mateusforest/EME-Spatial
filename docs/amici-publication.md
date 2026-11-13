@@ -34,14 +34,14 @@ Priorità and Apogeu source and assets remain unchanged.
 
 ## Eye-level walk
 
-The current viewer uses `amici-walk-v5.glb`; the earlier facade-only export is
+The current viewer uses `amici-walk-v6.glb`; the earlier facade-only export is
 retained for compatibility. The export script first applies
 `tools/amici-walkable-hall.py` to the in-memory source. This hollows the podium,
 replaces the shallow lobby with an interpreted furnished hall, and preserves
 sliding entrance leaves through `walkDoor` glTF extras. It uses the official
 lobby image and ground-floor plan as visual references, with estimated dimensions.
 The source .blend on disk remains unchanged. Metadata is recorded separately
-in `model-walk-v5.json`.
+in `model-walk-v6.json`.
 
 “Passear” begins at eye level in front of the building. WASD/arrows and held
 screen buttons move relative to the viewing direction; dragging looks around.
