@@ -58,6 +58,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
     let count=0;
     for(const {marker:m,distance,active} of candidates){
       m.element.hidden=true;
+      if(selected&&m.kind==='lot'&&!active)continue;
       if(m.kind==='lot'&&filtered&&!filtered.has(m.id)&&!active)continue;
       const isBlock=m.kind==='block',near=distance<155;
       if(m.kind==='lot'&&!active&&((!near&&m.block!==block)||(block&&m.block!==block)))continue;
@@ -68,7 +69,11 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
       projected.copy(m.point).project(camera);
       if(projected.z<-1||projected.z>1||m.point.clone().sub(camera.position).dot(view)<=0)continue;
       const x=(projected.x+1)*w/2,y=(1-projected.y)*h/2;
-      const rect={left:x-m.width/2,right:x+m.width/2,top:y-m.height/2,bottom:y+m.height/2};
+      let rect={left:x-m.width/2,right:x+m.width/2,top:y-m.height/2,bottom:y+m.height/2};
+      if(active&&m.kind==='lot'&&occupied.some(r=>overlaps(rect,r,7))){
+        const alternative=[-30,30,-56,56].map(offset=>({...rect,top:rect.top+offset,bottom:rect.bottom+offset})).find(candidate=>candidate.top>10&&candidate.bottom<h-12&&!occupied.some(r=>overlaps(candidate,r,7)));
+        if(alternative)rect=alternative;
+      }
       if(rect.left<8||rect.right>w-8||rect.top<10||rect.bottom>h-12||occupied.some(r=>overlaps(rect,r,m.kind==='measure'?3:7)))continue;
       m.element.hidden=false;m.element.style.transform=`translate(${Math.round(rect.left)}px,${Math.round(rect.top)}px)`;
       m.element.classList.toggle('is-selected',active||isBlock&&m.id===block);occupied.push(rect);count++;

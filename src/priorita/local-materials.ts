@@ -1,5 +1,5 @@
 /** Presentation files stay on this device. They are never uploaded implicitly. */
-export type LocalMaterial={id:string;name:string;type:string;file:Blob};
+export type LocalMaterial={id:string;name:string;type:string;file:Blob;category?:string};
 const open=()=>new Promise<IDBDatabase>((resolve,reject)=>{
  const request=indexedDB.open('priorita-materials-v1',1);
  request.onupgradeneeded=()=>request.result.createObjectStore('files',{keyPath:'id'});

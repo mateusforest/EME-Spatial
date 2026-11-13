@@ -29,3 +29,5 @@ Revisão v5: árvore procedural fornecida pelo usuário em arvore_paisagismo.py,
 Novos níveis near/mid/far usam folhas inteiras, cores por vértice e geometria instanciada. A árvore substitui tree_small_02 dentro do loteamento; os arbustos Poly Haven são mantidos.
 Arquivo de vegetação atual: production-v5/vegetation.glb. Implantação e materiais permanecem em production-v4/site.glb.
 Arquivo editável atual: conteudos/priorita/Priorita-producao-v5.blend. Protótipo: Priorita-arvore-fornecida.blend.
+
+Revisão v11: vista aérea de localização gerada por IA para demonstração; não é fotografia do local nem imagem georreferenciada. Implantação sobreposta a partir da prancha. Urbanístico de referência fornecido pelo cliente.

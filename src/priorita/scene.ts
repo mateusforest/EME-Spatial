@@ -12,6 +12,7 @@ import {frameBounds} from './camera-layout';
 import {createRoadNavigator} from './navigation';
 import {createSolarGuide} from './solar-gizmo';
 import {createContextGeometry,createDistantGroves,createHorizonSky} from './horizon';
+import {demoStatus} from './demo-stock';
 import {openingHour} from './visual-profile';
 
 export type WalkState='idle'|'choosing'|'moving';
@@ -26,7 +27,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   let selectedArea='',walkPicking=false,walkSpeed=8;
   let route:[number,number][]=[];
   const navigator=createRoadNavigator(plan.roads.map(r=>r.polygon),canWalk);
-  const statuses=new Map<string,LotStatus>(lots.map(l=>[l.id,'available']));
+  const statuses=new Map<string,LotStatus>(lots.map(l=>[l.id,demoStatus(l.id)]));
   const scene=new T.Scene();
   const solarGuide=createSolarGuide(scene,host);
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
@@ -516,6 +517,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     if(drag.active&&drag.id===e.pointerId&&!drag.moved&&!transition){
       const found=hit(e),data=found?.object.userData;
       if(found&&data?.road){if(mode==='walk')walkTo(found.point);else if(mode==='aerial'||mode==='plan')walk(found.point.x,found.point.z);}
+      else if(mode==='walk'&&data?.lot){stopWalk();held.clear();select(data.lot,false);events.onSelect(data.lot);}
       else if(walkPicking)events.onNotice('Clique sobre uma rua para escolher o início do passeio.');
       else if(mode==='aerial'||mode==='plan'){if(data?.lot){select(data.lot,true);events.onSelect(data.lot);}else if(data?.area)selectArea(data.area,true);}
     }
@@ -578,6 +580,15 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       parcelOutlines.visible=(mode==='aerial'||mode==='plan')&&camera.position.y>35;
       for(const chunk of grassChunks){grassViewer.copy(chunk.boundingSphere!.center);chunk.visible=!lightQuality&&camera.position.distanceTo(grassViewer)<62;}
       camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea,filtered);solarGuide.project(camera);
+      const lotPreview=host.parentElement!.querySelector<HTMLElement>('.pr-walk-lot'),previewLot=lotById.get(selected);
+      if(lotPreview&&previewLot&&mode==='walk'){
+        const [px,pz]=previewLot.center;
+        targetProjection.set(px,terrainHeight(px,pz)+1.1,pz).project(camera);
+        const x=(targetProjection.x+1)*host.clientWidth/2,y=(1-targetProjection.y)*host.clientHeight/2;
+        lotPreview.hidden=targetProjection.z< -1||targetProjection.z>1||Math.abs(targetProjection.x)>1.5;
+        lotPreview.style.left=`${T.MathUtils.clamp(x,150,Math.max(150,host.clientWidth-150))}px`;
+        lotPreview.style.top=`${T.MathUtils.clamp(y-90,135,Math.max(135,host.clientHeight-320))}px`;
+      }
       walkTarget.hidden=true;
       if(mode==='walk'&&(roadPreview||route.length)||walkPicking&&roadPreview){
         targetProjection.copy(route.length?destination.position:hoverRoad).project(camera);
