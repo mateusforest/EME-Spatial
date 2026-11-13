@@ -16,3 +16,4 @@
 @media(max-width:700px){.pr-header .pr-material-trigger{width:auto;height:32px;padding:0 8px;font-size:10px;gap:5px}.pr-header-center{display:none}.pr-header>div{gap:3px}.pr-header .pr-brand{letter-spacing:.13em}.pr-status-filters button{min-height:39px;font-size:10px}.pr-filter-indicator{left:14px;top:159px;font-size:9px;max-width:calc(100% - 65px)}.pr-orange-sun{width:24px;height:24px}.pr-row-bottom>span{font-size:16px}.pr-lot-list{max-height:56dvh}.pr-sheet .pr-panel-heading button{min-width:32px}.pr-pan-controls button{width:32px}.pr-view-controls button{width:36px;height:36px}.pr-map-road{font-size:8px!important}}
 @media(prefers-reduced-motion:reduce){.pr-lot-row{transition:none}}
 @media(min-width:1101px){.pr-panel-open .pr-pan-controls{bottom:62px}.pr-panel-open .pr-view-controls{bottom:18px}.pr-panel-open .pr-north,.pr-panel-open .pr-footnote{display:none}}
+.priorita .pr-primary{color:#18392e}
