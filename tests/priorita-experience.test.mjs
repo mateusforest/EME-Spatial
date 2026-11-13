@@ -19,7 +19,7 @@ test('comparison contains at most two distinct parcels and supports removal',()=
 test('automatic daylight respects speed, end time and resumed-frame limits',()=>{
   assert.equal(advanceDay(8,.2,1),8.05);
   assert.equal(advanceDay(8,.2,4),8.2);
-  assert.equal(advanceDay(19.99,.5,4),20);
+  assert.equal(advanceDay(21.99,.5,4),22);
   assert.equal(advanceDay(6,60,1),6.125);
   assert.equal(advanceDay(8,-1,1),8);
 });

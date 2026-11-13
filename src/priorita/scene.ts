@@ -14,6 +14,7 @@ import {createSolarGuide} from './solar-gizmo';
 import {createContextGeometry,createDistantGroves,createHorizonSky} from './horizon';
 import {demoStatus} from './demo-stock';
 import {openingHour} from './visual-profile';
+import {createStreetLighting,streetLampLayout} from './street-lighting';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -66,6 +67,10 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   Object.assign(sun.shadow.camera,{left:-190,right:190,top:210,bottom:-210,near:1,far:850});
   sun.shadow.bias=-.00012;sun.shadow.normalBias=.07;sun.shadow.radius=2;scene.add(sun,sun.target);
   const textures:T.Texture[]=[];
+  const lampLayout=streetLampLayout(plan.roads);
+  const streetLighting=createStreetLighting(lampLayout,terrainHeight);
+  textures.push(streetLighting.texture);
+  let streetLevel=0;
   // One tiny shared mask confines the new lawn finish to the actual parcels
   // and common areas. No extra geometry or changes to the outer landscape.
   const lawnMaskCanvas=document.createElement('canvas');lawnMaskCanvas.width=256;lawnMaskCanvas.height=384;
@@ -161,13 +166,14 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       for(const value of Object.values(material))if(value instanceof T.Texture)value.anisotropy=4;
       if(material.name.startsWith('Grama')){
         material.color.set('#d3d7bc');material.roughness=.96;material.normalScale.set(.65,.65);
-        const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);
+        const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);streetLighting.apply(contextMaterial);
         const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
         context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);
       }
       if(material.name.startsWith('Asfalto')){material.color.set('#778591');material.roughness=.92;material.roughnessMap=null;material.envMapIntensity=.25;material.normalScale.set(.65,.65);}
       if(material.name.startsWith('Calçada')){material.color.set('#d3c8b6');material.roughness=.83;material.normalScale.set(.75,.75);}
       if(material.name.startsWith('Sinalização')){material.color.set('#c6bfa4');material.roughness=.92;}
+      streetLighting.apply(material);
       const geometry=mergeGeometries(geometries);
       if(geometry){const object=mesh(geometry,material);object.castShadow=/Concreto|Metal|Banco/.test(material.name);}
       geometries.forEach(g=>g.dispose());
@@ -224,12 +230,11 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     instances.forEach(([x,y,z,sx,sy,sz,rotation=0],i)=>{dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(0,rotation,0);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);});
     m.castShadow=shadows;m.receiveShadow=true;m.computeBoundingSphere();scene.add(m);return m;
   }
-  const lampPosts:number[][]=[];
-  for(const side of [-1,1])for(let z=-104;z<126;z+=29){const x=side<0?-5.3:7.9,h=terrainHeight(x,z);lampPosts.push([x,h,z]);}
+  // Shared placements keep the light footprint aligned with every v7 fixture.
   // The v7 library supplies the actual lamp geometry; the placements are reused.
   // Sparse traffic markings. All geometries follow the ground rather than a
   // flat plane, including on the crest of the demonstration hill.
-  const paint=new T.MeshStandardMaterial({color:'#e5ddbb',roughness:.9});
+  const paint=new T.MeshStandardMaterial({color:'#e5ddbb',roughness:.9});streetLighting.apply(paint);
   const paintGeos:T.BufferGeometry[]=[];
   for(let z=-110;z<127;z+=8){if(z>-31&&z<-15||z>24&&z<44||z>84&&z<100)continue;paintGeos.push(surface([[1.1,z],[1.25,z],[1.25,z+3],[1.1,z+3]],.028));}
   for(const z of [-26,22,82])for(let x=-3;x<7;x+=1.2)paintGeos.push(surface([[x,z],[x+.65,z],[x+.65,z+2.6],[x,z+2.6]],.03));
@@ -242,7 +247,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh)||Array.isArray(o.material))return;
       const geometry=o.geometry.clone();geometry.applyMatrix4(o.matrixWorld);
-      const material=o.material as T.MeshStandardMaterial;material.side=T.DoubleSide;material.color.set('#7c9356');material.roughness=.9;
+      const material=o.material as T.MeshStandardMaterial;material.side=T.DoubleSide;material.color.set('#7c9356');material.roughness=.9;streetLighting.apply(material);
       const chunks=new Map<string,number[][]>();
       for(const lot of lots){
         const {a,b}=lot.front,len=Math.hypot(a[0]-b[0],a[1]-b[1]);
@@ -278,7 +283,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       shrub0:gardens.filter((_,i)=>i%3===0).map(([x,z,h,a])=>[x,z,h*.78,a]),
       shrub1:gardens.filter((_,i)=>i%3!==0).map(([x,z,h,a])=>[x,z,h*.42,a]),
       bench:[[-48,-80,1,0],[-64,-47,1,0],[-40,-68,1,0],[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]],
-      lamp:lampPosts.map(([x,,z])=>[x,z,1,x<0?0:Math.PI]),
+      lamp:lampLayout.map(({x,z,rotation})=>[x,z,1,rotation]),
     };
     // Low planting at the existing street-tree beds, reusing the small v7
     // groundcover mesh. Road surfaces and the outer landscape remain clear.
@@ -318,9 +323,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
             mat.customProgramCacheKey=()=> 'priorita-leaf-v10';
             mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.035*sunlightAmount;foliageMaterials.push(mat);
           }
-          if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=.2+(1-sunlightAmount)*2.1;fixtureMaterials.push(mat);}
+          if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
           for(const value of Object.values(mat))if(value instanceof T.Texture)value.anisotropy=4;
-          materialCache.set(m.uuid,mat);return mat;
+          streetLighting.apply(mat);materialCache.set(m.uuid,mat);return mat;
         });
         const positions=positionsByKind[kind];
         const inst=new T.InstancedMesh(geo,Array.isArray(o.material)?materials:materials[0],positions.length);
@@ -404,7 +409,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.035*daylight;
     sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(5.2-gold*.55)*T.MathUtils.smoothstep(solar.elevation,-1,9);
     sun.color.set('#fff7e9').lerp(new T.Color('#ffd29b'),gold*.8);
-    hemi.intensity=.14+daylight*.56;scene.environmentIntensity=.08+daylight*.22;
+    hemi.intensity=.22+daylight*.48;scene.environmentIntensity=.08+daylight*.22;
     const haze=new T.Color('#90b5cd').lerp(new T.Color('#ccb28c'),gold*.38).lerp(new T.Color('#24364d'),1-daylight);
     (scene.fog as T.Fog).color.copy(haze);
     skyMaterial.uniforms.bottomColor.value.copy(haze);
@@ -412,7 +417,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     skyMaterial.uniforms.cloudColor.value.set('#dce8ee').lerp(new T.Color('#e7c6a2'),gold*.65).lerp(new T.Color('#394756'),1-daylight);
     skyMaterial.uniforms.sunDirection.value.copy(dir);skyMaterial.uniforms.sunColor.value.set('#fff1ce').lerp(new T.Color('#ffbb77'),gold);
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
-    for(const mat of fixtureMaterials)mat.emissiveIntensity=.2+(1-daylight)*2.1;
+    streetLevel=streetLighting.setSun(solar.elevation);
+    for(const mat of fixtureMaterials)mat.emissiveIntensity=streetLevel*3;
+    host.dataset.streetLights=JSON.stringify({count:lampLayout.length,level:+streetLevel.toFixed(3),elevation:+solar.elevation.toFixed(2)});
     renderer.shadowMap.needsUpdate=true;invalidate();
   }
   function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();}

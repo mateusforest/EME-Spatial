@@ -6,5 +6,5 @@ export function toggleComparison(ids:string[],id:string):string[]{
   return ids.includes(id)?ids.filter(x=>x!==id):[...ids.slice(-1),id];
 }
 export function advanceDay(hour:number,seconds:number,speed:number){
-  return Math.min(20,Math.max(6,hour)+Math.min(.5,Math.max(0,seconds))*.25*speed);
+  return Math.min(22,Math.max(6,hour)+Math.min(.5,Math.max(0,seconds))*.25*speed);
 }
