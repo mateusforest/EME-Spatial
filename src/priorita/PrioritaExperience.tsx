@@ -10,6 +10,7 @@ import SolarControls from './SolarControls';
 import './priorita.css';
 import './premium.css';
 import {filterLots} from './presentation-model';
+import {openingHour} from './visual-profile';
 import type {StockFilter} from './presentation-model';
 const PresentationCenter=lazy(()=>import('./PresentationCenter'));
 
@@ -29,7 +30,7 @@ export default function PrioritaExperience(){
  const [favorites,setFavorites]=useState<string[]>(loadFavorites),[onlyFavorites,setOnlyFavorites]=useState(false),[comparison,setComparison]=useState<string[]>([]),[compareOpen,setCompareOpen]=useState(false);
  const [walkState,setWalkState]=useState<WalkState>('idle'),[walkSpeed,setWalkSpeed]=useState(8),[walkPad,setWalkPad]=useState(false);
  const [contours,setContours]=useState(false),[light,setLight]=useState(()=>matchMedia('(max-width:700px)').matches),[showStock,setShowStock]=useState(true),[showLabels,setShowLabels]=useState(true),[notice,setNotice]=useState('');
- const solarValue=useRef({hour:15.5,date:new Date().toLocaleDateString('en-CA'),trajectory:false});
+ const solarValue=useRef({hour:openingHour,date:new Date().toLocaleDateString('en-CA'),trajectory:false});
  const lot=lotById.get(selected),area=areaById.get(selectedArea);
  const matching=useMemo(()=>filterLots(lots,stock,statusFilter,block,query,favorites,onlyFavorites),[stock,statusFilter,block,query,favorites,onlyFavorites]);
  const filtering=statusFilter!=='all'||block!=='Todas'||Boolean(query.trim())||onlyFavorites;

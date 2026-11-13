@@ -3,7 +3,8 @@ import * as T from 'three';
 export type FrameRect={left:number;top:number;right:number;bottom:number};
 /** Fit all corners into the unobstructed viewport, leaving room for dimension labels. */
 export function frameBounds(bounds:T.Box3,aspect:number,fov:number,viewport:{width:number;height:number},safe:FrameRect,flat=false){
-  const direction=new T.Vector3(flat?0:.58,flat?1:1.05,flat?.001:1).normalize();
+  const portrait=aspect<.85;
+  const direction=new T.Vector3(flat?0:portrait?.08:.58,flat?1:portrait?1.65:1.05,flat?.001:portrait?.8:1).normalize();
   const right=new T.Vector3().crossVectors(new T.Vector3(0,1,0),direction).normalize();
   const up=new T.Vector3().crossVectors(direction,right).normalize();
   const center=bounds.getCenter(new T.Vector3());

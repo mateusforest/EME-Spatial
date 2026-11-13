@@ -2,10 +2,11 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {ChevronDown,Pause,Play,RotateCcw,Sun,X} from 'lucide-react';
 import {solarPosition,timeLabel} from './model';
 import {advanceDay} from './experience-state';
+import {openingHour} from './visual-profile';
 
 type Props={paused:boolean;onChange:(hour:number,date:string)=>void;onTrajectory:(visible:boolean)=>void;onOpen:(open:boolean)=>void;selected:boolean};
 export default function SolarControls({paused,onChange,onTrajectory,onOpen,selected}:Props){
-  const [hour,setHour]=useState(15.5),[date,setDate]=useState(()=>new Date().toLocaleDateString('en-CA'));
+  const [hour,setHour]=useState(openingHour),[date,setDate]=useState(()=>new Date().toLocaleDateString('en-CA'));
   const [open,setOpen]=useState(false),[playing,setPlaying]=useState(false),[speed,setSpeed]=useState(1),[trajectory,setTrajectory]=useState(true);
   const frame=useRef(0);
   useEffect(()=>{if(paused)setPlaying(false);},[paused]);

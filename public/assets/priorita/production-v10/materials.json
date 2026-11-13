@@ -1,0 +1,10 @@
+{
+  "grass-detail.webp": {
+    "source": "/assets/casa-m/materials/v2/grass_ground-color.jpg",
+    "purpose": "Shared photographic grass luminance detail, restricted to Priorità parcels and common areas",
+    "size": [1024, 1024],
+    "bytes": 284188,
+    "processing": "Existing project texture resized and compressed to WebP quality 88; no generated geometry",
+    "runtime": "Two texture samples, no postprocessing pass"
+  }
+}
