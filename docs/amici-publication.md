@@ -95,3 +95,25 @@ Validation: TypeScript/build, navigation unit tests, browser desktop/mobile
 walkthrough including automatic entry/exit and modal pause, and presentation
 gallery/plan/fallback checks. The model is approximately 32.4 MB compressed and
 4.4 million triangles, including the retained surrounding trees and interior.
+
+## Interactive daylight and material review (V16)
+
+The same V15 GLB now uses dynamic solar lighting instead of the old day/evening
+switch. The Amici-only solar panel follows the Priorita interaction: time, date,
+animation speed and trajectory. Morning/afternoon move the actual directional
+light and shadow map; the sky and its reflection environment follow solar altitude.
+Artificial facade lights become more prominent at dusk. Six warm balcony bays,
+clearer glass reflections and material-specific surface adjustments restore
+contrast lost during the Cycles-to-web conversion. The opening view is frontal.
+
+The approximate NOAA calculation uses Passo Fundo (-28.26, -52.41), BRT UTC-3,
+from the [IBGE municipal map](https://geoftp.ibge.gov.br/cartas_e_mapas/mapas_municipais/colecao_de_mapas_municipais/2020/RS/passo_fundo/4314100_MM.pdf).
+The model orientation is provisional (35-degree visual alignment), not surveyed.
+This limitation is stated in the solar panel; this is not a technical insolation
+study. Priorita source and assets remain unchanged. No source Blender geometry
+is edited in this release, and the approved V15 Cycles still stays available.
+
+`tools/check-amici-solar.mjs` checks opposite morning/afternoon sun directions,
+zero direct sun at night, date/season changes, animation, trajectory controls and
+mobile panel fit, with screenshots. Existing presentation and walk checks cover
+loading, gallery, fallback, doors, hall entry/exit, and desktop/mobile controls.

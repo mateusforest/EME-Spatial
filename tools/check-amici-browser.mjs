@@ -45,9 +45,11 @@ await page.getByRole('button',{name:'Fechar apresentação',exact:true}).click()
 await page.getByRole('button',{name:'Fachada original',exact:true}).click();
 checks.original=await page.locator('.am-photo img').isVisible();
 await page.getByRole('button',{name:'Voltar ao 3D',exact:true}).click();
-await page.getByRole('button',{name:'Luz do dia',exact:true}).click();
-checks.evening=await page.getByRole('button',{name:'Entardecer',exact:true}).getAttribute('aria-pressed');
-await page.getByRole('button',{name:'Entardecer',exact:true}).click();
+await page.getByRole('button',{name:'Abrir luz do dia',exact:true}).click();
+await page.getByLabel('Horário da simulação solar').focus();await page.keyboard.press('End');
+checks.evening=await page.locator('.pr-canvas').evaluate(el=>String(JSON.parse(el.dataset.solar).intensity===0));
+await page.getByLabel('Horário da simulação solar').evaluate(el=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'17');el.dispatchEvent(new Event('input',{bubbles:true}));});
+await page.getByRole('button',{name:'Fechar luz do dia',exact:true}).click();
 await page.getByRole('button',{name:'Salvar imagem do modelo',exact:true}).click();
 checks.capture=(await page.locator('.am-capture img').getAttribute('src')).startsWith('data:image/png');
 await page.getByRole('button',{name:'Fechar apresentação',exact:true}).click();

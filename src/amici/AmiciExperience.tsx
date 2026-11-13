@@ -1,13 +1,16 @@
-import {useEffect,useRef,useState} from 'react';
-import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,Box,Building2,Camera,Check,ChevronRight,Expand,Footprints,Image,Info,Layers,MapPin,Maximize,Minus,Plus,RotateCcw,Share2,Sun,Trees,X} from 'lucide-react';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,Box,Building2,Camera,Check,ChevronRight,Expand,Footprints,Image,Info,Layers,MapPin,Maximize,Minus,Plus,RotateCcw,Share2,Trees,X} from 'lucide-react';
 import {apartments,asset,facts,gallery,number,plans,sourceUrl} from './data';
 import type {View} from './data';
 import {createAmiciScene} from './scene';
 import type {AmiciScene} from './scene';
+import AmiciSolarControls from './AmiciSolarControls';
+import {openingHour} from './solar';
 import type {WalkZone} from './navigation';
 import '../priorita/priorita.css';
 import '../priorita/premium.css';
 import './amici.css';
+import './solar.css';
 
 type Tab='Visão geral'|'Galeria'|'Plantas'|'Localização'|'Sobre';
 const tabs:Tab[]=['Visão geral','Galeria','Plantas','Localização','Sobre'];
@@ -17,10 +20,14 @@ export default function AmiciExperience(){
  const host=useRef<HTMLDivElement>(null),engine=useRef<AmiciScene|null>(null),shell=useRef<HTMLDivElement>(null),dialog=useRef<HTMLDialogElement>(null);
  const [ready,setReady]=useState(false),[failed,setFailed]=useState(false),[retry,setRetry]=useState(0),[progress,setProgress]=useState(0);
  const [panel,setPanel]=useState<'apartments'|'areas'|null>(null),[selected,setSelected]=useState('');
- const [view,setView]=useState<View>('facade'),[evening,setEvening]=useState(false),[photo,setPhoto]=useState(false);
+ const [view,setView]=useState<View>('facade'),[photo,setPhoto]=useState(false);
  const [opened,setOpened]=useState(false),[tab,setTab]=useState<Tab>('Visão geral'),[media,setMedia]=useState<Media|null>(null),[category,setCategory]=useState('Todos');
  const [notice,setNotice]=useState(''),[capture,setCapture]=useState('');
  const [walk,setWalk]=useState<WalkZone|null>(null),[moving,setMoving]=useState(false);
+ const solarValue=useRef({hour:openingHour,date:new Date().toLocaleDateString('en-CA'),trajectory:false});
+ const changeSun=useCallback((hour:number,date:string)=>{solarValue.current={...solarValue.current,hour,date};engine.current?.lighting(hour,date);},[]);
+ const changeTrajectory=useCallback((value:boolean)=>{solarValue.current.trajectory=value;engine.current?.setSolarTrajectory(value);},[]);
+ const openSolar=useCallback((value:boolean)=>{if(value)setPanel(null);},[]);
  const apartment=apartments.find(a=>a.id===selected);
  useEffect(()=>{const old=document.title;document.title='Amici · ZM Empreendimentos | EME Spatial';return()=>{document.title=old;};},[]);
  useEffect(()=>{
@@ -29,7 +36,7 @@ export default function AmiciExperience(){
   catch(error){console.error('Amici scene initialization',error);setFailed(true);}
   return()=>{scene?.dispose();engine.current=null;};
  },[retry]);
- useEffect(()=>{engine.current?.lighting(evening);},[evening,ready,retry]);
+ useEffect(()=>{const s=solarValue.current;engine.current?.lighting(s.hour,s.date);engine.current?.setSolarTrajectory(s.trajectory);},[ready,retry]);
  useEffect(()=>{engine.current?.pause(opened||photo||failed);},[opened,photo,failed,ready,retry]);
  useEffect(()=>{if(opened)dialog.current?.showModal();else dialog.current?.close();},[opened]);
  useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),5000);return()=>clearTimeout(timer);},[notice]);
@@ -69,7 +76,7 @@ export default function AmiciExperience(){
   {!ready&&!failed&&<div className="am-model-loading" role="status"><span className="am-spinner"/>Preparando o Amici em 3D… {progress>0?progress+'%':''}</div>}
   {failed&&<div className="am-error" role="status"><b>Veja o Amici pelas imagens oficiais</b><p>O modelo 3D não carregou neste navegador. Galeria e plantas continuam disponíveis.</p><button onClick={restart}>Tentar abrir o 3D</button><button onClick={()=>present('Galeria')}>Ver galeria</button></div>}
   <div className="am-caption"><span>{photo||failed?'PERSPECTIVA OFICIAL · ZM':'AMICI · ESTUDO 3D'}</span><small>{photo||failed?'Imagem de divulgação do empreendimento':'Reconstrução visual · dimensões e entorno aproximados'}</small></div>
-  <div className="am-light"><button aria-pressed={evening} disabled={inactive} onClick={()=>setEvening(v=>!v)}><Sun size={17}/>{evening?'Entardecer':'Luz do dia'}</button></div>
+  <AmiciSolarControls paused={opened||photo||failed||!ready} onChange={changeSun} onTrajectory={changeTrajectory} onOpen={openSolar} selected={false}/>
   <nav className="pr-dock am-dock" aria-label="Navegação do Amici"><button aria-pressed={!photo&&!walk&&view==='facade'} disabled={!ready||failed} onClick={()=>chooseView('facade')}><Building2 size={18}/><span>Fachada</span></button><button aria-pressed={!photo&&!walk&&view==='aerial'} disabled={!ready||failed} onClick={()=>chooseView('aerial')}><Box size={18}/><span>Vista aérea</span></button><button aria-pressed={!photo&&!walk&&view==='entrance'} disabled={!ready||failed} onClick={()=>chooseView('entrance')}><MapPin size={18}/><span>Entrada</span></button><button aria-pressed={Boolean(walk&&!photo)} disabled={!ready||failed} onClick={stroll}><Footprints size={18}/><span>Passear</span></button><span className="pr-separator"/><button onClick={()=>present('Galeria')}><Image size={18}/><span>Galeria</span></button></nav>
   <div className="am-tools"><button aria-label="Aproximar" disabled={inactive||Boolean(walk)} onClick={()=>engine.current?.zoom(.85)}><Plus size={18}/></button><button aria-label="Afastar" disabled={inactive||Boolean(walk)} onClick={()=>engine.current?.zoom(1.18)}><Minus size={18}/></button><button aria-label="Restaurar vista" disabled={!ready||failed} onClick={()=>chooseView('facade')}><RotateCcw size={17}/></button><button aria-label="Salvar imagem do modelo" disabled={inactive} onClick={screenshot}><Camera size={17}/></button><button aria-label="Copiar link do Amici" onClick={share}><Share2 size={17}/></button></div>
   {walk&&!photo&&!failed&&<><section className="am-walk-banner" aria-label="Passeio pelo Amici"><div><Footprints size={18}/><b>{walk==='hall'?'Hall de entrada':'Passeio pela calçada'}</b><button aria-label="Sair do passeio" onClick={()=>chooseView('facade')}><X size={17}/></button></div><p>Arraste para olhar. Use WASD, setas ou toque no piso para caminhar.</p><div className="am-walk-actions">{moving?<button onClick={()=>engine.current?.stopMoving()}>Parar caminhada <X size={14}/></button>:walk==='outside'?<button onClick={()=>engine.current?.enterHall()}>Entrar no hall <ArrowRight size={15}/></button>:<button onClick={()=>engine.current?.returnOutside()}>Voltar à calçada <ArrowLeft size={15}/></button>}{walk==='hall'&&<button onClick={()=>showImage('lobby.webp','Lobby oficial')}>Ver referência <Image size={14}/></button>}</div></section><div className="am-walk-pad" aria-label="Controles de caminhada">{(['w','a','s','d'] as const).map((key,i)=>{const Icon=[ArrowUp,ArrowLeft,ArrowDown,ArrowRight][i];return <button key={key} className={'am-key-'+key} aria-label={['Caminhar para frente','Caminhar para esquerda','Caminhar para trás','Caminhar para direita'][i]} onPointerDown={hold(key)} onPointerUp={release(key)} onPointerCancel={release(key)} onLostPointerCapture={release(key)}><Icon size={21}/></button>;})}</div></>}
