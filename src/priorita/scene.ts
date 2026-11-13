@@ -10,6 +10,7 @@ import type {LotStatus, ViewMode} from './model';
 import {createAnnotations} from './annotations';
 import {frameBounds} from './camera-layout';
 import {createRoadNavigator} from './navigation';
+import {createSolarGuide} from './solar-gizmo';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -18,11 +19,13 @@ type Transition={start:number;duration:number;from:T.Vector3;to:T.Vector3;fromTa
 export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   let disposed=false,dirty=true,mode:ViewMode='aerial',selected='',hovered='',showStock=true,showLabels=true;
   let focusedBlock='';
+  let comparison:string[]=[];
   let selectedArea='',walkPicking=false,walkSpeed=8;
   let route:[number,number][]=[];
   const navigator=createRoadNavigator(plan.roads.map(r=>r.polygon),canWalk);
   const statuses=new Map<string,LotStatus>(lots.map(l=>[l.id,'available']));
   const scene=new T.Scene();
+  const solarGuide=createSolarGuide(scene,host);
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
   scene.fog=new T.Fog('#b9cccf',350,1900);
   const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -103,8 +106,6 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
   const barkMat=new T.MeshStandardMaterial({color:'#63564a',roughness:.95});
-  const metalMat=new T.MeshStandardMaterial({color:'#40544e',roughness:.65,metalness:.45});
-  const lampMat=new T.MeshStandardMaterial({color:'#fff0d2',emissive:'#ffdc9a',emissiveIntensity:.25});
   const overlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
   const borders=new Map<string,T.LineLoop<T.BufferGeometry,T.LineBasicMaterial>>();
   const areaOverlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
@@ -145,6 +146,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const groups=new Map<string,{material:T.MeshStandardMaterial;geometries:T.BufferGeometry[]}>();
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh)||Array.isArray(o.material))return;
+      if(/Banco|Encosto/.test(o.name)){o.geometry.dispose();return;}
       const material=o.material as T.MeshStandardMaterial;
       const key=material.uuid+Object.keys(o.geometry.attributes).sort().join(',');
       const group=groups.get(key)||{material,geometries:[]};
@@ -154,7 +156,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     for(const {material,geometries} of groups.values()){
       horizon(material);
       for(const value of Object.values(material))if(value instanceof T.Texture)value.anisotropy=4;
-      if(material.name.startsWith('Grama')){material.color.set('#f2f3de');material.roughness=.96;material.normalScale.set(.38,.38);}
+      if(material.name.startsWith('Grama')){material.color.set('#dedfc4');material.roughness=.94;material.normalScale.set(.48,.48);}
       if(material.name.startsWith('Asfalto')){material.color.set('#bbc1c0');material.normalScale.set(.65,.65);}
       if(material.name.startsWith('Calçada')){material.color.set('#ebe7dc');material.normalScale.set(.8,.8);}
       const geometry=mergeGeometries(geometries);
@@ -188,6 +190,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   for(const road of plan.roads){const pick=new T.Mesh(surface(road.polygon,.02),grassMat);pick.userData.road=road.name;pickables.push(pick);}
   const destination=new T.Mesh(new T.RingGeometry(.38,.6,28),new T.MeshBasicMaterial({color:'#f2d690',transparent:true,opacity:.95,depthTest:false,side:T.DoubleSide}));
   destination.rotation.x=-Math.PI/2;destination.renderOrder=5;destination.visible=false;scene.add(destination);
+  const walkTarget=document.createElement('div');walkTarget.className='pr-walk-target';walkTarget.hidden=true;walkTarget.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="13" cy="4" r="2"/><path d="m8 21 3-7m5 7-3-9 1-5m-7 7 3-6 4-1 4 5"/></svg><span>Ir até aqui</span>';host.append(walkTarget);
+  const hoverRoad=new T.Vector3();let roadPreview=false;const targetProjection=new T.Vector3();
   // A single thin outline keeps sub-pixel physical strips legible from the air.
   const parcelOutlineGeometry=new T.BufferGeometry();parcelOutlineGeometry.setAttribute('position',new T.Float32BufferAttribute(parcelOutlineSegments,3));
   const parcelOutlines=new T.LineSegments(parcelOutlineGeometry,new T.LineBasicMaterial({color:'#dedfc5',transparent:true,opacity:.7}));scene.add(parcelOutlines);
@@ -202,6 +206,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const plantLevels:PlantLevel[]=[];
   const plantStates=new Map<string,string[]>();
   const foliageMaterials:T.MeshStandardMaterial[]=[];
+  const fixtureMaterials:T.MeshStandardMaterial[]=[];
   let sunlightAmount=1;
   let vegetationDirty=true;
   let lightQuality=false;
@@ -210,11 +215,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     instances.forEach(([x,y,z,sx,sy,sz,rotation=0],i)=>{dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(0,rotation,0);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);});
     m.castShadow=shadows;m.receiveShadow=true;m.computeBoundingSphere();scene.add(m);return m;
   }
-  const lampPosts:number[][]=[],lampHeads:number[][]=[],lampLenses:number[][]=[];
-  for(const side of [-1,1])for(let z=-104;z<126;z+=29){const x=side<0?-5.3:7.9,h=terrainHeight(x,z);lampPosts.push([x,h+3.4,z,.085,6.8,.085]);lampHeads.push([x+side*.15,h+6.8,z,.55,.1,.7]);lampLenses.push([x+side*.15,h+6.73,z,.46,.03,.6]);}
-  batch(new T.CylinderGeometry(1,1,1,6),metalMat,lampPosts);
-  batch(new T.BoxGeometry(1,1,1),metalMat,lampHeads);
-  batch(new T.BoxGeometry(1,1,1),lampMat,lampLenses,false);
+  const lampPosts:number[][]=[];
+  for(const side of [-1,1])for(let z=-104;z<126;z+=29){const x=side<0?-5.3:7.9,h=terrainHeight(x,z);lampPosts.push([x,h,z]);}
+  // The v7 library supplies the actual lamp geometry; the placements are reused.
   // Sparse traffic markings. All geometries follow the ground rather than a
   // flat plane, including on the crest of the demonstration hill.
   const paint=new T.MeshStandardMaterial({color:'#e5ddbb',roughness:.9});
@@ -260,38 +263,44 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const plantingLayout=(file:string)=>fetch(`/assets/priorita/production-v4/${file}.json`).then(r=>{if(!r.ok)throw new Error('planting layout');return r.json() as Promise<number[][]>;});
   Promise.all([plantingLayout('trees'),plantingLayout('gardens')]).then(([trees,gardens])=>{
     if(disposed)return;
-    new GLTFLoader().setDRACOLoader(draco).load('/assets/priorita/production-v5/vegetation.glb',gltf=>{
+    const positionsByKind:Record<string,number[][]>={
+      tree:trees.filter(([x,z])=>!areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h*.84,a]),
+      shade:trees.filter(([x,z])=>areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h*.9,a]),
+      shrub0:gardens.filter((_,i)=>i%3===0).map(([x,z,h,a])=>[x,z,h*.78,a]),
+      shrub1:gardens.filter((_,i)=>i%3!==0).map(([x,z,h,a])=>[x,z,h*.42,a]),
+      bench:[[-48,-80,1,0],[-64,-47,1,0],[-40,-68,1,0],[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]],
+      lamp:lampPosts.map(([x,,z])=>[x,z,1,x<0?0:Math.PI]),
+    };
+    new GLTFLoader().setDRACOLoader(draco).load('/assets/priorita/production-v7/landscape.glb',gltf=>{
       if(disposed){disposeObject(gltf.scene);return;}
       gltf.scene.updateMatrixWorld(true);
+      const materialCache=new Map<string,T.MeshStandardMaterial>();
       gltf.scene.traverse(o=>{
         if(!(o instanceof T.Mesh))return;
-        // glTF may put custom properties on a parent for multi-material meshes.
         const metadata=o.userData.plant_kind?o.userData:o.parent?.userData;
         const kind=metadata?.plant_kind as string,level=metadata?.detail_level as string;
-        if(!kind||!level)return;
-        const geo=o.geometry.clone();geo.applyMatrix4(o.matrixWorld);geo.computeBoundingBox();
+        if(!kind||!level||!positionsByKind[kind])return;
+        const geo=o.geometry.clone();geo.applyMatrix4(o.matrixWorld);
         const materials=(Array.isArray(o.material)?o.material:[o.material]).map(m=>{
-          const mat=m.clone() as T.MeshStandardMaterial;mat.side=T.DoubleSide;mat.envMapIntensity=.65;mat.roughness=.87;
-          if(mat.transparent||/leaves|shrub|Folhas/.test(mat.name)){
-            mat.transparent=false;mat.alphaTest=(mat.alphaMap||mat.map?.format===T.RGBAFormat)?.4:0;mat.alphaToCoverage=mat.alphaTest>0;
-            if(!/Folhas/.test(mat.name))mat.color.setRGB(1.25,1.35,1.05);mat.normalScale.set(.4,.4);mat.aoMapIntensity=.35;
-            // A small albedo-based fill approximates thin leaves transmitting sky light.
-            if(!/Folhas/.test(mat.name)){mat.emissiveMap=mat.map;mat.emissive.set('#c7dbac');mat.emissiveIntensity=.26*sunlightAmount;foliageMaterials.push(mat);}
-            else {mat.emissive.set('#000000');mat.emissiveIntensity=0;}
+          if(materialCache.has(m.uuid))return materialCache.get(m.uuid)!;
+          const mat=m as T.MeshStandardMaterial;mat.side=T.DoubleSide;mat.envMapIntensity=.55;
+          if(/folh|leaf|forra/i.test(mat.name)){
+            mat.transparent=false;mat.alphaTest=0;mat.roughness=.86;mat.normalScale.set(.4,.4);
+            mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.13*sunlightAmount;foliageMaterials.push(mat);
           }
+          if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=.2+(1-sunlightAmount)*2.1;fixtureMaterials.push(mat);}
           for(const value of Object.values(mat))if(value instanceof T.Texture)value.anisotropy=4;
-          return mat;
+          materialCache.set(m.uuid,mat);return mat;
         });
-        const positions=kind==='tree'?trees:gardens.filter((_,i)=>i%2===Number(kind.slice(-1)));
+        const positions=positionsByKind[kind];
         const inst=new T.InstancedMesh(geo,Array.isArray(o.material)?materials:materials[0],positions.length);
-        inst.count=0;inst.visible=false;inst.castShadow=true;inst.receiveShadow=true;inst.name=`${kind} · ${level}`;
+        inst.count=0;inst.visible=false;inst.castShadow=kind!=='shrub1';inst.receiveShadow=true;inst.name=`v7 ${kind} · ${level}`;
         scene.add(inst);plantLevels.push({mesh:inst,kind,level,positions});
-        if(!plantStates.has(kind))plantStates.set(kind,positions.map(()=>''));
-        o.geometry.dispose();
+        if(!plantStates.has(kind))plantStates.set(kind,positions.map(()=>''));o.geometry.dispose();
       });
-      vegetationDirty=true;renderer.shadowMap.needsUpdate=true;invalidate();
-    },undefined,()=>invalidate());
-  }).catch(()=>invalidate());
+      host.dataset.landscape='Blender v7';vegetationDirty=true;renderer.shadowMap.needsUpdate=true;invalidate();
+    },undefined,()=>events.onNotice('O paisagismo não terminou de carregar. Reabra a visita para tentar novamente.'));
+  }).catch(()=>events.onNotice('Não foi possível carregar o paisagismo nesta conexão.'));
   for(let i=0;i<96;i++){
     const a=i*2.399963,r=190+random()*95,x=Math.cos(a)*r,z=Math.sin(a)*r;
     if(Math.abs(x)<25&&z<-110)continue;treePositions.push([x,z,7+random()*5,random()*6.28]);
@@ -306,21 +315,21 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   function updateVegetation(){
     if(!vegetationDirty&&camera.position.distanceToSquared(vegetationViewer)<9)return;
     vegetationViewer.copy(camera.position);vegetationDirty=false;
-    const near=lightQuality?22:42,mid=lightQuality?65:105;
+    const near=lightQuality?22:42;
     const updated=new Set<string>();let changed=false;
     for(const {mesh:inst,kind,level,positions} of plantLevels){
       const states=plantStates.get(kind)!;
       if(!updated.has(kind)){
         positions.forEach(([x,z,h],i)=>{
           const distance=camera.position.distanceTo(new T.Vector3(x,terrainHeight(x,z)+h*.6,z)),old=states[i];
-          states[i]=distance<near+(old==='near'?9:0)?'near':kind==='tree'&&distance<mid+(old==='mid'?14:0)?'mid':'far';
+          states[i]=distance<near+(old==='near'?9:0)?'near':'far';
           if(states[i]!==old)changed=true;
         });updated.add(kind);
       }
       let count=0;
       positions.forEach(([x,z,h,a],i)=>{
         if(states[i]!==level)return;
-        dummy.position.set(x,terrainHeight(x,z)+(kind==='tree'?0:.06),z);dummy.scale.setScalar(h);dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count++,dummy.matrix);
+        dummy.position.set(x,terrainHeight(x,z)+(['tree','shade'].includes(kind)?0:.06),z);dummy.scale.setScalar(h);dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count++,dummy.matrix);
       });
       inst.count=count;inst.visible=count>0;inst.instanceMatrix.needsUpdate=true;if(count)inst.computeBoundingSphere();
     }
@@ -341,22 +350,24 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     object.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line||o instanceof T.Sprite){if('geometry' in o)o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];for(const mat of mats){for(const value of Object.values(mat))if(value instanceof T.Texture)value.dispose();mat.dispose();}}});
   }
   function updateLotColors(){
+    solarGuide.selection(selected,selectedArea);
     for(const [id,overlay] of areaOverlays){overlay.visible=id===selectedArea;overlay.material.opacity=mode==='area'?.04:.16;}
     for(const lot of lots){
-      const active=lot.id===selected,hot=lot.id===hovered,inBlock=lot.block===focusedBlock,overlay=overlays.get(lot.id)!,border=borders.get(lot.id)!;
-      overlay.visible=active||hot||inBlock||(showStock&&statuses.get(lot.id)!=='available');
-      border.visible=active||hot||inBlock;
+      const active=lot.id===selected,hot=lot.id===hovered,inBlock=lot.block===focusedBlock,compared=comparison.includes(lot.id),overlay=overlays.get(lot.id)!,border=borders.get(lot.id)!;
+      overlay.visible=active||hot||inBlock||compared||(showStock&&statuses.get(lot.id)!=='available');
+      border.visible=active||hot||inBlock||compared;
       overlay.material.color.set(statusInfo[statuses.get(lot.id)!].color);
-      overlay.material.opacity=active?(mode==='lot'?.08:.22):hot?.16:inBlock?.11:showStock?.065:0;
-      border.material.color.set(active?'#f4edcf':hot?statusInfo[statuses.get(lot.id)!].color:inBlock?'#e4cb8a':'#d9dfb6');border.material.opacity=active||hot?1:.75;
+      overlay.material.opacity=active?(mode==='lot'?.03:.09):hot?.12:compared?.1:inBlock?.07:showStock?.065:0;
+      border.material.color.set(active||compared?'#f1cf84':hot?statusInfo[statuses.get(lot.id)!].color:inBlock?'#e4cb8a':'#d9dfb6');border.material.opacity=active||hot?1:.75;
     }
     invalidate();
   }
   function lighting(hour:number,date:string){
+    solarGuide.update(hour,date,selected,selectedArea);
     const solar=solarPosition(hour,date),dir=new T.Vector3(...solar.direction);
 
     const daylight=T.MathUtils.smoothstep(solar.elevation,-7,15),gold=1-T.MathUtils.smoothstep(solar.elevation,2,32);
-    sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.26*daylight;
+    sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.13*daylight;
     sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(2.9-gold*.5)*T.MathUtils.smoothstep(solar.elevation,-1,9);
     sun.color.set('#fff6e6').lerp(new T.Color('#ffd6a0'),gold*.65);
     hemi.intensity=.32+daylight*1.18;scene.environmentIntensity=.12+daylight*.28;
@@ -367,7 +378,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     skyMaterial.uniforms.topColor.value.set('#3883b9').lerp(new T.Color('#527d9c'),gold*.3).lerp(new T.Color('#101e38'),1-daylight);
     skyMaterial.uniforms.sunDirection.value.copy(dir);skyMaterial.uniforms.sunColor.value.set('#fff1ce').lerp(new T.Color('#ffbb77'),gold);
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
-    lampMat.emissiveIntensity=.2+(1-daylight)*2.1;
+    for(const mat of fixtureMaterials)mat.emissiveIntensity=.2+(1-daylight)*2.1;
     renderer.shadowMap.needsUpdate=true;invalidate();
   }
   function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();}
@@ -382,21 +393,22 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   function syncLook(){const d=camera.getWorldDirection(new T.Vector3());yaw=Math.atan2(d.x,-d.z);pitch=Math.asin(d.y);}
   function focusPoints(points:number[][],flat=false){
-    requestAnimationFrame(()=>{
+    // Wait for the selected parcel's sheet to commit before measuring the free viewport.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
       if(disposed)return;
       const rect=host.getBoundingClientRect(),w=rect.width,h=rect.height;
-      const safe={left:w<700?18:40,top:110,right:w-40,bottom:h-135};
+      const safe={left:w<700?18:35,top:w<700?125:80,right:w-35,bottom:h-120};
       const ui=host.parentElement!;
-      for(const el of ui.querySelectorAll<HTMLElement>('.pr-intro,.pr-lot-list,.pr-detail')){
+      for(const el of ui.querySelectorAll<HTMLElement>('.pr-search-pill,.pr-lot-list,.pr-detail')){
         const box=el.getBoundingClientRect();
         if(w<700){if(el.matches('.pr-detail,.pr-lot-list'))safe.bottom=Math.min(safe.bottom,box.top-rect.top-18);}
-        else if(el.matches('.pr-intro'))safe.left=Math.max(safe.left,box.right-rect.left+20);
+        else if(el.matches('.pr-search-pill'))continue;
         else safe.right=Math.min(safe.right,box.left-rect.left-20);
       }
       const bounds=new T.Box3().setFromPoints(points.map(([x,z])=>new T.Vector3(x,terrainHeight(x,z),z)));
       const frame=frameBounds(bounds,camera.aspect,camera.fov,{width:w,height:h},safe,flat);
       fly(frame.position,frame.target,()=>{controls.enabled=true;controls.target.copy(frame.target);controls.update();});
-    });
+    }));
   }
   function focusBlock(block:string){
     selectedArea='';events.onArea('');focusedBlock=block==='Todas'?'':block;selected='';events.onSelect('');setMode('aerial');
@@ -453,7 +465,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       if(!transition&&(mode==='lot'||mode==='area'||mode==='walk')){yaw-=(e.clientX-drag.lastX)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-drag.lastY)*.003,-1.15,1.15);invalidate();}
       drag.lastX=e.clientX;drag.lastY=e.clientY;
     }else if(mode!=='lot'&&mode!=='area'&&e.pointerType==='mouse'){
-      const data=hit(e)?.object.userData,id=(data?.lot as string)||'';
+      const found=hit(e),data=found?.object.userData;roadPreview=Boolean(found&&data?.road&&(mode==='walk'||walkPicking));if(roadPreview){hoverRoad.copy(found!.point);invalidate();}else if(!walkTarget.hidden){walkTarget.hidden=true;invalidate();}
+      const id=(data?.lot as string)||'';
       renderer.domElement.style.cursor=data?.road?'crosshair':data?.area||id?'pointer':'grab';
       if(id!==hovered){hovered=id;updateLotColors();}
     }
@@ -517,7 +530,15 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       updateVegetation();
       parcelOutlines.visible=(mode==='aerial'||mode==='plan')&&camera.position.y>35;
       for(const chunk of grassChunks){grassViewer.copy(chunk.boundingSphere!.center);chunk.visible=!lightQuality&&camera.position.distanceTo(grassViewer)<62;}
-      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea);
+      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea);solarGuide.project(camera);
+      walkTarget.hidden=true;
+      if(mode==='walk'&&(roadPreview||route.length)||walkPicking&&roadPreview){
+        targetProjection.copy(route.length?destination.position:hoverRoad).project(camera);
+        const x=(targetProjection.x+1)*host.clientWidth/2,y=(1-targetProjection.y)*host.clientHeight/2;
+        if(targetProjection.z>-1&&targetProjection.z<1&&x>40&&x<host.clientWidth-40&&y>30&&y<host.clientHeight-110){walkTarget.hidden=false;walkTarget.style.left=`${x}px`;walkTarget.style.top=`${y-9}px`;walkTarget.querySelector('span')!.textContent=route.length?'Indo até aqui':'Ir até aqui';}
+      }
+      const north=host.parentElement!.querySelector<HTMLElement>('.pr-north svg');
+      if(north){const origin=new T.Vector3().copy(controls.target).project(camera),n=new T.Vector3(controls.target.x+plan.northVector[0]*10,controls.target.y,controls.target.z+plan.northVector[1]*10).project(camera);north.style.transform=`rotate(${Math.atan2(n.x-origin.x,n.y-origin.y)*180/Math.PI-45}deg)`;}
       renderer.render(scene,camera);
       if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
       dirty=false;frameTime=now;
@@ -535,6 +556,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   return {
     select,selectArea,enterArea,enterLot,walk,chooseWalkStart,stopWalk,overview,lighting,focusBlock,pan,refresh:invalidate,
+    setSolarTrajectory(show:boolean){solarGuide.show(show);invalidate();},
+    setComparison(ids:string[]){comparison=ids.filter(id=>lotById.has(id));updateLotColors();},
+    focusComparison(ids:string[]){setMode('aerial');focusedBlock='';comparison=ids.filter(id=>lotById.has(id));focusPoints(comparison.flatMap(id=>lotById.get(id)!.polygon));updateLotColors();},
     setWalkSpeed(value:number){walkSpeed=T.MathUtils.clamp(value,3,14);},
     setStatus(id:string,status:LotStatus){if(statuses.has(id)){statuses.set(id,status);updateLotColors();}},
     setStock(show:boolean){showStock=show;updateLotColors();},
@@ -549,7 +573,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       const a=document.createElement('a');a.href=output.toDataURL('image/png');a.download='priorita-vista.png';a.click();
     },
-    dispose(){disposed=true;cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
+    dispose(){disposed=true;cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
   };
 }
 export type PrioritaScene=ReturnType<typeof createPrioritaScene>;

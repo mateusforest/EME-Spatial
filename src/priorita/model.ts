@@ -15,7 +15,7 @@ export const statusInfo = {
   unavailable: {label: 'Indisponível', color: '#d85c55'},
 } satisfies Record<LotStatus, {label: string; color: string}>;
 export const number = (value: number) => value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-export const timeLabel = (hour: number) => `${Math.floor(hour).toString().padStart(2, '0')}:${Math.round((hour % 1) * 60).toString().padStart(2, '0')}`;
+export const timeLabel = (hour:number) => {const m=Math.round(hour*60);return `${Math.floor(m/60).toString().padStart(2,'0')}:${(m%60).toString().padStart(2,'0')}`;};
 
 /** Authored demonstration landform. Never a survey elevation or earthworks plan. */
 export function terrainHeight(x: number, z: number) {

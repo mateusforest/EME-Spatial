@@ -37,4 +37,5 @@ test('solar position follows time and season in southern Brazil',()=>{
   assert.ok(m.solarPosition(0,'2026-11-12').elevation<0);
   assert.ok(Math.abs(Math.hypot(...morning.direction)-1)<.002);
   assert.equal(m.timeLabel(18.25),'18:15');
+  assert.equal(m.timeLabel(18.999),'19:00');
 });

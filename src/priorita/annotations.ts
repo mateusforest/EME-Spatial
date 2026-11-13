@@ -6,7 +6,7 @@ type Kind='lot'|'block'|'road'|'area'|'measure';
 type Marker={element:HTMLElement;point:T.Vector3;kind:Kind;id:string;block?:string;width:number;height:number};
 type Rect={left:number;top:number;right:number;bottom:number};
 export const overlaps=(a:Rect,b:Rect,gap=6)=>a.left<b.right+gap&&a.right>b.left-gap&&a.top<b.bottom+gap&&a.bottom>b.top-gap;
-const panelSelector='.pr-intro,.pr-lot-list,.pr-detail,.pr-top-actions,.pr-solar,.pr-legend,.pr-dock,.pr-view-controls,.pr-pan-controls,.pr-walk-banner';
+const panelSelector='.pr-search-pill,.pr-settings,.pr-solar-sheet,.pr-lot-list,.pr-detail,.pr-top-actions,.pr-solar,.pr-legend,.pr-dock,.pr-view-controls,.pr-pan-controls,.pr-walk-banner';
 
 /** Screen-space labels: constant typography, priority placement and no terrain clipping. */
 export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,focusBlock:(block:string)=>void,selectArea:(id:string)=>void){
@@ -63,7 +63,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
       if(isBlock&&near&&m.id!==block)continue;
       if(m.kind==='road'&&(distance<35||distance>380))continue;
       if(m.kind==='measure'&&distance>175)continue;
-      if(count>(w<600?12:30)&&m.kind!=='measure'&&!active)continue;
+      if(count>(w<600?9:20)&&m.kind!=='measure'&&!active)continue;
       projected.copy(m.point).project(camera);
       if(projected.z<-1||projected.z>1||m.point.clone().sub(camera.position).dot(view)<=0)continue;
       const x=(projected.x+1)*w/2,y=(1-projected.y)*h/2;

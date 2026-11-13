@@ -1,0 +1,68 @@
+{
+  "source": "Priorita_Blender_v7.zip",
+  "blender": "4.5.16 LTS",
+  "bytes": 621848,
+  "textures": 6,
+  "meshes": [
+    {
+      "kind": "tree",
+      "level": "near",
+      "triangles": 15780
+    },
+    {
+      "kind": "tree",
+      "level": "far",
+      "triangles": 3074
+    },
+    {
+      "kind": "shade",
+      "level": "near",
+      "triangles": 15780
+    },
+    {
+      "kind": "shade",
+      "level": "far",
+      "triangles": 3074
+    },
+    {
+      "kind": "shrub0",
+      "level": "near",
+      "triangles": 3344
+    },
+    {
+      "kind": "shrub0",
+      "level": "far",
+      "triangles": 1368
+    },
+    {
+      "kind": "shrub1",
+      "level": "near",
+      "triangles": 216
+    },
+    {
+      "kind": "shrub1",
+      "level": "far",
+      "triangles": 72
+    },
+    {
+      "kind": "bench",
+      "level": "near",
+      "triangles": 1344
+    },
+    {
+      "kind": "bench",
+      "level": "far",
+      "triangles": 416
+    },
+    {
+      "kind": "lamp",
+      "level": "near",
+      "triangles": 348
+    },
+    {
+      "kind": "lamp",
+      "level": "far",
+      "triangles": 128
+    }
+  ]
+}
