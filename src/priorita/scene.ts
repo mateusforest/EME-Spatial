@@ -11,6 +11,7 @@ import {createAnnotations} from './annotations';
 import {frameBounds} from './camera-layout';
 import {createRoadNavigator} from './navigation';
 import {createSolarGuide} from './solar-gizmo';
+import {createContextGeometry,createDistantGroves,createHorizonSky} from './horizon';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -28,7 +29,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const scene=new T.Scene();
   const solarGuide=createSolarGuide(scene,host);
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
-  scene.fog=new T.Fog('#9dbec8',650,2600);
+  scene.fog=new T.Fog('#9ebccc',900,10500);
   const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace=T.SRGBColorSpace;
@@ -40,10 +41,10 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   renderer.domElement.setAttribute('aria-label','Cenário 3D do loteamento Priorità. Use a lista de lotes para selecionar pelo teclado.');
   renderer.domElement.tabIndex=0;
   host.append(renderer.domElement);
-  const camera=new T.PerspectiveCamera(47,1,.12,6200);
-  camera.position.set(182,172,232);
+  const camera=new T.PerspectiveCamera(47,1,.12,30000);
+  camera.position.set(182,95,232);
   const controls=new OrbitControls(camera,renderer.domElement);
-  controls.target.set(-7,0,8);controls.enableDamping=true;controls.dampingFactor=.085;
+  controls.target.set(-7,18,8);controls.enableDamping=true;controls.dampingFactor=.085;
   controls.minDistance=16;controls.maxDistance=550;controls.maxPolarAngle=Math.PI*.47;
   controls.screenSpacePanning=false;
   controls.addEventListener('change',invalidate);
@@ -55,21 +56,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     hdr.dispose();pmrem.dispose();invalidate();
   },undefined,()=>pmrem.dispose());
   scene.environmentIntensity=.26;
-  const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,
-    uniforms:{topColor:{value:new T.Color('#3883b9')},bottomColor:{value:new T.Color('#b9d0d9')},sunDirection:{value:new T.Vector3(1,1,1).normalize()},sunColor:{value:new T.Color('#ffdfac')},daylight:{value:1}},
-    vertexShader:'varying vec3 vDirection; void main(){vDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-    fragmentShader:`uniform vec3 topColor;uniform vec3 bottomColor;uniform vec3 sunDirection;uniform vec3 sunColor;uniform float daylight;varying vec3 vDirection;
-      void main(){
-        vec3 d=normalize(vDirection);float h=smoothstep(-.02,.6,d.y);
-        vec3 color=mix(bottomColor,topColor,pow(h,.65));
-        float alignment=max(0.,dot(d,sunDirection));
-        float glow=pow(alignment,80.)*.32;float disc=smoothstep(.99991,.99996,alignment);
-        color=mix(color,sunColor,clamp((glow+disc)*daylight,0.,1.));
-        gl_FragColor=vec4(color,1.);
-        #include <colorspace_fragment>
-      }`
-  });
-  const sky=new T.Mesh(new T.SphereGeometry(3000,24,12),skyMaterial);scene.add(sky);
+  const sky=createHorizonSky(),skyMaterial=sky.material;scene.add(sky);
   const hemi=new T.HemisphereLight('#dbeaf2','#b6ad82',1.7);scene.add(hemi);
   const sun=new T.DirectionalLight('#fff3db',3.2);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   const sunDirection=new T.Vector3(),shadowFocus=new T.Vector3(9999,9999,9999);
@@ -77,9 +64,6 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   Object.assign(sun.shadow.camera,{left:-190,right:190,top:210,bottom:-210,near:1,far:850});
   sun.shadow.bias=-.00012;sun.shadow.normalBias=.07;sun.shadow.radius=2;scene.add(sun,sun.target);
   const textures:T.Texture[]=[];
-  // Blur the unsupported context perceptually with a spatial atmospheric fade,
-  // without a full-screen depth-of-field pass or fading the property itself.
-  const horizonColor={value:new T.Color('#b9cccf')};
   // One tiny shared mask confines the new lawn finish to the actual parcels
   // and common areas. No extra geometry or changes to the outer landscape.
   const lawnMaskCanvas=document.createElement('canvas');lawnMaskCanvas.width=256;lawnMaskCanvas.height=384;
@@ -89,8 +73,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const lawnMask=new T.CanvasTexture(lawnMaskCanvas);lawnMask.generateMipmaps=false;lawnMask.minFilter=T.LinearFilter;textures.push(lawnMask);
   function horizon(material:T.Material){
     const lawn=material.name.startsWith('Grama');
+    if(!lawn)return material;
     material.onBeforeCompile=shader=>{
-      shader.uniforms.prHorizonColor=horizonColor;shader.uniforms.prLawnMask={value:lawnMask};
+      shader.uniforms.prLawnMask={value:lawnMask};
       shader.vertexShader='varying vec2 prWorldXZ;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <fog_vertex>',`#include <fog_vertex>
         vec4 prPosition=vec4(transformed,1.0);
@@ -98,7 +83,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
           prPosition=instanceMatrix*prPosition;
         #endif
         prWorldXZ=(modelMatrix*prPosition).xz;`);
-      shader.fragmentShader='uniform vec3 prHorizonColor;uniform sampler2D prLawnMask;varying vec2 prWorldXZ;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform sampler2D prLawnMask;varying vec2 prWorldXZ;\n'+shader.fragmentShader;
       if(lawn)shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
         vec4 lawnA=texture2D(map,vMapUv);
         vec4 lawnB=texture2D(map,mat2(.8,-.6,.6,.8)*vMapUv*.731+vec2(.173,.371));
@@ -108,12 +93,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         lawnMix.rgb*=mix(vec3(1.0),vec3(.94,1.015,.91)*(.96+mowing*.07),siteMask);
         diffuseColor*=lawnMix;
       #endif`);
-      shader.fragmentShader=shader.fragmentShader.replace('#include <fog_fragment>',`#include <fog_fragment>
-        float prDistance=max(abs(prWorldXZ.x),abs(prWorldXZ.y));
-        float prHaze=smoothstep(385.0,500.0,prDistance);
-        gl_FragColor.rgb=mix(gl_FragColor.rgb,prHorizonColor,prHaze);`);
     };
-    material.customProgramCacheKey=()=> 'priorita-spatial-haze-v8-'+lawn;
+    material.customProgramCacheKey=()=> 'priorita-lawn-v9';
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
@@ -149,9 +130,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();return geo;
   }
   function mesh(geo:T.BufferGeometry,material:T.Material){const m=new T.Mesh(geo,material);m.receiveShadow=true;scene.add(m);return m;}
-  const backdrop=new T.PlaneGeometry(6000,6000);backdrop.rotateX(-Math.PI/2);backdrop.translate(0,-25,0);
-  const backdropMaterial=new T.MeshBasicMaterial({color:'#dce4dc',toneMapped:false,fog:false});
-  mesh(backdrop,backdropMaterial);
+  scene.add(createDistantGroves(terrainHeight));
   new GLTFLoader().setDRACOLoader(draco).load('/assets/priorita/production-v4/site.glb',gltf=>{
     if(disposed){disposeObject(gltf.scene);return;}
     gltf.scene.updateMatrixWorld(true);
@@ -168,7 +147,12 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     for(const {material,geometries} of groups.values()){
       horizon(material);
       for(const value of Object.values(material))if(value instanceof T.Texture)value.anisotropy=4;
-      if(material.name.startsWith('Grama')){material.color.set('#dedfc4');material.roughness=.94;material.normalScale.set(.48,.48);}
+      if(material.name.startsWith('Grama')){
+        material.color.set('#dedfc4');material.roughness=.94;material.normalScale.set(.48,.48);
+        const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);
+        const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
+        context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);
+      }
       if(material.name.startsWith('Asfalto')){material.color.set('#a9b1b3');material.roughness=.82;material.normalScale.set(.8,.8);}
       if(material.name.startsWith('Calçada')){material.color.set('#e4dfd2');material.roughness=.78;material.normalScale.set(.85,.85);}
       const geometry=mergeGeometries(geometries);
@@ -384,11 +368,11 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(2.9-gold*.5)*T.MathUtils.smoothstep(solar.elevation,-1,9);
     sun.color.set('#fff6e6').lerp(new T.Color('#ffd6a0'),gold*.65);
     hemi.intensity=.28+daylight*1.08;scene.environmentIntensity=.12+daylight*.34;
-    const haze=new T.Color('#b5cbd0').lerp(new T.Color('#dcba93'),gold*.28).lerp(new T.Color('#33495b'),1-daylight);
-    (scene.fog as T.Fog).color.copy(haze);horizonColor.value.copy(haze).convertLinearToSRGB();
-    backdropMaterial.color.copy(haze);
+    const haze=new T.Color('#9ebccc').lerp(new T.Color('#d4ae88'),gold*.42).lerp(new T.Color('#24364d'),1-daylight);
+    (scene.fog as T.Fog).color.copy(haze);
     skyMaterial.uniforms.bottomColor.value.copy(haze);
-    skyMaterial.uniforms.topColor.value.set('#3883b9').lerp(new T.Color('#527d9c'),gold*.3).lerp(new T.Color('#101e38'),1-daylight);
+    skyMaterial.uniforms.topColor.value.set('#2e7db4').lerp(new T.Color('#517b9b'),gold*.3).lerp(new T.Color('#101e38'),1-daylight);
+    skyMaterial.uniforms.cloudColor.value.set('#dce8ee').lerp(new T.Color('#e7c6a2'),gold*.65).lerp(new T.Color('#394756'),1-daylight);
     skyMaterial.uniforms.sunDirection.value.copy(dir);skyMaterial.uniforms.sunColor.value.set('#fff1ce').lerp(new T.Color('#ffbb77'),gold);
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
     for(const mat of fixtureMaterials)mat.emissiveIntensity=.2+(1-daylight)*2.1;
@@ -396,7 +380,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   }
   function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();}
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);resize();
-  if(camera.aspect<.85)camera.position.multiplyScalar(1.7);
+  // A portrait viewport needs more distance to keep the full site in view.
+  if(camera.aspect<.85){controls.maxDistance=850;camera.position.multiplyScalar(2.5);}
   function stopWalk(){route=[];walkPicking=false;destination.visible=false;events.onWalkState('idle');invalidate();}
   function setMode(value:ViewMode){stopWalk();mode=value;controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
   function fly(to:T.Vector3,target:T.Vector3,done?:()=>void){

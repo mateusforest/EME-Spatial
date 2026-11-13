@@ -12,8 +12,8 @@ export function projection(base:number,rate:number,years:number){
 
 export type PresentationAsset={id:string;title:string;kind:'image'|'video'|'document';url:string;description:string;local?:boolean};
 export const presentationAssets:PresentationAsset[]=[
- {id:'aerial',title:'O loteamento, por inteiro',kind:'image',url:'/assets/priorita/presentation/aerea.png',description:'Imagem de demonstração do cenário 3D. Relevo e paisagismo ilustrativos.'},
- {id:'street',title:'Uma perspectiva das ruas',kind:'image',url:'/assets/priorita/presentation/passeio.png',description:'Imagem de demonstração. Materiais e vegetação sujeitos ao projeto definitivo.'},
+ {id:'aerial',title:'O loteamento, por inteiro',kind:'image',url:'/assets/priorita/presentation/aerea-v9.png',description:'Imagem de demonstração do cenário 3D. Relevo e paisagismo ilustrativos.'},
+ {id:'street',title:'Uma perspectiva das ruas',kind:'image',url:'/assets/priorita/presentation/passeio-v9.png',description:'Imagem de demonstração. Materiais e vegetação sujeitos ao projeto definitivo.'},
  {id:'plan',title:'Implantação de consulta',kind:'image',url:'/assets/priorita/presentation/implantacao.svg',description:'Leitura esquemática dos 96 lotes a partir do urbanístico. Não substitui a prancha técnica.'},
  {id:'plan-file',title:'Planta esquemática • SVG',kind:'document',url:'/assets/priorita/presentation/implantacao.svg',description:'Lotes, quadras, ruas e áreas comuns para consulta durante a apresentação.'},
 ];
