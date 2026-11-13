@@ -1,0 +1,44 @@
+import {createRequire} from 'node:module';
+import {dirname,join} from 'node:path';
+import {mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require=createRequire(join(dirname(process.execPath),'node_modules/playwright/package.json'));
+const {chromium}=require('playwright');
+const base=process.argv[2]||'http://127.0.0.1:4214';
+const out=process.argv[3]||'C:/Users/EME/Downloads/eme-spatial/output/amici-blender/web-v16-solar';
+await mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist']});
+const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+const stats=()=>page.locator('.pr-canvas').evaluate(el=>JSON.parse(el.dataset.solar));
+async function hour(value){await page.getByLabel('Horário da simulação solar').evaluate((el,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,String(v));el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},value);await page.waitForTimeout(700);}
+const report={};
+try{
+ await page.goto(base+'/apresentar/amici');
+ await page.waitForFunction(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Passear');return b&&!b.disabled;},null,{timeout:90000});
+ await page.getByRole('button',{name:'Passear',exact:true}).waitFor();
+ await page.waitForTimeout(1000);report.opening=await stats();
+ await page.screenshot({path:join(out,'facade-17h.png')});
+ await page.getByRole('button',{name:'Abrir luz do dia',exact:true}).click();
+ await hour(9);report.morning=await stats();await page.screenshot({path:join(out,'morning.png')});
+ await hour(19.5);report.dusk=await stats();await page.screenshot({path:join(out,'dusk.png')});
+ await hour(22);report.night=await stats();assert.equal(report.night.intensity,0);
+ await page.screenshot({path:join(out,'night.png')});
+ await hour(17);await page.getByText('Data e trajetória',{exact:true}).click();
+ await page.getByLabel('Data da simulação solar').fill('2026-06-21');await page.waitForTimeout(400);
+ report.winter=await stats();assert(Math.abs(report.winter.elevation-report.opening.elevation)>5);
+ await page.getByLabel('Data da simulação solar').fill('2026-11-13');
+ await page.getByLabel('Mostrar trajetória do sol').uncheck();await page.getByLabel('Mostrar trajetória do sol').check();
+ await page.getByRole('button',{name:'Fechar luz do dia',exact:true}).click();
+ await page.getByRole('button',{name:'Simular passagem do dia',exact:true}).click();await page.waitForTimeout(1600);
+ const advanced=await stats();assert(advanced.hour>17);
+ await page.getByRole('button',{name:'Pausar simulação do dia',exact:true}).click();
+ await page.getByRole('button',{name:'Entrada',exact:true}).click();await page.waitForTimeout(1000);await page.screenshot({path:join(out,'entrance.png')});
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Abrir luz do dia',exact:true}).click();await page.waitForTimeout(500);
+ report.mobileOverflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert(!report.mobileOverflow);
+ const box=await page.locator('.pr-solar-sheet').boundingBox();assert(box.x>=0&&box.y>=0&&box.x+box.width<=390&&box.y+box.height<=844);
+ await page.screenshot({path:join(out,'mobile-solar.png')});
+ assert(report.morning.direction[0]*report.opening.direction[0]<0);assert.deepEqual(errors,[]);
+ report.errors=errors;report.passed=true;await writeFile(join(out,'checks.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}finally{await browser.close();}

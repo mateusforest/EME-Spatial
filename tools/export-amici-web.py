@@ -40,6 +40,9 @@ def texture(name,color,material_name):
                 yy,xx=np.indices((h,w));rows=yy*16//h;cols=((xx+(rows%2)*w//8)%w)*4//w
                 tones=np.array([[.76,.66,.62],[.91,.73,.66],[.68,.68,.69],[.85,.78,.72],[.70,.59,.55]])
                 palette=np.random.default_rng(113).integers(0,len(tones),(16,4));px[:,:,:3]*=tones[palette[rows,cols]]
+                luminance=px[:,:,:3].mean(axis=2,keepdims=True)
+                px[:,:,:3]=px[:,:,:3]*.42+luminance*.58
+                px[:,:,:3]*=np.array([.92,.99,1.07])
                 tinted=bpy.data.images.new('Amici tijolo referencia',width=w,height=h,alpha=False)
                 tinted.pixels.foreach_set(px.ravel());tinted.filepath_raw=str(cache/'amici-tijolo.jpg');tinted.file_format='JPEG';tinted.save();images[-1]=tinted
         return tuple(images)
@@ -188,7 +191,7 @@ for img in bpy.data.images:
     if img.name.startswith('tree_small') and max(img.size)>1024:
         img.scale(1024,1024)
 bpy.ops.object.select_all(action='SELECT')
-target=out/'amici-walk-v5.glb'
+target=out/'amici-walk-v6.glb'
 bpy.ops.export_scene.gltf(filepath=str(target),export_format='GLB',use_selection=True,
     export_image_format='JPEG',export_jpeg_quality=85,
     export_animations=False,export_cameras=False,export_lights=False,export_extras=True,
@@ -199,6 +202,6 @@ report={'source_sha256':source_hash,'objects_before':len(objects),'meshes':len(b
         'triangles':triangles,'bytes':target.stat().st_size,'source_unchanged':source_hash==hashlib.sha256(source.read_bytes()).hexdigest(),
         'building_height_m_estimated':36.21,'source':'Amici reconstruction v2; ZM marketing references',
         'limitations':'Approximate dimensions and external context; not official BIM; no confirmed unit inventory'}
-(out/'model-walk-v5.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+(out/'model-walk-v6.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 assert report['source_unchanged']
 print('AMICI_WEB_OK',json.dumps(report),flush=True)

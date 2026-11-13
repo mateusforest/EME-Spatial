@@ -34,14 +34,14 @@ Priorità and Apogeu source and assets remain unchanged.
 
 ## Eye-level walk
 
-The current viewer uses `amici-walk-v5.glb`; the earlier facade-only export is
+The current viewer uses `amici-walk-v15.glb`; the earlier facade-only export is
 retained for compatibility. The export script first applies
 `tools/amici-walkable-hall.py` to the in-memory source. This hollows the podium,
 replaces the shallow lobby with an interpreted furnished hall, and preserves
 sliding entrance leaves through `walkDoor` glTF extras. It uses the official
 lobby image and ground-floor plan as visual references, with estimated dimensions.
 The source .blend on disk remains unchanged. Metadata is recorded separately
-in `model-walk-v5.json`.
+in `model-walk-v6.json`.
 
 “Passear” begins at eye level in front of the building. WASD/arrows and held
 screen buttons move relative to the viewing direction; dragging looks around.
@@ -73,3 +73,47 @@ entry improve depth without changing walk controls. Hall additions include oak,
 stone, smoother upholstered furniture, coworking furniture, smaller accessories,
 and curved plant leaves. The footprint includes the added coworking chairs.
 The original native Blender scene is preserved; these are export-time changes.
+
+## Approved facade V15
+
+The V15 release uses the approved `amici_revisao_fachada_v15_02.blend` source
+(SHA-256 in `public/assets/amici/model-walk-v15.json`). Export with
+`tools/export-amici-v15-web.py -- <absolute source blend path>` from Blender.
+The exporter preserves the rebuilt portal, lettering, doors, floor-by-floor
+facade and irregular cypress sprays. Portal color conversion follows the V15
+saturation, tint and lightening adjustments; the browser supplies warm entrance
+lighting. Cycles indirect lighting is not baked into the interactive model.
+
+`amici-v15-walk-adapter.py` connects the approved frontage to the existing
+interpreted walkable interior, removes the duplicate old entrance and shallow
+back wall, and tags the V15 doors and handles for automatic opening. The original
+native scene remains unchanged. The approved Cycles image is available under
+About / View model render (`render-v15.webp`); the comparison is also packaged as
+`comparacao-hall-v15.webp`. No Priorita modules or assets change in this release.
+
+Validation: TypeScript/build, navigation unit tests, browser desktop/mobile
+walkthrough including automatic entry/exit and modal pause, and presentation
+gallery/plan/fallback checks. The model is approximately 32.4 MB compressed and
+4.4 million triangles, including the retained surrounding trees and interior.
+
+## Interactive daylight and material review (V16)
+
+The same V15 GLB now uses dynamic solar lighting instead of the old day/evening
+switch. The Amici-only solar panel follows the Priorita interaction: time, date,
+animation speed and trajectory. Morning/afternoon move the actual directional
+light and shadow map; the sky and its reflection environment follow solar altitude.
+Artificial facade lights become more prominent at dusk. Six warm balcony bays,
+clearer glass reflections and material-specific surface adjustments restore
+contrast lost during the Cycles-to-web conversion. The opening view is frontal.
+
+The approximate NOAA calculation uses Passo Fundo (-28.26, -52.41), BRT UTC-3,
+from the [IBGE municipal map](https://geoftp.ibge.gov.br/cartas_e_mapas/mapas_municipais/colecao_de_mapas_municipais/2020/RS/passo_fundo/4314100_MM.pdf).
+The model orientation is provisional (35-degree visual alignment), not surveyed.
+This limitation is stated in the solar panel; this is not a technical insolation
+study. Priorita source and assets remain unchanged. No source Blender geometry
+is edited in this release, and the approved V15 Cycles still stays available.
+
+`tools/check-amici-solar.mjs` checks opposite morning/afternoon sun directions,
+zero direct sun at night, date/season changes, animation, trajectory controls and
+mobile panel fit, with screenshots. Existing presentation and walk checks cover
+loading, gallery, fallback, doors, hall entry/exit, and desktop/mobile controls.

@@ -1,0 +1,18 @@
+.amici .am-solar{left:26px;bottom:48px;top:auto;z-index:8}
+.amici .am-solar .pr-solar-bar,.amici .am-solar .pr-solar-sheet{background:#252d3df5;border-color:#c7c8b041;color:#efe9df}
+.amici .am-solar .pr-solar-time,.amici .am-solar .pr-solar-expand{color:#efe9df}
+.amici .am-solar .pr-solar-time b{font-size:16px}
+.amici .am-solar .pr-solar-sheet{width:300px;bottom:61px}
+.amici .am-solar .pr-panel-heading h2{color:#f5ecdf;font-size:21px}
+.amici .am-solar .pr-solar-scale{display:flex;justify-content:space-between;font-size:10px;color:#c5cbd5}
+.amici .am-solar .pr-solar-more{border-top:1px solid #ffffff20;padding-top:12px;margin-top:14px}
+.amici .am-solar summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:11px;color:#e3d0b4}
+.amici .am-solar .pr-solar-more>div{padding-top:14px}
+.amici .am-solar .pr-solar-reset{display:flex;gap:7px;align-items:center;padding:10px 0;background:none;color:#dfc8a7;font-size:10px}
+.amici .am-solar .pr-street-light-status{padding-top:10px;border-top:1px solid #ffffff17;color:#d8c3a3}
+.amici .am-solar p{color:#bbc5d2}
+.amici .am-solar input[type=date],.amici .am-solar select{color-scheme:dark;color:#f0e5d7;background:#343d4d;border:1px solid #ffffff20;border-radius:5px}
+.amici .am-solar input[type=range]{accent-color:#e2c18d}
+.amici .am-solar .pr-solar-play{color:#f3d4a5;background:#86704c38}
+@media(max-width:1100px){.amici .am-solar{left:18px;bottom:93px}.amici .am-caption{bottom:155px}}
+@media(max-width:700px){.amici .am-solar{left:12px;bottom:96px;top:auto}.amici .am-solar .pr-solar-bar{padding:4px 5px;gap:2px}.amici .am-solar .pr-solar-time b{font-size:14px}.amici .am-solar .pr-solar-play{padding:7px}.amici .am-solar .pr-solar-play span{display:none}.amici .am-solar .pr-solar-sheet{position:fixed;left:12px;right:12px;bottom:150px;width:auto;max-height:calc(100dvh - 220px);overflow:auto;padding:18px}.amici .am-solar .pr-solar-sheet .pr-solar-play span{display:inline}.amici:has(.am-solar.pr-solar-open) .am-caption,.amici:has(.am-solar.pr-solar-open) .am-walk-pad{visibility:hidden}}

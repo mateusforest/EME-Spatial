@@ -13,6 +13,26 @@ def refine_facade(scene):
         b.inputs['Roughness'].default_value=.85
         return m
     leaves=[material('Cipreste folhas '+str(i),c) for i,c in enumerate(('294633','3B5537','526447'))]
+    # The reference alternates four C-shaped white frames above the first level.
+    ribbons=sorted([o for o in scene.objects if o.name.startswith('Fita vertical branca')],key=lambda o:o.location.z)
+    for index,o in enumerate(ribbons):
+        if index>=4:bpy.data.objects.remove(o,do_unlink=True);continue
+        o.location.z=6.2+(1+index*2)*3.05+1.46;o.dimensions.x=.25;o.dimensions.y=.48;o.dimensions.z=3.05
+    for o in scene.objects:
+        if o.name.startswith(('Fita horizontal branca','Borda de laje aparente')):
+            o.dimensions.z=.29;o.dimensions.y=.48
+    # Rounded topiary and low flower groups on both sides of the clear entrance.
+    template=next(o for o in scene.objects if o.name.startswith('Buxo vaso'))
+    garden=template.users_collection[0]
+    flower_mat=material('Jardim flores lilas','9D85B5')
+    for sign in (-1,1):
+        for i,(x,r) in enumerate(((3.25,.38),(4.65,.31),(6.3,.43),(7.1,.28))):
+            o=bpy.data.objects.new('Topiaria arredondada entrada',template.data.copy());garden.objects.link(o)
+            o.location=(sign*x,-19.25,r+.23);o.scale=(r,r,r);o.rotation_euler.z=i*1.71
+        for i in range(6):
+            o=bpy.data.objects.new('Flores jardim entrada',template.data.copy());garden.objects.link(o)
+            o.location=(sign*(3.8+i*.56),-19.32,.42);o.scale=(.22,.20,.25);o.rotation_euler.z=i*2.1
+            o.data.materials[2]=flower_mat
     for obj in list(scene.objects):
         if obj.name.startswith('Cipreste | folhagem'):
             height=max(v.co.z for v in obj.data.vertices)
@@ -43,8 +63,6 @@ def refine_facade(scene):
                 if mod.type=='BEVEL':mod.width=.015
         elif obj.name.startswith('Letreiro Amici'):
             obj.data.size=1.02;obj.data.extrude=.035
-        elif obj.name.startswith('Hall fechamento frontal'):
-            pass
         elif obj.name.startswith('Vaso entrada'):
             # Narrow rim and foot give the existing terracotta pots their real profile.
             obj.data=obj.data.copy()
