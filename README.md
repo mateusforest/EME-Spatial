@@ -78,3 +78,13 @@ A entrada pública usa `src/marketing` (React), separada do portal e dos motores
 - `app.js` e `style.css` permanecem como referência legada; não são carregados pela nova entrada pública.
 
 Validação da implementação: build/TypeScript, navegação das 11 rotas principais em desktop e larguras 390/768, seleção de categoria/nível, persistência de briefing, download JSON, preferências de materiais e ausência de modelos 3D no carregamento da landing.
+
+## Orçamentos por entregas
+
+A rota `/portal/orcamentos` agora monta o catálogo Essencial, Interativo e Completo, com seção independente de imagens, filmes, vídeos curtos e peças. O estimador legado permanece no Estúdio 3D para projetos antigos.
+
+Custos desconhecidos bloqueiam indicadores de viabilidade. O módulo considera custos econômicos e saídas de caixa, operação mensal, Vagon Cloud Computer ou Streams, tributos e parceiro informados, prazo, parcelamento e receita posterior ao horizonte. A apuração é uma simulação e não um cálculo fiscal. Câmbio e planos precisam ser conferidos na contratação.
+
+O rascunho usa `eme-spatial:commercial-budget:v1`, separado dos projetos antigos. Salvar é explícito, com proteção contra sobrescrita por outra aba. Exportar/importar JSON permite guardar versões. O resumo comercial HTML omite custos e margem; pode ser impresso em PDF. O portal continua demonstrativo e sem autenticação.
+
+Validação: `node --experimental-strip-types --test tests/commercial-budget.test.mjs tests/portal-storage.test.mjs`, TypeScript e build.
