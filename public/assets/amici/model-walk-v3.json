@@ -1,0 +1,11 @@
+{
+  "source_sha256": "cd1c7314f92c1a6938bb7583168d77893e8941cc27a837eec80a684e7dd3b9da",
+  "objects_before": 5546,
+  "meshes": 34,
+  "triangles": 1288636,
+  "bytes": 15090548,
+  "source_unchanged": true,
+  "building_height_m_estimated": 36.21,
+  "source": "Amici reconstruction v2; ZM marketing references",
+  "limitations": "Approximate dimensions and external context; not official BIM; no confirmed unit inventory"
+}

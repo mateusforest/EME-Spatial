@@ -31,3 +31,27 @@ a deployment origin and a local evidence output folder.
 
 Only the Amici modules, its assets and the lazy route entry are added. Existing
 Priorità and Apogeu source and assets remain unchanged.
+
+## Eye-level walk
+
+The current viewer uses `amici-walk-v3.glb`; the earlier facade-only export is
+retained for compatibility. The export script first applies
+`tools/amici-walkable-hall.py` to the in-memory source. This hollows the podium,
+replaces the shallow lobby with an interpreted furnished hall, and preserves
+sliding entrance leaves through `walkDoor` glTF extras. It uses the official
+lobby image and ground-floor plan as visual references, with estimated dimensions.
+The source .blend on disk remains unchanged. Metadata is recorded separately
+in `model-walk-v3.json`.
+
+“Passear” begins at eye level in front of the building. WASD/arrows and held
+screen buttons move relative to the viewing direction; dragging looks around.
+Tapping a reachable floor point or choosing “Entrar no hall” follows a path
+through the shared collision footprint. The entrance opens automatically.
+The visitor can walk back out, use the guided return, or leave the walk through
+Escape, its close button, or any camera preset. Modals, backgrounding and lost
+input focus stop movement; viewport resizing preserves the walk position.
+
+`tests/amici-navigation.test.mjs` checks connectivity, blocked furniture/walls,
+closed doors, swept movement and floor transitions. `tools/check-amici-walk.mjs`
+verifies keyboard and screen-pad entry, guided entry/exit, ground clicks,
+looking around, resize, modal pause, Escape and the mobile layout in a browser.

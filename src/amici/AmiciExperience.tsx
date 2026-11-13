@@ -1,9 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
-import {ArrowLeft,ArrowRight,Box,Building2,Camera,Check,ChevronRight,Expand,Image,Info,Layers,MapPin,Maximize,Minus,Plus,RotateCcw,Share2,Sun,Trees,X} from 'lucide-react';
+import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,Box,Building2,Camera,Check,ChevronRight,Expand,Footprints,Image,Info,Layers,MapPin,Maximize,Minus,Plus,RotateCcw,Share2,Sun,Trees,X} from 'lucide-react';
 import {apartments,asset,facts,gallery,number,plans,sourceUrl} from './data';
 import type {View} from './data';
 import {createAmiciScene} from './scene';
 import type {AmiciScene} from './scene';
+import type {WalkZone} from './navigation';
 import '../priorita/priorita.css';
 import '../priorita/premium.css';
 import './amici.css';
@@ -19,11 +20,12 @@ export default function AmiciExperience(){
  const [view,setView]=useState<View>('facade'),[evening,setEvening]=useState(false),[photo,setPhoto]=useState(false);
  const [opened,setOpened]=useState(false),[tab,setTab]=useState<Tab>('Visão geral'),[media,setMedia]=useState<Media|null>(null),[category,setCategory]=useState('Todos');
  const [notice,setNotice]=useState(''),[capture,setCapture]=useState('');
+ const [walk,setWalk]=useState<WalkZone|null>(null),[moving,setMoving]=useState(false);
  const apartment=apartments.find(a=>a.id===selected);
  useEffect(()=>{const old=document.title;document.title='Amici · ZM Empreendimentos | EME Spatial';return()=>{document.title=old;};},[]);
  useEffect(()=>{
   let scene:AmiciScene|undefined;
-  try{scene=createAmiciScene(host.current!,{onReady:()=>setReady(true),onError:()=>setFailed(true),onProgress:setProgress});engine.current=scene;}
+  try{scene=createAmiciScene(host.current!,{onReady:()=>setReady(true),onError:()=>setFailed(true),onProgress:setProgress,onWalk:setWalk,onMoving:setMoving});engine.current=scene;}
   catch(error){console.error('Amici scene initialization',error);setFailed(true);}
   return()=>{scene?.dispose();engine.current=null;};
  },[retry]);
@@ -34,12 +36,15 @@ export default function AmiciExperience(){
  function present(next:Tab){setMedia(null);setCapture('');setTab(next);setOpened(true);}
  function showImage(file:string,name:string,official=true){setMedia({file,name,official});setCapture('');setOpened(true);}
  function chooseView(next:View){setPhoto(false);setView(next);engine.current?.view(next);}
- function restart(){setReady(false);setFailed(false);setProgress(0);setPhoto(false);setRetry(r=>r+1);}
+ function restart(){setReady(false);setFailed(false);setProgress(0);setPhoto(false);setWalk(null);setMoving(false);setRetry(r=>r+1);}
+ function stroll(){setPhoto(false);setPanel(null);engine.current?.startWalk();}
+ const hold=(key:string)=>(event:React.PointerEvent<HTMLButtonElement>)=>{event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);engine.current?.hold(key,true);};
+ const release=(key:string)=>()=>engine.current?.hold(key,false);
  async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await shell.current?.requestFullscreen();}catch{setNotice('A apresentação já ocupa a área disponível da tela.');}}
  async function share(){try{await navigator.clipboard.writeText(location.origin+'/apresentar/amici');setNotice('Link do Amici copiado.');}catch{setNotice('Copie o endereço desta página para compartilhar o Amici.');}}
  function screenshot(){try{setCapture(engine.current!.capture());setMedia(null);setOpened(true);}catch{setNotice('Aguarde o modelo terminar de carregar para salvar a imagem.');}}
  const inactive=!ready||failed||photo;
- return <div className={'priorita amici '+(panel?'am-panel-open':'')} ref={shell}>
+ return <div className={'priorita amici '+(panel?'am-panel-open ':'')+(walk&&!photo?'am-walking':'')} ref={shell}>
   <div className="pr-canvas" ref={host}/>
   {(photo||failed)&&<div className="am-photo"><img src={asset('fachada.webp')} alt="Perspectiva oficial da fachada do Amici, divulgada pela ZM"/></div>}
   <div className="pr-vignette"/>
@@ -65,9 +70,10 @@ export default function AmiciExperience(){
   {failed&&<div className="am-error" role="status"><b>Veja o Amici pelas imagens oficiais</b><p>O modelo 3D não carregou neste navegador. Galeria e plantas continuam disponíveis.</p><button onClick={restart}>Tentar abrir o 3D</button><button onClick={()=>present('Galeria')}>Ver galeria</button></div>}
   <div className="am-caption"><span>{photo||failed?'PERSPECTIVA OFICIAL · ZM':'AMICI · ESTUDO 3D'}</span><small>{photo||failed?'Imagem de divulgação do empreendimento':'Reconstrução visual · dimensões e entorno aproximados'}</small></div>
   <div className="am-light"><button aria-pressed={evening} disabled={inactive} onClick={()=>setEvening(v=>!v)}><Sun size={17}/>{evening?'Entardecer':'Luz do dia'}</button></div>
-  <nav className="pr-dock am-dock" aria-label="Navegação do Amici"><button aria-pressed={!photo&&view==='facade'} disabled={!ready||failed} onClick={()=>chooseView('facade')}><Building2 size={18}/><span>Fachada</span></button><button aria-pressed={!photo&&view==='aerial'} disabled={!ready||failed} onClick={()=>chooseView('aerial')}><Box size={18}/><span>Vista aérea</span></button><button aria-pressed={!photo&&view==='entrance'} disabled={!ready||failed} onClick={()=>chooseView('entrance')}><MapPin size={18}/><span>Entrada</span></button><span className="pr-separator"/><button onClick={()=>present('Galeria')}><Image size={18}/><span>Galeria</span></button></nav>
-  <div className="am-tools"><button aria-label="Aproximar" disabled={inactive} onClick={()=>engine.current?.zoom(.85)}><Plus size={18}/></button><button aria-label="Afastar" disabled={inactive} onClick={()=>engine.current?.zoom(1.18)}><Minus size={18}/></button><button aria-label="Restaurar vista" disabled={!ready||failed} onClick={()=>chooseView('facade')}><RotateCcw size={17}/></button><button aria-label="Salvar imagem do modelo" disabled={inactive} onClick={screenshot}><Camera size={17}/></button><button aria-label="Copiar link do Amici" onClick={share}><Share2 size={17}/></button></div>
-  <p className="am-instructions">{photo?'Imagem oficial da ZM · alterne para explorar o modelo':'Arraste para girar · role ou use dois dedos para aproximar'}</p>
+  <nav className="pr-dock am-dock" aria-label="Navegação do Amici"><button aria-pressed={!photo&&!walk&&view==='facade'} disabled={!ready||failed} onClick={()=>chooseView('facade')}><Building2 size={18}/><span>Fachada</span></button><button aria-pressed={!photo&&!walk&&view==='aerial'} disabled={!ready||failed} onClick={()=>chooseView('aerial')}><Box size={18}/><span>Vista aérea</span></button><button aria-pressed={!photo&&!walk&&view==='entrance'} disabled={!ready||failed} onClick={()=>chooseView('entrance')}><MapPin size={18}/><span>Entrada</span></button><button aria-pressed={Boolean(walk&&!photo)} disabled={!ready||failed} onClick={stroll}><Footprints size={18}/><span>Passear</span></button><span className="pr-separator"/><button onClick={()=>present('Galeria')}><Image size={18}/><span>Galeria</span></button></nav>
+  <div className="am-tools"><button aria-label="Aproximar" disabled={inactive||Boolean(walk)} onClick={()=>engine.current?.zoom(.85)}><Plus size={18}/></button><button aria-label="Afastar" disabled={inactive||Boolean(walk)} onClick={()=>engine.current?.zoom(1.18)}><Minus size={18}/></button><button aria-label="Restaurar vista" disabled={!ready||failed} onClick={()=>chooseView('facade')}><RotateCcw size={17}/></button><button aria-label="Salvar imagem do modelo" disabled={inactive} onClick={screenshot}><Camera size={17}/></button><button aria-label="Copiar link do Amici" onClick={share}><Share2 size={17}/></button></div>
+  {walk&&!photo&&!failed&&<><section className="am-walk-banner" aria-label="Passeio pelo Amici"><div><Footprints size={18}/><b>{walk==='hall'?'Hall de entrada':'Passeio pela calçada'}</b><button aria-label="Sair do passeio" onClick={()=>chooseView('facade')}><X size={17}/></button></div><p>Arraste para olhar. Use WASD, setas ou toque no piso para caminhar.</p><div className="am-walk-actions">{moving?<button onClick={()=>engine.current?.stopMoving()}>Parar caminhada <X size={14}/></button>:walk==='outside'?<button onClick={()=>engine.current?.enterHall()}>Entrar no hall <ArrowRight size={15}/></button>:<button onClick={()=>engine.current?.returnOutside()}>Voltar à calçada <ArrowLeft size={15}/></button>}{walk==='hall'&&<button onClick={()=>showImage('lobby.webp','Lobby oficial')}>Ver referência <Image size={14}/></button>}</div></section><div className="am-walk-pad" aria-label="Controles de caminhada">{(['w','a','s','d'] as const).map((key,i)=>{const Icon=[ArrowUp,ArrowLeft,ArrowDown,ArrowRight][i];return <button key={key} className={'am-key-'+key} aria-label={['Caminhar para frente','Caminhar para esquerda','Caminhar para trás','Caminhar para direita'][i]} onPointerDown={hold(key)} onPointerUp={release(key)} onPointerCancel={release(key)} onLostPointerCapture={release(key)}><Icon size={21}/></button>;})}</div></>}
+  <p className="am-instructions">{photo?'Imagem oficial da ZM · alterne para explorar o modelo':walk?'Arraste para olhar · WASD/setas para caminhar · Esc para sair':'Arraste para girar · role ou use dois dedos para aproximar'}</p>
   {notice&&<div className="am-toast" role="status">{notice}</div>}
 
   <dialog className="am-dialog" ref={dialog} onCancel={()=>setOpened(false)} onClick={e=>{if(e.target===e.currentTarget)setOpened(false);}} aria-label="Apresentação do Amici">

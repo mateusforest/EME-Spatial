@@ -1,7 +1,7 @@
 """Produce a compressed web derivative without changing the source Amici .blend.
 Usage: blender -b --python tools/export-amici-web.py -- /path/to/amici_realista_v2.blend
 """
-import bpy, bmesh, sys, json, math, hashlib
+import bpy, bmesh, sys, json, math, hashlib, runpy
 import numpy as np
 from pathlib import Path
 from mathutils import Vector
@@ -13,6 +13,7 @@ out=root/'public/assets/amici';out.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(source))
 scene=next(s for s in bpy.data.scenes if s.name.startswith('Amici | Fachada refinada'))
 bpy.context.window.scene=scene
+runpy.run_path(str(root/'tools/amici-walkable-hall.py'))['add_walkable_hall'](scene)
 deps=bpy.context.evaluated_depsgraph_get()
 objects=[o for o in scene.objects if o.type in ('MESH','FONT') and not o.hide_render
          and not any(c.hide_render for c in o.users_collection)]
@@ -99,7 +100,7 @@ for index,obj in enumerate(objects):
             for li in face.loop_indices:
                 co=mesh.vertices[mesh.loops[li].vertex_index].co
                 uv.data[li].uv=(co[axes[0]]/1.16,co[axes[1]]/1.36)
-    key=tuple(m.name if m else '' for m in mesh.materials)
+    key=(str(obj.get('walkDoor',0)),)+tuple(m.name if m else '' for m in mesh.materials)
     buckets.setdefault(key,[]).append(portable)
     if index%1000==0:print('CONVERT',index,flush=True)
 
@@ -108,7 +109,8 @@ for idx,(key,group) in enumerate(buckets.items()):
     for o in group:o.select_set(True)
     bpy.context.view_layer.objects.active=group[0]
     if len(group)>1:bpy.ops.object.join()
-    obj=group[0];obj.name='AMICI '+str(idx)+' '+(key[0] if key else 'geometry')
+    obj=group[0];obj.name='AMICI '+str(idx)+' '+(key[1] if len(key)>1 else 'geometry')
+    if key[0]!='0':obj['walkDoor']=int(key[0])
     obj.data.calc_loop_triangles();triangles+=len(obj.data.loop_triangles)
     # Leaves are already individual lightweight geometry; keep their silhouettes.
     for mat in obj.data.materials:
@@ -127,9 +129,9 @@ for img in bpy.data.images:
     if img.name.startswith('tree_small') and max(img.size)>512:
         img.scale(512,512)
 bpy.ops.object.select_all(action='SELECT')
-target=out/'amici-v2.glb'
+target=out/'amici-walk-v3.glb'
 bpy.ops.export_scene.gltf(filepath=str(target),export_format='GLB',use_selection=True,
-    export_animations=False,export_cameras=False,export_lights=False,export_extras=False,
+    export_animations=False,export_cameras=False,export_lights=False,export_extras=True,
     export_apply=False,export_draco_mesh_compression_enable=True,
     export_draco_mesh_compression_level=6,export_draco_position_quantization=14,
     export_draco_normal_quantization=9,export_draco_texcoord_quantization=12)
@@ -137,6 +139,6 @@ report={'source_sha256':source_hash,'objects_before':len(objects),'meshes':len(b
         'triangles':triangles,'bytes':target.stat().st_size,'source_unchanged':source_hash==hashlib.sha256(source.read_bytes()).hexdigest(),
         'building_height_m_estimated':36.21,'source':'Amici reconstruction v2; ZM marketing references',
         'limitations':'Approximate dimensions and external context; not official BIM; no confirmed unit inventory'}
-(out/'model.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+(out/'model-walk-v3.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 assert report['source_unchanged']
 print('AMICI_WEB_OK',json.dumps(report),flush=True)
