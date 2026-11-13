@@ -45,11 +45,14 @@ Required activation steps
 2. Both spatial_portal migrations above have been applied.
    It uses distinct spatial_portal_* names and does not modify EME Select tables.
 3. Configure Auth:
-   - Email provider enabled; Confirm email ON; password minimum 12 characters.
-   - Site URL https://www.emespatial.com/portal.
-   - Redirect allowlist includes exactly that URL (and explicit preview origins
-     only while testing). Preserve existing URLs if sharing an Auth project.
-   - Configure custom SMTP for confirmation/recovery to the business address.
+   - Email provider enabled; Confirm email ON (already confirmed by public settings).
+     The Spatial form requires a new password of at least 12 characters. Review
+     global password policy without disrupting existing Select accounts.
+   - Preserve the current Select Site URL in this shared project.
+   - Add https://www.emespatial.com/portal to the redirect allowlist (and explicit preview URLs
+     only while testing). Preserve all existing Select URLs.
+   - Check existing SMTP; preserve it if it already supports production mail.
+     Otherwise configure custom SMTP for confirmation/recovery to the business address.
      Built-in SMTP only delivers to organization team emails and is not production
      email infrastructure. Do not bypass this by disabling email confirmation.
    - Credentials entered directly by the owner in the service's secure UI; no

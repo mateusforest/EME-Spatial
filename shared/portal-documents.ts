@@ -98,3 +98,10 @@ export function collectLegacy(storage: Pick<Storage, 'getItem'>) {
   } catch { errors.push('eme-spatial:studio:v1'); }
   return {documents, errors};
 }
+export function archiveLegacy(storage: Pick<Storage, 'getItem'>) {
+  const data: Record<string, string> = {};
+  for (const key of [...Object.keys(legacyDocuments), 'eme-spatial:studio:v1']) {
+    const raw = storage.getItem(key); if (raw !== null) data[key] = raw;
+  }
+  return {schema: 'eme-spatial-local-archive/1', exportedAt: new Date().toISOString(), data};
+}

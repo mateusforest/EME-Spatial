@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DocumentStore,collectLegacy,validatePayload,validateAccountBackup} from '../shared/portal-documents.ts';
+import {DocumentStore,collectLegacy,validatePayload,validateAccountBackup,archiveLegacy} from '../shared/portal-documents.ts';
 import {initialSpatialProject} from '../shared/spatial-studio.mjs';
 import {newBudget} from '../shared/commercial-budget.ts';
 const project=()=>initialSpatialProject();
@@ -56,4 +56,10 @@ test('account restore validates the whole backup before any write',()=>{
  assert.throws(()=>validateAccountBackup({schema:'other',documents:[row]}));
  assert.throws(()=>validateAccountBackup({schema:'eme-spatial-cloud-backup/1',documents:[row,row]}),/duplicado/);
  assert.throws(()=>validateAccountBackup({schema:'eme-spatial-cloud-backup/1',documents:[row,{...row,document_id:'../bad'}]}),/inválido/);
+});
+
+test('local archive preserves raw damaged drafts and never exports the Auth session',()=>{
+ const data=new Map([['eme-spatial:lot-operation:v1','broken'],['eme-spatial:auth:v1','private-token']]);
+ const result=archiveLegacy({getItem:key=>data.get(key)??null});
+ assert.deepEqual(result.data,{'eme-spatial:lot-operation:v1':'broken'});
 });
