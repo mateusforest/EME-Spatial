@@ -51,7 +51,7 @@ export function createStreetLighting(lamps:StreetLamp[],height:(x:number,z:numbe
       const r2=(across/14)**2+(along/22)**2;
       if(r2>=1)continue;
       const edge=(1-r2)**2,falloff=1/(1+(across/7)**2+(along/12)**2);
-      field[iz*width+ix]+=3.6*edge*falloff;
+      field[iz*width+ix]+=2.3*edge*falloff;
     }
   }
   const data=new Uint8Array(width*heightPixels*4);
@@ -63,13 +63,13 @@ export function createStreetLighting(lamps:StreetLamp[],height:(x:number,z:numbe
   }
   const texture=new T.DataTexture(data,width,heightPixels,T.RGBAFormat);
   texture.minFilter=texture.magFilter=T.LinearFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
-  const strength={value:0},color={value:new T.Color('#fff0d5')};
+  const strength={value:0},color={value:new T.Color('#ffe8c7')};
   const patched=new WeakSet<T.Material>();
   function apply(material:T.Material){
     if(!(material instanceof T.MeshStandardMaterial)||patched.has(material))return;
     patched.add(material);
     const previous=material.onBeforeCompile,cacheKey=material.customProgramCacheKey();
-    const response=material.name.startsWith('Asfalto')?3:material.name.startsWith('Grama')?.3:1;
+    const response=material.name.startsWith('Asfalto')?1.7:material.name.startsWith('Grama')?.3:1;
     material.onBeforeCompile=(shader,renderer)=>{
       previous.call(material,shader,renderer);
       shader.uniforms.prStreetMap={value:texture};shader.uniforms.prStreetStrength=strength;shader.uniforms.prStreetColor=color;

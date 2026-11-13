@@ -15,6 +15,7 @@ import {createContextGeometry,createDistantGroves,createHorizonSky} from './hori
 import {demoStatus} from './demo-stock';
 import {openingHour} from './visual-profile';
 import {createStreetLighting,streetLampLayout} from './street-lighting';
+import {createSurfaceFinish} from './surface-finish';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -37,7 +38,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace=T.SRGBColorSpace;
   renderer.toneMapping=T.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.12;
+  renderer.toneMappingExposure=1.08;
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFShadowMap;
   renderer.shadowMap.autoUpdate=false;
@@ -45,7 +46,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   renderer.domElement.tabIndex=0;
   host.append(renderer.domElement);
   const camera=new T.PerspectiveCamera(47,1,1.5,30000);
-  camera.position.set(158,125,215);
+  camera.position.set(132,103,182);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.target.set(8,0,23);controls.enableDamping=true;controls.dampingFactor=.085;
   controls.minDistance=16;controls.maxDistance=550;controls.maxPolarAngle=Math.PI*.47;
@@ -71,6 +72,29 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const streetLighting=createStreetLighting(lampLayout,terrainHeight);
   textures.push(streetLighting.texture);
   let streetLevel=0;
+  const surfaceFinish=createSurfaceFinish();textures.push(surfaceFinish.texture);
+  // One local shadowed fixture gives nearby objects volume at night. The
+  // rest of the street remains on the shared light field, on every device.
+  const localLamp=new T.SpotLight('#ffe6c1',0,24,Math.PI*.38,.78,2);
+  localLamp.castShadow=true;localLamp.shadow.mapSize.set(512,512);
+  localLamp.shadow.bias=-.00015;localLamp.shadow.normalBias=.035;
+  localLamp.shadow.camera.near=.3;localLamp.shadow.camera.far=24;
+  localLamp.position.set(0,5.55,0);localLamp.shadow.autoUpdate=false;localLamp.shadow.needsUpdate=true;scene.add(localLamp,localLamp.target);
+  let localLampIndex=-1;
+  function updateLocalLamp(near:boolean){
+    const active=near&&!lightQuality&&streetLevel>.01;
+    localLamp.intensity=active?95*streetLevel:0;
+    if(!active)return;
+    let index=-1,distance=Infinity;
+    lampLayout.forEach((p,i)=>{const d=Math.hypot(p.x-camera.position.x,p.z-camera.position.z);if(d<distance){distance=d;index=i;}});
+    if(localLampIndex>=0){const previous=lampLayout[localLampIndex];if(Math.hypot(previous.x-camera.position.x,previous.z-camera.position.z)<distance+5)index=localLampIndex;}
+    if(index!==localLampIndex&&index>=0){
+      localLampIndex=index;const p=lampLayout[index],dx=Math.cos(p.rotation),dz=-Math.sin(p.rotation);
+      localLamp.position.set(p.x+dx*1.22,terrainHeight(p.x,p.z)+5.55,p.z+dz*1.22);
+      localLamp.target.position.set(p.x+dx*4,terrainHeight(p.x,p.z),p.z+dz*4);
+      localLamp.shadow.needsUpdate=true;renderer.shadowMap.needsUpdate=true;
+    }
+  }
   // One tiny shared mask confines the new lawn finish to the actual parcels
   // and common areas. No extra geometry or changes to the outer landscape.
   const lawnMaskCanvas=document.createElement('canvas');lawnMaskCanvas.width=256;lawnMaskCanvas.height=384;
@@ -165,15 +189,15 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       horizon(material);
       for(const value of Object.values(material))if(value instanceof T.Texture)value.anisotropy=4;
       if(material.name.startsWith('Grama')){
-        material.color.set('#d3d7bc');material.roughness=.96;material.normalScale.set(.65,.65);
+        material.color.set('#becbb1');material.roughness=.96;material.normalScale.set(.65,.65);
         const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);streetLighting.apply(contextMaterial);
         const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
         context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);
       }
-      if(material.name.startsWith('Asfalto')){material.color.set('#778591');material.roughness=.92;material.roughnessMap=null;material.envMapIntensity=.25;material.normalScale.set(.65,.65);}
-      if(material.name.startsWith('Calçada')){material.color.set('#d3c8b6');material.roughness=.83;material.normalScale.set(.75,.75);}
+      if(material.name.startsWith('Asfalto')){material.color.set('#959994');material.roughness=.84;material.roughnessMap=null;material.envMapIntensity=.25;material.normalScale.set(.65,.65);}
+      if(material.name.startsWith('Calçada')){material.color.set('#c6beb0');material.roughness=.86;material.normalScale.set(.75,.75);}
       if(material.name.startsWith('Sinalização')){material.color.set('#c6bfa4');material.roughness=.92;}
-      streetLighting.apply(material);
+      streetLighting.apply(material);surfaceFinish.apply(material);
       const geometry=mergeGeometries(geometries);
       if(geometry){const object=mesh(geometry,material);object.castShadow=/Concreto|Metal|Banco/.test(material.name);}
       geometries.forEach(g=>g.dispose());
@@ -217,7 +241,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const grassChunks:T.InstancedMesh[]=[];
   const grassViewer=new T.Vector3();
   const vegetationViewer=new T.Vector3(Infinity,Infinity,Infinity);
-  type PlantLevel={mesh:T.InstancedMesh;kind:string;level:string;positions:number[][]};
+  type PlantLevel={mesh:T.InstancedMesh;kind:string;level:string;positions:number[][];fullerCrown:boolean};
   const plantLevels:PlantLevel[]=[];
   const plantStates=new Map<string,string[]>();
   const foliageMaterials:T.MeshStandardMaterial[]=[];
@@ -277,6 +301,11 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const plantingLayout=(file:string)=>fetch(`/assets/priorita/production-v4/${file}.json`).then(r=>{if(!r.ok)throw new Error('planting layout');return r.json() as Promise<number[][]>;});
   Promise.all([plantingLayout('trees'),plantingLayout('gardens')]).then(([trees,gardens])=>{
     if(disposed)return;
+    surfaceFinish.contacts([
+      ...trees.map(([x,z,h])=>({x,z,radius:Math.min(3.3,h*.28),strength:.8})),
+      ...gardens.map(([x,z,h])=>({x,z,radius:Math.max(.4,h*.6),strength:.55})),
+      ...lampLayout.map(({x,z})=>({x,z,radius:.65,strength:.75})),
+    ]);
     const positionsByKind:Record<string,number[][]>={
       tree:trees.filter(([x,z])=>!areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h,a]),
       shade:trees.filter(([x,z])=>areas.some(a=>containsPoint([x,z],a.polygon))).map(([x,z,h,a])=>[x,z,h*1.05,a]),
@@ -308,19 +337,19 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
             mat.transparent=false;mat.alphaTest=0;mat.roughness=.78;mat.normalScale.set(.3,.3);
             // The supplied leaf image is very dark. Correct its albedo rather
             // than brightening the whole scene or making the trees emissive.
-            mat.color.setRGB(2.3,2.1,1.5);
+            mat.color.setRGB(1.95,1.9,1.55);
             mat.onBeforeCompile=shader=>{
               shader.fragmentShader=shader.fragmentShader.replace('#include <lights_physical_pars_fragment>',`#include <lights_physical_pars_fragment>
                 void RE_Direct_Leaf(const in IncidentLight light, const in vec3 position, const in vec3 normal, const in vec3 viewDir, const in vec3 coatNormal, const in PhysicalMaterial material, inout ReflectedLight reflected) {
                   RE_Direct_Physical(light,position,normal,viewDir,coatNormal,material,reflected);
                   float backLight=max(0.0,dot(-normal,light.direction));
                   // Thin leaf transmission uses the existing, shadowed light.
-                  reflected.directDiffuse+=material.diffuseColor*light.color*RECIPROCAL_PI*(.12+.38*backLight);
+                  reflected.directDiffuse+=material.diffuseColor*light.color*RECIPROCAL_PI*(.04+.30*backLight);
                 }
                 #undef RE_Direct
                 #define RE_Direct RE_Direct_Leaf`);
             };
-            mat.customProgramCacheKey=()=> 'priorita-leaf-v10';
+            mat.customProgramCacheKey=()=> 'priorita-leaf-v14';
             mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.035*sunlightAmount;foliageMaterials.push(mat);
           }
           if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
@@ -328,9 +357,10 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
           streetLighting.apply(mat);materialCache.set(m.uuid,mat);return mat;
         });
         const positions=positionsByKind[kind];
-        const inst=new T.InstancedMesh(geo,Array.isArray(o.material)?materials:materials[0],positions.length);
+        const fullerCrown=(kind==='tree'||kind==='shade')&&materials.every(m=>/folh|leaf/i.test(m.name));
+        const inst=new T.InstancedMesh(geo,Array.isArray(o.material)?materials:materials[0],positions.length*(fullerCrown?2:1));
         inst.count=0;inst.visible=false;inst.castShadow=kind!=='shrub1';inst.receiveShadow=true;inst.name=`v7 ${kind} · ${level}`;
-        scene.add(inst);plantLevels.push({mesh:inst,kind,level,positions});
+        scene.add(inst);plantLevels.push({mesh:inst,kind,level,positions,fullerCrown});
         if(!plantStates.has(kind))plantStates.set(kind,positions.map(()=>''));o.geometry.dispose();
       });
       host.dataset.landscape='Blender v7';vegetationDirty=true;renderer.shadowMap.needsUpdate=true;invalidate();
@@ -352,7 +382,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     vegetationViewer.copy(camera.position);vegetationDirty=false;
     const near=lightQuality?22:42;
     const updated=new Set<string>();let changed=false;
-    for(const {mesh:inst,kind,level,positions} of plantLevels){
+    for(const {mesh:inst,kind,level,positions,fullerCrown} of plantLevels){
       const states=plantStates.get(kind)!;
       if(!updated.has(kind)){
         positions.forEach(([x,z,h],i)=>{
@@ -367,11 +397,18 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         const isTree=kind==='tree'||kind==='shade';
         dummy.position.set(x,terrainHeight(x,z)+(isTree?0:.06),z);dummy.scale.set(h*(isTree?1.22:1),h,h*(isTree?1.22:1));dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count,dummy.matrix);
         const tint=.5+.5*Math.sin(x*1.71+z*.83);
-        inst.setColorAt(count,new T.Color().setRGB(.88+tint*.12,.92+tint*.08,.82+tint*.15));count++;
+        const color=new T.Color().setRGB(.86+tint*.14,.91+tint*.09,.78+tint*.18);
+        inst.setColorAt(count,color);count++;
+        // A second rotated foliage cluster reuses the same mesh and draw call.
+        // Mobile/light quality keeps one crown; no extra trunks are introduced.
+        if(fullerCrown&&!lightQuality){
+          dummy.rotation.y+=1.12;dummy.scale.x*=.92;dummy.scale.z*=.92;dummy.position.y+=h*.055;dummy.updateMatrix();
+          inst.setMatrixAt(count,dummy.matrix);inst.setColorAt(count,color.multiplyScalar(.91));count++;
+        }
       });
       inst.count=count;inst.visible=count>0;inst.instanceMatrix.needsUpdate=true;if(inst.instanceColor)inst.instanceColor.needsUpdate=true;if(count)inst.computeBoundingSphere();
     }
-    if(changed)renderer.shadowMap.needsUpdate=true;
+    if(changed){renderer.shadowMap.needsUpdate=true;if(localLamp.intensity>0)localLamp.shadow.needsUpdate=true;}
   }
 
   // 1 m illustrative contours, computed from the exact displayed height field.
@@ -407,9 +444,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
 
     const daylight=T.MathUtils.smoothstep(solar.elevation,-7,15),gold=1-T.MathUtils.smoothstep(solar.elevation,6,55);
     sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.035*daylight;
-    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(5.2-gold*.55)*T.MathUtils.smoothstep(solar.elevation,-1,9);
-    sun.color.set('#fff7e9').lerp(new T.Color('#ffd29b'),gold*.8);
-    hemi.intensity=.22+daylight*.48;scene.environmentIntensity=.08+daylight*.22;
+    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(4.4-gold*.4)*T.MathUtils.smoothstep(solar.elevation,-1,9);
+    sun.color.set('#fff7eb').lerp(new T.Color('#ffd9ad'),gold*.62);
+    hemi.intensity=.25+daylight*.48;hemi.color.set('#bcd4ed');hemi.groundColor.set('#77786b');scene.environmentIntensity=.08+daylight*.22;
     const haze=new T.Color('#90b5cd').lerp(new T.Color('#ccb28c'),gold*.38).lerp(new T.Color('#24364d'),1-daylight);
     (scene.fog as T.Fog).color.copy(haze);
     skyMaterial.uniforms.bottomColor.value.copy(haze);
@@ -419,6 +456,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
     streetLevel=streetLighting.setSun(solar.elevation);
     for(const mat of fixtureMaterials)mat.emissiveIntensity=streetLevel*3;
+    localLamp.shadow.needsUpdate=!localLamp.shadow.map||streetLevel>.01;
     host.dataset.streetLights=JSON.stringify({count:lampLayout.length,level:+streetLevel.toFixed(3),elevation:+solar.elevation.toFixed(2)});
     renderer.shadowMap.needsUpdate=true;invalidate();
   }
@@ -584,6 +622,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
       }
       updateVegetation();
+      updateLocalLamp(nearView);
       parcelOutlines.visible=(mode==='aerial'||mode==='plan')&&camera.position.y>35;
       for(const chunk of grassChunks){grassViewer.copy(chunk.boundingSphere!.center);chunk.visible=!lightQuality&&camera.position.distanceTo(grassViewer)<62;}
       camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea,filtered);solarGuide.project(camera);
@@ -605,7 +644,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const north=host.parentElement!.querySelector<HTMLElement>('.pr-north svg');
       if(north){const origin=new T.Vector3().copy(controls.target).project(camera),n=new T.Vector3(controls.target.x+plan.northVector[0]*10,controls.target.y,controls.target.z+plan.northVector[1]*10).project(camera);north.style.transform=`rotate(${Math.atan2(n.x-origin.x,n.y-origin.y)*180/Math.PI-45}deg)`;}
       renderer.render(scene,camera);
-      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
+      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,localShadowLight:localLamp.intensity>0,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
       dirty=false;frameTime=now;
     }
   }
@@ -641,7 +680,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       return output.toDataURL('image/png');
     },
-    dispose(){disposed=true;cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
+    dispose(){disposed=true;cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
   };
 }
 export type PrioritaScene=ReturnType<typeof createPrioritaScene>;
