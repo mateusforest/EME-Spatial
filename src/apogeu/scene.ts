@@ -12,7 +12,7 @@ type Events={onAerial:(value:boolean)=>void;onSelect:(id:number)=>void;onError:(
 export function createApogeuScene(host:HTMLDivElement,events:Events){
  const scene=new T.Scene();scene.background=new T.Color('#334840');
  const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.25:1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
+ renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.25:1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
  const canvas=renderer.domElement;canvas.setAttribute('aria-label','Modelo do Apogeu exportado do Blender. Arraste para olhar. Use os botões para visitar os ambientes.');canvas.tabIndex=0;host.append(canvas);
  const camera=new T.PerspectiveCamera(43,1,.08,500),controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=5;controls.maxDistance=95;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.49;controls.rotateSpeed=.55;
  const sun=new T.DirectionalLight('#fff3df',3.2);sun.position.set(-25,45,38);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-38,right:38,top:48,bottom:-48,near:1,far:130});sun.shadow.normalBias=.025;sun.shadow.bias=-.0003;scene.add(sun,sun.target,new T.HemisphereLight('#d5e5ee','#68685b',.8));
