@@ -1,21 +1,21 @@
 import * as T from 'three';
-import {lotById, lots, number, plan, terrainHeight} from './model';
+import {areas,lotById, lots, number, plan, terrainHeight} from './model';
 import type {ViewMode} from './model';
 
 type Kind='lot'|'block'|'road'|'area'|'measure';
 type Marker={element:HTMLElement;point:T.Vector3;kind:Kind;id:string;block?:string;width:number;height:number};
 type Rect={left:number;top:number;right:number;bottom:number};
 export const overlaps=(a:Rect,b:Rect,gap=6)=>a.left<b.right+gap&&a.right>b.left-gap&&a.top<b.bottom+gap&&a.bottom>b.top-gap;
-const panelSelector='.pr-intro,.pr-lot-list,.pr-detail,.pr-top-actions,.pr-solar,.pr-legend,.pr-dock,.pr-view-controls,.pr-pan-controls';
+const panelSelector='.pr-intro,.pr-lot-list,.pr-detail,.pr-top-actions,.pr-solar,.pr-legend,.pr-dock,.pr-view-controls,.pr-pan-controls,.pr-walk-banner';
 
 /** Screen-space labels: constant typography, priority placement and no terrain clipping. */
-export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,focusBlock:(block:string)=>void){
+export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,focusBlock:(block:string)=>void,selectArea:(id:string)=>void){
   const layer=document.createElement('div');layer.className='pr-annotations';layer.setAttribute('aria-label','Identificações do loteamento');host.append(layer);
   const markers:Marker[]=[];let dimensions:Marker[]=[];let currentLot='';
   const point=(x:number,z:number,lift=.3)=>new T.Vector3(x,terrainHeight(x,z)+lift,z);
   function add(text:string,kind:Kind,id:string,position:T.Vector3,block?:string,action?:()=>void){
     const element=document.createElement(action?'button':'span');element.className=`pr-map-label pr-map-${kind}`;element.textContent=text;
-    if(action){element.setAttribute('type','button');element.setAttribute('aria-label',kind==='block'?`Enquadrar quadra ${id}`:`Selecionar lote ${id}`);element.addEventListener('click',action);}
+    if(action){element.setAttribute('type','button');element.setAttribute('aria-label',kind==='block'?`Enquadrar quadra ${id}`:kind==='area'?`Conhecer ${text}`:`Selecionar lote ${id}`);element.addEventListener('click',action);}
     element.hidden=true;layer.append(element);
     const width=kind==='lot'?48:kind==='block'?84:kind==='road'?64:kind==='measure'?Math.max(92,text.length*5.5+18):Math.max(106,text.length*6+24);
     element.style.width=`${width}px`;
@@ -28,9 +28,9 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
     add(`Quadra ${block}`,'block',block,point(x,z),block,()=>focusBlock(block));
   }
   for(const road of plan.roads)add(road.name,'road',road.name,point(...road.label as [number,number]));
-  for(const [i,area] of plan.otherPolygons.entries())add(['Recreação 01','Institucional','Recreação 02'][i],'area',String(i),point(...area.center as [number,number]));
+  for(const area of areas)add(area.name,'area',area.id,point(...area.center as [number,number]),undefined,()=>selectArea(area.id));
   const projected=new T.Vector3(),view=new T.Vector3();
-  function update(camera:T.PerspectiveCamera,mode:ViewMode,selected:string,block:string,visible:boolean){
+  function update(camera:T.PerspectiveCamera,mode:ViewMode,selected:string,block:string,visible:boolean,selectedArea=''){
     if(currentLot!==selected){
       dimensions.forEach(m=>{m.element.remove();markers.splice(markers.indexOf(m),1);});dimensions=[];currentLot=selected;
       const lot=lotById.get(selected);
@@ -51,7 +51,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
     camera.getWorldDirection(view);
     const candidates=markers.map(marker=>{
       const distance=camera.position.distanceTo(marker.point);
-      const active=marker.kind==='lot'&&marker.id===selected;
+      const active=marker.kind==='lot'&&marker.id===selected||marker.kind==='area'&&marker.id===selectedArea;
       const priority=marker.kind==='measure'?0:active?1:marker.kind==='block'&&marker.id===block?2:marker.kind==='block'?3:marker.kind==='area'?4:marker.kind==='lot'?5:6;
       return {marker,distance,priority,active};
     }).sort((a,b)=>a.priority-b.priority||a.distance-b.distance);

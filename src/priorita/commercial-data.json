@@ -1,0 +1,11 @@
+{
+  "defaults": {
+    "price": null,
+    "pricePerSquareMeter": 650,
+    "downPaymentPercent": 20,
+    "installments": 60,
+    "illustrative": true,
+    "paymentConditions": "Exemplo sem juros ou correção monetária. Valores ilustrativos, sem validade de oferta."
+  },
+  "lots": {}
+}

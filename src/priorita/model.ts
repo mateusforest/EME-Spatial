@@ -2,11 +2,13 @@ import source from './plan-source.json';
 
 export type Point2 = [number, number];
 export type LotStatus = 'available' | 'reserved' | 'unavailable';
-export type ViewMode = 'aerial' | 'plan' | 'walk' | 'lot';
+export type ViewMode = 'aerial' | 'plan' | 'walk' | 'lot' | 'area';
 export const plan = source;
 export type Lot = typeof source.lots[number];
 export const lots = source.lots;
 export const lotById = new Map(lots.map(lot => [lot.id, lot]));
+export const areas=source.otherPolygons.map((area,i)=>({...area,id:`area-${i+1}`,name:['Recreação 01','Área institucional','Recreação 02'][i],kind:i===1?'Institucional':'Recreação'}));
+export const areaById=new Map(areas.map(area=>[area.id,area]));
 export const statusInfo = {
   available: {label: 'Disponível', color: '#3caa78'},
   reserved: {label: 'Reservado', color: '#e59132'},

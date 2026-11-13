@@ -5,17 +5,22 @@ import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {canopy51} from '../developments/mCanopy51';
-import {canWalk, containsPoint, lotById, lots, solarPosition, statusInfo, terrainHeight} from './model';
+import {areas,areaById,plan,canWalk, containsPoint, lotById, lots, solarPosition, statusInfo, terrainHeight} from './model';
 import type {LotStatus, ViewMode} from './model';
 import {createAnnotations} from './annotations';
 import {frameBounds} from './camera-layout';
+import {createRoadNavigator} from './navigation';
 
-type Events = {onSelect: (id:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
+export type WalkState='idle'|'choosing'|'moving';
+type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
 type Transition={start:number;duration:number;from:T.Vector3;to:T.Vector3;fromTarget:T.Vector3;toTarget:T.Vector3;done?:()=>void};
 
 export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   let disposed=false,dirty=true,mode:ViewMode='aerial',selected='',hovered='',showStock=true,showLabels=true;
   let focusedBlock='';
+  let selectedArea='',walkPicking=false,walkSpeed=8;
+  let route:[number,number][]=[];
+  const navigator=createRoadNavigator(plan.roads.map(r=>r.polygon),canWalk);
   const statuses=new Map<string,LotStatus>(lots.map(l=>[l.id,'available']));
   const scene=new T.Scene();
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
@@ -102,8 +107,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const lampMat=new T.MeshStandardMaterial({color:'#fff0d2',emissive:'#ffdc9a',emissiveIntensity:.25});
   const overlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
   const borders=new Map<string,T.LineLoop<T.BufferGeometry,T.LineBasicMaterial>>();
+  const areaOverlays=new Map<string,T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>>();
   const pickables:T.Mesh[]=[];
-  const annotations=createAnnotations(host,id=>{select(id,true);events.onSelect(id);},block=>{focusBlock(block);events.onBlock(block);});
+  const annotations=createAnnotations(host,id=>{select(id,true);events.onSelect(id);},block=>{focusBlock(block);events.onBlock(block);},id=>selectArea(id,true));
   const uiObserver=new MutationObserver(invalidate);
   uiObserver.observe(host.parentElement!,{childList:true,subtree:false});
   let transition:Transition|undefined;
@@ -174,6 +180,14 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const edge=border.geometry.getAttribute('position');
     for(let i=0;i<edge.count;i++)for(const j of [i,(i+1)%edge.count])parcelOutlineSegments.push(edge.getX(j),edge.getY(j)+.08,edge.getZ(j));
   }
+  for(const area of areas){
+    const pick=new T.Mesh(surface(area.polygon,.04),grassMat);pick.userData.area=area.id;pickables.push(pick);
+    const overlay=new T.Mesh(surface(area.polygon,.08),new T.MeshBasicMaterial({color:'#d7bf78',transparent:true,opacity:.16,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}));
+    overlay.renderOrder=2;overlay.visible=false;scene.add(overlay);areaOverlays.set(area.id,overlay);
+  }
+  for(const road of plan.roads){const pick=new T.Mesh(surface(road.polygon,.02),grassMat);pick.userData.road=road.name;pickables.push(pick);}
+  const destination=new T.Mesh(new T.RingGeometry(.38,.6,28),new T.MeshBasicMaterial({color:'#f2d690',transparent:true,opacity:.95,depthTest:false,side:T.DoubleSide}));
+  destination.rotation.x=-Math.PI/2;destination.renderOrder=5;destination.visible=false;scene.add(destination);
   // A single thin outline keeps sub-pixel physical strips legible from the air.
   const parcelOutlineGeometry=new T.BufferGeometry();parcelOutlineGeometry.setAttribute('position',new T.Float32BufferAttribute(parcelOutlineSegments,3));
   const parcelOutlines=new T.LineSegments(parcelOutlineGeometry,new T.LineBasicMaterial({color:'#dedfc5',transparent:true,opacity:.7}));scene.add(parcelOutlines);
@@ -327,6 +341,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     object.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line||o instanceof T.Sprite){if('geometry' in o)o.geometry.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];for(const mat of mats){for(const value of Object.values(mat))if(value instanceof T.Texture)value.dispose();mat.dispose();}}});
   }
   function updateLotColors(){
+    for(const [id,overlay] of areaOverlays){overlay.visible=id===selectedArea;overlay.material.opacity=mode==='area'?.04:.16;}
     for(const lot of lots){
       const active=lot.id===selected,hot=lot.id===hovered,inBlock=lot.block===focusedBlock,overlay=overlays.get(lot.id)!,border=borders.get(lot.id)!;
       overlay.visible=active||hot||inBlock||(showStock&&statuses.get(lot.id)!=='available');
@@ -358,11 +373,12 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();}
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);resize();
   if(camera.aspect<.85)camera.position.multiplyScalar(1.7);
-  function setMode(value:ViewMode){mode=value;controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
+  function stopWalk(){route=[];walkPicking=false;destination.visible=false;events.onWalkState('idle');invalidate();}
+  function setMode(value:ViewMode){stopWalk();mode=value;controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
   function fly(to:T.Vector3,target:T.Vector3,done?:()=>void){
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fromTarget=controls.enabled?controls.target.clone():camera.position.clone().add(camera.getWorldDirection(new T.Vector3()).multiplyScalar(10));
-    transition={start:performance.now(),duration:reduced?1:1500,from:camera.position.clone(),to,fromTarget,toTarget:target,done};controls.enabled=false;held.clear();invalidate();
+    transition={start:performance.now(),duration:reduced?1:1050,from:camera.position.clone(),to,fromTarget,toTarget:target,done};controls.enabled=false;held.clear();invalidate();
   }
   function syncLook(){const d=camera.getWorldDirection(new T.Vector3());yaw=Math.atan2(d.x,-d.z);pitch=Math.asin(d.y);}
   function focusPoints(points:number[][],flat=false){
@@ -383,19 +399,29 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     });
   }
   function focusBlock(block:string){
-    focusedBlock=block==='Todas'?'':block;selected='';events.onSelect('');setMode('aerial');
+    selectedArea='';events.onArea('');focusedBlock=block==='Todas'?'':block;selected='';events.onSelect('');setMode('aerial');
     if(!focusedBlock){overview();return;}
     focusPoints(lots.filter(l=>l.block===block).flatMap(l=>l.polygon));updateLotColors();
   }
   function overview(flat=false){
-    focusedBlock='';selected='';events.onSelect('');events.onBlock('Todas');setMode(flat?'plan':'aerial');
+    selectedArea='';events.onArea('');focusedBlock='';selected='';events.onSelect('');events.onBlock('Todas');setMode(flat?'plan':'aerial');
     focusPoints(lots.flatMap(l=>l.polygon),flat);
   }
   function select(id:string,focus=false){
-    if(id&&!lotById.has(id))return;selected=id;if(id)focusedBlock='';updateLotColors();
+    if(id&&!lotById.has(id))return;selectedArea='';events.onArea('');selected=id;if(id)focusedBlock='';updateLotColors();
     if(focus&&id){
       const lot=lotById.get(id)!;setMode('aerial');focusPoints(lot.polygon);
     }
+  }
+  function selectArea(id:string,focus=false){
+    const area=areaById.get(id);if(id&&!area)return;
+    selectedArea=id;selected='';focusedBlock='';events.onSelect('');events.onArea(id);setMode('aerial');
+    if(focus&&area)focusPoints(area.polygon);updateLotColors();
+  }
+  function enterArea(id:string){
+    const area=areaById.get(id);if(!area)return;selectArea(id);setMode('area');
+    const [x,z]=area.center,eye=new T.Vector3(x,terrainHeight(x,z)+1.68,z);
+    fly(eye,new T.Vector3(1.3,terrainHeight(1.3,z)+1.68,z),()=>{controls.enabled=false;syncLook();renderer.domElement.focus({preventScroll:true});});
   }
   function enterLot(id:string){
     const lot=lotById.get(id);if(!lot)return;
@@ -403,30 +429,52 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     const eye=new T.Vector3(x,y,z),target=eye.clone().add(new T.Vector3(lot.frontAxis[0]*12,-.2,lot.frontAxis[1]*12));
     fly(eye,target,()=>{controls.enabled=false;syncLook();renderer.domElement.focus({preventScroll:true});});
   }
-  function walk(){
-    setMode('walk');const x=1.3,z=112,eye=new T.Vector3(x,terrainHeight(x,z)+1.68,z);
+  function walk(x=1.3,z=112){
+    if(!canWalk(x,z))return;
+    selected='';selectedArea='';focusedBlock='';events.onSelect('');events.onArea('');setMode('walk');
+    const eye=new T.Vector3(x,terrainHeight(x,z)+1.68,z);
     fly(eye,new T.Vector3(x,terrainHeight(x,z-15)+1.68,z-15),()=>{controls.enabled=false;syncLook();renderer.domElement.focus({preventScroll:true});});
   }
-  function hit(e:PointerEvent){const box=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-box.left)/box.width*2-1,-(e.clientY-box.top)/box.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0]?.object.userData.lot as string|undefined;}
-  function down(e:PointerEvent){if(e.button!==0)return;drag.active=true;drag.id=e.pointerId;drag.x=drag.lastX=e.clientX;drag.y=drag.lastY=e.clientY;drag.moved=false;if(mode==='lot'||mode==='walk')renderer.domElement.setPointerCapture(e.pointerId);}
+  function chooseWalkStart(){
+    if(mode!=='aerial'&&mode!=='plan')overview();
+    selected='';selectedArea='';events.onSelect('');events.onArea('');updateLotColors();
+    walkPicking=true;events.onWalkState('choosing');invalidate();
+  }
+  function walkTo(point:T.Vector3){
+    const next=navigator.route([camera.position.x,camera.position.z],[point.x,point.z]);
+    if(!next.length){events.onNotice('Escolha outro ponto da rua para continuar o passeio.');return;}
+    route=next;destination.position.set(point.x,terrainHeight(point.x,point.z)+.12,point.z);destination.visible=true;held.clear();events.onWalkState('moving');invalidate();
+  }
+  function hit(e:PointerEvent){const box=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-box.left)/box.width*2-1,-(e.clientY-box.top)/box.height*2+1);camera.updateMatrixWorld();raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(pickables,false)[0];}
+  function down(e:PointerEvent){if(e.button!==0)return;drag.active=true;drag.id=e.pointerId;drag.x=drag.lastX=e.clientX;drag.y=drag.lastY=e.clientY;drag.moved=false;if(mode==='lot'||mode==='area'||mode==='walk')renderer.domElement.setPointerCapture(e.pointerId);}
   function move(e:PointerEvent){
     if(drag.active&&e.pointerId===drag.id){
       if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6)drag.moved=true;
-      if(!transition&&(mode==='lot'||mode==='walk')){yaw-=(e.clientX-drag.lastX)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-drag.lastY)*.003,-1.15,1.15);invalidate();}
+      if(!transition&&(mode==='lot'||mode==='area'||mode==='walk')){yaw-=(e.clientX-drag.lastX)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-drag.lastY)*.003,-1.15,1.15);invalidate();}
       drag.lastX=e.clientX;drag.lastY=e.clientY;
-    }else if(mode!=='lot'&&e.pointerType==='mouse'){
-      const id=hit(e)||'';if(id!==hovered){hovered=id;renderer.domElement.style.cursor=id?'pointer':'grab';updateLotColors();}
+    }else if(mode!=='lot'&&mode!=='area'&&e.pointerType==='mouse'){
+      const data=hit(e)?.object.userData,id=(data?.lot as string)||'';
+      renderer.domElement.style.cursor=data?.road?'crosshair':data?.area||id?'pointer':'grab';
+      if(id!==hovered){hovered=id;updateLotColors();}
     }
   }
-  function up(e:PointerEvent){if(drag.active&&!drag.moved&&(mode==='aerial'||mode==='plan')&&!transition){const id=hit(e);if(id){select(id,true);events.onSelect(id);}}drag.active=false;}
+  function up(e:PointerEvent){
+    if(drag.active&&drag.id===e.pointerId&&!drag.moved&&!transition){
+      const found=hit(e),data=found?.object.userData;
+      if(found&&data?.road){if(mode==='walk')walkTo(found.point);else if(mode==='aerial'||mode==='plan')walk(found.point.x,found.point.z);}
+      else if(walkPicking)events.onNotice('Clique sobre uma rua para escolher o início do passeio.');
+      else if(mode==='aerial'||mode==='plan'){if(data?.lot){select(data.lot,true);events.onSelect(data.lot);}else if(data?.area)selectArea(data.area,true);}
+    }
+    if(renderer.domElement.hasPointerCapture(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);drag.active=false;
+  }
   function keydown(e:KeyboardEvent){
-    if((e.target as HTMLElement).closest('input,select,textarea'))return;
-    if(e.key==='Escape'&&(mode==='lot'||mode==='walk')){overview();return;}
+    if((e.target as HTMLElement).closest('input,select,textarea,button,a,dialog'))return;
+    if(e.key==='Escape'){if(route.length||walkPicking){stopWalk();return;}if(mode==='lot'||mode==='area'||mode==='walk'){overview();return;}}
     if((mode==='aerial'||mode==='plan')&&['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())&&(e.target===renderer.domElement||e.target===document.body)){pan(e.key==='ArrowLeft'?-1:e.key==='ArrowRight'?1:0,e.key==='ArrowUp'?1:e.key==='ArrowDown'?-1:0);e.preventDefault();}
-    if(mode==='walk'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())){held.add(e.key.toLowerCase());e.preventDefault();}
+    if(mode==='walk'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())){if(route.length)stopWalk();held.add(e.key.toLowerCase());e.preventDefault();}
   }
   const keyup=(e:KeyboardEvent)=>held.delete(e.key.toLowerCase());
-  const blur=()=>{held.clear();drag.active=false;};
+  const blur=()=>{held.clear();drag.active=false;if(route.length)stopWalk();};
   const visibility=()=>{blur();if(!document.hidden)invalidate();};
   const contextLost=(e:Event)=>{e.preventDefault();events.onError('A visita 3D foi interrompida.');};
   renderer.domElement.addEventListener('pointerdown',down);renderer.domElement.addEventListener('pointermove',move);renderer.domElement.addEventListener('pointerup',up);renderer.domElement.addEventListener('pointercancel',blur);
@@ -437,11 +485,20 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const t=Math.min(1,(now-transition.start)/transition.duration),smooth=t*t*(3-2*t);
       camera.position.lerpVectors(transition.from,transition.to,smooth);const target=new T.Vector3().lerpVectors(transition.fromTarget,transition.toTarget,smooth);camera.lookAt(target);controls.target.copy(target);dirty=true;
       if(t===1){const done=transition.done;transition=undefined;done?.();}
-    }else if(mode==='lot'||mode==='walk'){
+    }else if(mode==='lot'||mode==='area'||mode==='walk'){
+      if(mode==='walk'&&route.length){
+        let travel=dt*walkSpeed;
+        while(route.length&&travel>0){
+          const [x,z]=route[0],dx=x-camera.position.x,dz=z-camera.position.z,distance=Math.hypot(dx,dz),step=Math.min(distance,travel);
+          if(distance>.001){camera.position.x+=dx/distance*step;camera.position.z+=dz/distance*step;if(!drag.active){const heading=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(heading-yaw),Math.cos(heading-yaw));yaw+=delta*Math.min(1,dt*5);}}
+          travel-=step;if(distance<=step+.001)route.shift();else break;
+        }
+        camera.position.y=terrainHeight(camera.position.x,camera.position.z)+1.68;dirty=true;if(!route.length)stopWalk();
+      }
       if(mode==='walk'&&held.size){
         const forward=Number(held.has('w')||held.has('arrowup'))-Number(held.has('s')||held.has('arrowdown'));
         const side=Number(held.has('d')||held.has('arrowright'))-Number(held.has('a')||held.has('arrowleft'));
-        const norm=Math.hypot(forward,side)||1,speed=dt*3.8/norm;
+        const norm=Math.hypot(forward,side)||1,speed=dt*walkSpeed/norm;
         const dx=(Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed,dz=(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*speed;
         if(canWalk(camera.position.x+dx,camera.position.z+dz)){camera.position.x+=dx;camera.position.z+=dz;}
         else if(canWalk(camera.position.x+dx,camera.position.z))camera.position.x+=dx;
@@ -451,7 +508,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       if(dirty)camera.lookAt(camera.position.clone().add(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch))));
     }else controls.update();
     if(dirty&&now-frameTime>30){
-      const nearView=(mode==='lot'||mode==='walk')&&camera.position.y<30,span=nearView?70:210;
+      const nearView=(mode==='lot'||mode==='area'||mode==='walk')&&camera.position.y<30,span=nearView?70:210;
       const focus=nearView?new T.Vector3(camera.position.x,0,camera.position.z):new T.Vector3();
       if(span!==shadowSpan||focus.distanceTo(shadowFocus)>7){
         shadowSpan=span;shadowFocus.copy(focus);sun.target.position.copy(focus);sun.position.copy(focus).addScaledVector(sunDirection,420);
@@ -460,9 +517,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       updateVegetation();
       parcelOutlines.visible=(mode==='aerial'||mode==='plan')&&camera.position.y>35;
       for(const chunk of grassChunks){grassViewer.copy(chunk.boundingSphere!.center);chunk.visible=!lightQuality&&camera.position.distanceTo(grassViewer)<62;}
-      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels);
+      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea);
       renderer.render(scene,camera);
-      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
+      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
       dirty=false;frameTime=now;
     }
   }
@@ -477,16 +534,17 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     offset.copy(next).sub(controls.target);camera.position.add(offset);controls.target.copy(next);controls.update();invalidate();
   }
   return {
-    select,enterLot,walk,overview,lighting,focusBlock,pan,refresh:invalidate,
+    select,selectArea,enterArea,enterLot,walk,chooseWalkStart,stopWalk,overview,lighting,focusBlock,pan,refresh:invalidate,
+    setWalkSpeed(value:number){walkSpeed=T.MathUtils.clamp(value,3,14);},
     setStatus(id:string,status:LotStatus){if(statuses.has(id)){statuses.set(id,status);updateLotColors();}},
     setStock(show:boolean){showStock=show;updateLotColors();},
     setLabels(show:boolean){showLabels=show;invalidate();},
     setContours(show:boolean){contours.visible=show;invalidate();},
     setQuality(light:boolean){lightQuality=light;vegetationDirty=true;renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,1.5));sun.shadow.mapSize.setScalar(light?1024:2048);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;resize();},
-    hold(key:string,value:boolean){if(value&&mode==='walk')held.add(key);else held.delete(key);},
+    hold(key:string,value:boolean){if(value&&mode==='walk'){if(route.length)stopWalk();held.add(key);}else held.delete(key);},
     zoom(direction:number){if(!controls.enabled)return;camera.position.sub(controls.target).multiplyScalar(direction>0?.8:1.25).add(controls.target);controls.update();invalidate();},
     screenshot(){
-      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels);renderer.render(scene,camera);
+      camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea);renderer.render(scene,camera);
       const output=document.createElement('canvas');output.width=renderer.domElement.width;output.height=renderer.domElement.height;
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       const a=document.createElement('a');a.href=output.toDataURL('image/png');a.download='priorita-vista.png';a.click();
