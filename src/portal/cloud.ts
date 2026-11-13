@@ -18,7 +18,8 @@ export const workspace = new DocumentStore({async save(kind, id, payload, versio
 export async function loadWorkspace(userId: string) {
   if (!supabase) throw Error('Servidor não configurado.');
   const {data: member, error: denied} = await supabase.from('spatial_portal_members').select('email').eq('enabled', true).limit(1);
-  if (denied || !member?.length) throw Error('Esta conta ainda não tem acesso ao EME Spatial. Solicite a liberação ao administrador.');
+  if (denied) throw Error('Não foi possível verificar seu acesso. Verifique a conexão e tente novamente.');
+  if (!member?.length) throw Error('Esta conta ainda não tem acesso ao EME Spatial. Solicite a liberação ao administrador.');
   const rows: CloudDocument[] = [];
   for (let offset = 0; ; offset += 500) {
     const {data, error} = await supabase.from('spatial_portal_documents').select('kind,document_id,payload,version,updated_at').eq('owner_id', userId).order('kind').order('document_id').range(offset, offset + 499);

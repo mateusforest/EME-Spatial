@@ -1,9 +1,11 @@
 import {useEffect, useRef, useState} from 'react';
 import type {FormEvent} from 'react';
 import {ArrowDownToLine, ArrowUpFromLine, Check, ChevronRight, Cloud, FileText, Plus, Wallet} from 'lucide-react';
-import {addBusinessDays, calculateOperation, newOperation, operationKey, stageDefinitions, validateOperation} from '../../shared/lot-operation';
+import {addBusinessDays, calculateOperation, newOperation, stageDefinitions, validateOperation} from '../../shared/lot-operation';
 import type {LotReceipt, Operation, Stage} from '../../shared/lot-operation';
-import {calculateBudget, validateBudget} from '../../shared/commercial-budget';
+import {operationFromBudget,copyOperationPlan} from '../../shared/commercial-links';
+import DocumentLibrary from './DocumentLibrary';
+import type {EditorDocument} from './DocumentLibrary';
 import './commercial-budget.css';
 import './lot-operation.css';
 import {workspace,setEditorDirty} from './cloud';
@@ -19,14 +21,17 @@ function download(content: string, name: string, type = 'application/json') {
 function NumberField({label, value, onChange, max = 1e9}: {label: string; value: string; onChange: (s: string) => void; max?: number}) {
   return <label>{label}<input type="number" min="0" max={max} step="0.01" placeholder="A definir" value={value} onChange={e => onChange(e.target.value)}/></label>;
 }
-export default function LotOperation() {
-  const [data, setData] = useState<Operation>(newOperation);
+export default function LotOperation(){return <DocumentLibrary<Operation> kind="operation" label="Acompanhamento" copy={copyOperationPlan}>{props=><OperationEditor {...props}/>}</DocumentLibrary>;}
+function OperationEditor({documentId,seed,onSaved}:EditorDocument<Operation>) {
+  const [data, setData] = useState<Operation>(()=>seed||newOperation());
   const [ready, setReady] = useState(false), [blocked, setBlocked] = useState(false), [notice, setNotice] = useState('');
   const [tab, setTab] = useState('plan'), [editing, setEditing] = useState<LotReceipt | null>(null), [formOpen, setFormOpen] = useState(false);
   const [query, setQuery] = useState(''), [dirty,setDirty]=useState(false), [saving,setSaving]=useState(false);
-  const previous = useRef<string | null>(null), file = useRef<HTMLInputElement>(null);
+  const budgets=workspace.list('budget');
+  const [budgetId,setBudgetId]=useState(()=>seed?.sourceBudget?.id||budgets[0]?.document_id||'');
+  const previous = useRef(0), file = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    try { const raw = workspace.readRaw(operationKey); previous.current = raw; if (raw) setData(validateOperation(JSON.parse(raw))); }
+    try { const row = workspace.get('operation',documentId); previous.current = row?.version||0; if (row) setData(validateOperation(row.payload)); }
     catch { setBlocked(true); setNotice('Não foi possível ler o acompanhamento. Seus dados não foram substituídos. Exporte o arquivo salvo para recuperação.'); }
     setReady(true);
   }, []);
@@ -36,7 +41,7 @@ export default function LotOperation() {
     catch (e) { setNotice(e instanceof Error ? e.message : 'Não foi possível salvar.'); return false; }
   }
   useEffect(()=>{setEditorDirty('operation',dirty||saving);const leave=(e:BeforeUnloadEvent)=>{if(dirty||saving)e.preventDefault();};window.addEventListener('beforeunload',leave);return()=>{setEditorDirty('operation',false);window.removeEventListener('beforeunload',leave);};},[dirty,saving]);
-  async function save(){if(saving)return;setSaving(true);try{previous.current=await workspace.saveRaw(operationKey,data,previous.current);setDirty(false);setNotice('Acompanhamento salvo na sua conta.');}catch(e){setNotice((e as Error).message);}finally{setSaving(false);}}
+  async function save(){if(saving)return;setSaving(true);try{const row=await workspace.save('operation',documentId,data,previous.current);previous.current=row.version;onSaved();setDirty(false);setNotice('Acompanhamento salvo na sua conta.');}catch(e){setNotice((e as Error).message);}finally{setSaving(false);}}
   function update<K extends keyof Operation>(key: K, value: Operation[K]) { return commit({...data, [key]: value}); }
   function stage(index: number, changes: Partial<Stage>) { update('stages', data.stages.map((s, i) => i === index ? {...s, ...changes} : s)); }
   function cloud(changes: Partial<Operation['cloud']>) { update('cloud', {...data.cloud, ...changes}); }
@@ -44,14 +49,11 @@ export default function LotOperation() {
   const result = calculateOperation(data, today());
   function useBudget() {
     try {
-      const raw = workspace.readRaw('eme-spatial:commercial-budget:v1');
-      if (!raw) throw Error('Salve um orçamento na área Orçamentos primeiro.');
-      const b = validateBudget(JSON.parse(raw));
-      if (b.commercial.mode !== 'lot') throw Error('Este acompanhamento usa valor fixo por lote. Escolha essa condição no orçamento.');
-      if (!confirm('Trazer nome, quantidade, preço por lote e estimativa mensal de nuvem do orçamento salvo? As etapas e os repasses existentes serão preservados.')) return;
-      const costs = calculateBudget(b);
-      const cloudKnown = b.cloud.mode === 'local' || ((b.cloud.mode === 'streams' || b.cloud.mode === 'desktop') && ['rate', 'fixed', 'fx', 'extra', ...(b.cloud.mode === 'streams' ? ['sessions', 'minutes'] : ['hours'])].every(k => b.cloud[k as 'rate'] !== ''));
-      if (commit({...data, name: b.name, units: b.units, fee: b.commercial.price, cloud: {...data.cloud, monthly: cloudKnown ? costs.cloudMonthly.toFixed(2) : ''}})) setNotice('Premissas do orçamento copiadas. Isso não confirma preço com o cliente nem define a base de compensação.');
+      const row=workspace.get('budget',budgetId);
+      if(!row)throw Error('Selecione um orçamento salvo primeiro.');
+      const next=operationFromBudget(row.payload,row.document_id,row.version,data);
+      if(!confirm('Copiar as condições da versão '+row.version+' do orçamento? Isso prepara um rascunho; não registra aceite do cliente.'))return;
+      if(commit(next))setNotice('Escopo e condições copiados. Revise e salve o acompanhamento. A base de compensação continua a negociar.');
     } catch (e) { setNotice((e as Error).message); }
   }
   async function importFile(f?: File) {
@@ -65,7 +67,7 @@ export default function LotOperation() {
     finally { if (file.current) file.current.value = ''; }
   }
   function exportData() {
-    try { download(blocked ? workspace.readRaw(operationKey) || '{}' : JSON.stringify(data, null, 2), 'acompanhamento-loteamento.json'); }
+    try { download(blocked ? JSON.stringify(workspace.get('operation',documentId)?.payload||{}) : JSON.stringify(data, null, 2), 'acompanhamento-loteamento.json'); }
     catch { setNotice('Não foi possível acessar os dados salvos.'); }
   }
   function saveReceipt(event: FormEvent<HTMLFormElement>) {
@@ -76,13 +78,14 @@ export default function LotOperation() {
     if (update('receipts', editing ? data.receipts.map(r => r.id === editing.id ? row : r) : [...data.receipts, row])) { setFormOpen(false); setEditing(null); }
   }
   function exportReport() {
-    const report = `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Acompanhamento do loteamento</title><style>body{font:15px/1.6 Arial;max-width:900px;margin:40px auto;padding:24px;color:#203e32}table{width:100%;border-collapse:collapse}td,th{padding:10px;text-align:left;border-bottom:1px solid #ddd}h1{font-size:30px}@media print{body{margin:0}} </style><h1>${escape(data.name)}</h1><p>EME Spatial · Acompanhamento interno · ${date(today())}</p><p>Registro de planejamento. Não é contrato assinado, nota fiscal, comprovante bancário ou ordem enviada ao Vagon.</p><p>${escape(data.units)} lotes · Preço proposto: ${data.fee ? money(Number(data.fee)) : 'A definir'} · Base de compensação: ${data.base ? money(Number(data.base)) : 'A definir'}</p><h2>Produção</h2><table><tr><th>Etapa</th><th>Autorização registrada</th><th>Execução</th><th>Investido</th></tr>${data.stages.map((s, i) => `<tr><td>${stageDefinitions[i].name}</td><td>${date(s.authorized)}</td><td>${escape(s.progress)}%</td><td>${money(Number(s.spent))}</td></tr>`).join('')}</table><h2>Vagon</h2><p>Lançamento previsto: ${date(data.cloud.planned)}. Ativação registrada: ${date(data.cloud.activated)}. Término de 24 meses: ${date(result.cloudEnd)}.</p><h2>Repasses</h2><p>Recebido: ${money(result.received)}. Saldo das vendas registradas: ${money(result.due)}.</p><table><tr><th>Lote</th><th>Entrada integral</th><th>Vencimento</th><th>Devido</th><th>Recebido</th></tr>${data.receipts.map(r => `<tr><td>${escape(r.lot)}</td><td>${date(r.entryDate)}</td><td>${date(r.dueDate)}</td><td>${money(Number(r.fee))}</td><td>${money(Number(r.received))}</td></tr>`).join('')}</table><h2>Simulação de cancelamento</h2><p>${result.compensation === null ? 'Pendente: ' + result.pending.map(escape).join(' ') : 'Saldo adicional estimado: ' + money(result.compensation) + '. Não inclui nem extingue o saldo das vendas já exigíveis.'}</p><p>Atraso no lançamento e falta de vendas não geram compensação por si sós. A medição exige documentação e concordância contratual. Todo valor de compensação efetivamente pago deve ser conciliado como crédito se houver vendas futuras.</p></html>`;
+    const report = `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Acompanhamento do loteamento</title><style>body{font:15px/1.6 Arial;max-width:900px;margin:40px auto;padding:24px;color:#203e32}table{width:100%;border-collapse:collapse}td,th{padding:10px;text-align:left;border-bottom:1px solid #ddd}h1{font-size:30px}@media print{body{margin:0}} </style><h1>${escape(data.name)}</h1><p>EME Spatial · Acompanhamento interno · ${date(today())}</p><p>Registro de planejamento. Não é contrato assinado, nota fiscal, comprovante bancário ou ordem enviada ao Vagon.</p><p>${escape(data.units)} lotes · Preço proposto: ${data.fee ? money(Number(data.fee)) : 'A definir'} · Base de compensação: ${data.base ? money(Number(data.base)) : 'A definir'}</p>${data.sourceBudget?'<h2>Orçamento de origem</h2><p>'+escape(data.sourceBudget.name)+' · versão '+data.sourceBudget.revision+' · '+escape(data.sourceBudget.package)+'</p><p>'+escape(data.sourceBudget.scope)+'</p><ul>'+data.sourceBudget.media.map(m=>'<li>'+escape(m.quantity)+' × '+escape(m.name)+'</li>').join('')+'</ul>':''}<h2>Produção</h2><table><tr><th>Etapa</th><th>Autorização registrada</th><th>Execução</th><th>Investido</th></tr>${data.stages.map((s, i) => `<tr><td>${stageDefinitions[i].name}</td><td>${date(s.authorized)}</td><td>${escape(s.progress)}%</td><td>${money(Number(s.spent))}</td></tr>`).join('')}</table><h2>Vagon</h2><p>Lançamento previsto: ${date(data.cloud.planned)}. Ativação registrada: ${date(data.cloud.activated)}. Término de 24 meses: ${date(result.cloudEnd)}.</p><h2>Repasses</h2><p>Recebido: ${money(result.received)}. Saldo das vendas registradas: ${money(result.due)}.</p><table><tr><th>Lote</th><th>Entrada integral</th><th>Vencimento</th><th>Devido</th><th>Recebido</th></tr>${data.receipts.map(r => `<tr><td>${escape(r.lot)}</td><td>${date(r.entryDate)}</td><td>${date(r.dueDate)}</td><td>${money(Number(r.fee))}</td><td>${money(Number(r.received))}</td></tr>`).join('')}</table><h2>Simulação de cancelamento</h2><p>${result.compensation === null ? 'Pendente: ' + result.pending.map(escape).join(' ') : 'Saldo adicional estimado: ' + money(result.compensation) + '. Não inclui nem extingue o saldo das vendas já exigíveis.'}</p><p>Atraso no lançamento e falta de vendas não geram compensação por si sós. A medição exige documentação e concordância contratual. Todo valor de compensação efetivamente pago deve ser conciliado como crédito se houver vendas futuras.</p></html>`;
     download(report, 'acompanhamento-loteamento.html', 'text/html');
   }
   const visible = data.receipts.filter(r => r.lot.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')));
   return <section className="cb lo" aria-label="Acompanhamento do loteamento">
     <div className="cb-intro"><div><span className="cb-kicker">DO CONTRATO À ENTREGA</span><h2>Produza por etapas.<br/>Acompanhe cada repasse.</h2><p>Organize o loteamento com pagamento após a entrada do comprador, operação no lançamento e investimento controlado.</p></div><FileText size={46} strokeWidth={1}/></div>
-    <div className="cb-top"><label>Nome do projeto<input value={data.name} maxLength={180} disabled={!ready || blocked || saving} onChange={e => update('name', e.target.value)}/></label><div className="cb-actions"><button onClick={()=>void save()} disabled={!ready||blocked||saving}>{saving?'Salvando…':'Salvar acompanhamento'}</button><button onClick={useBudget} disabled={!ready || blocked || saving}>Usar orçamento salvo</button><button onClick={exportData}><ArrowDownToLine size={16}/>Exportar dados</button><button onClick={() => file.current?.click()} disabled={!ready || blocked || saving}><ArrowUpFromLine size={16}/>Importar</button><button onClick={exportReport}><FileText size={16}/>Baixar acompanhamento</button></div></div>
+    <div className="cb-top"><label>Nome do projeto<input value={data.name} maxLength={180} disabled={!ready || blocked || saving} onChange={e => update('name', e.target.value)}/></label><div className="cb-actions"><button onClick={()=>void save()} disabled={!ready||blocked||saving}>{saving?'Salvando…':'Salvar acompanhamento'}</button><button onClick={exportData}><ArrowDownToLine size={16}/>Exportar dados</button><button onClick={() => file.current?.click()} disabled={!ready || blocked || saving}><ArrowUpFromLine size={16}/>Importar</button><button onClick={exportReport}><FileText size={16}/>Baixar acompanhamento</button></div></div>
+    <section className="cb-panel"><h3>Proposta que orienta este acompanhamento</h3><div className="cb-fields"><label>Orçamento de origem<select value={budgetId} onChange={e=>setBudgetId(e.target.value)} disabled={saving}><option value="">Selecione um orçamento salvo</option>{budgets.map(row=><option key={row.document_id} value={row.document_id}>{(row.payload as {name:string}).name} · versão {row.version}</option>)}</select></label><button onClick={useBudget} disabled={!budgetId||!ready||blocked||saving}>Usar orçamento salvo</button></div>{data.sourceBudget&&<><p><b>{data.sourceBudget.name}</b> · versão {data.sourceBudget.revision} copiada · {data.sourceBudget.package}</p><p className="cb-note">{data.sourceBudget.scope}</p><div className="cb-scope-list">{data.sourceBudget.media.filter(m=>Number(m.quantity)>0).map(m=><span key={m.name}>{m.quantity} × {m.name}</span>)}</div><p className="cb-note">Entrega: {data.sourceBudget.deliveryWeeks||'a definir'} semanas · {data.sourceBudget.revisions||'a definir'} revisões. Pagamento integral após a entrada do comprador; Vagon somente no lançamento, mediante autorização. A produção segue as etapas registradas abaixo.</p>{workspace.get('budget',data.sourceBudget.id)?.version!==data.sourceBudget.revision&&<p className="cb-notice">O orçamento de origem mudou ou não está disponível. As condições copiadas foram preservadas. Mudanças comerciais exigem revisão acordada.</p>}{(data.fee!==data.sourceBudget.fee||data.units!==data.sourceBudget.units)&&<p className="cb-notice">Quantidade ou preço deste acompanhamento diferem da proposta copiada. Confira a alteração antes de negociar.</p>}</>}</section>
     <input ref={file} type="file" accept="application/json,.json" hidden onChange={e => void importFile(e.target.files?.[0])}/>
     <p className="cb-note">{dirty?'Há alterações não salvas. ':' '}Use Salvar acompanhamento para atualizar sua conta. Identifique os lotes sem incluir dados pessoais dos compradores.</p>
     {notice && <p role="status" className="cb-notice">{notice}</p>}

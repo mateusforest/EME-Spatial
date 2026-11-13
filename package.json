@@ -9,7 +9,7 @@
     "check": "tsc --noEmit && node --check app.js",
     "preview": "vite preview --host 127.0.0.1 --port 4196",
     "test:walk": "node --experimental-strip-types tests/click-walk63.test.mjs",
-    "test:portal": "node --experimental-strip-types --test tests/portal-storage.test.mjs tests/portal-database.test.mjs tests/commercial-budget.test.mjs tests/lot-operation.test.mjs tests/production74.test.mjs",
+    "test:portal": "node --experimental-strip-types --test tests/portal-storage.test.mjs tests/portal-database.test.mjs tests/commercial-budget.test.mjs tests/commercial-links.test.mjs tests/lot-operation.test.mjs tests/production74.test.mjs",
     "deliveries:manage": "node --use-system-ca --experimental-strip-types tools/manage-deliveries.mjs",
     "test:deliveries": "node --experimental-strip-types --test tests/deliveries.test.mjs"
   },

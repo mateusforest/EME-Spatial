@@ -25,8 +25,16 @@ Application
 - Allowed emails live in spatial_portal_members, editable only by an administrator.
   Initial allowed address: hub@groupmf.com.br. This does not create an Auth account.
 - Documents belong to auth.uid(); RLS also requires enabled membership.
-- Studio projects have individual IDs. The current commercial budget and lot
-  operation remain one working document per account, matching the existing UI.
+- Studio projects, budgets and lot operations have individual IDs. Existing main
+  documents remain available in the library; new drafts and copies get new IDs.
+- Operations copy a saved budget revision's commercial scope, without internal
+  costs. Later budget edits do not change that snapshot. An operation with
+  execution or receipts cannot be replaced by another proposal. Copying a plan
+  resets receipts, approvals, spending, progress, activation and cancellation.
+- New budgets model initial costs by four stages and 24 navigation-cloud months
+  from the estimated launch. The analysis horizon is not the service term; future
+  production/cloud costs outside it are disclosed. Legacy budgets retain their
+  original timing until the owner explicitly enables stage planning.
 - Management, briefings and production request lists are versioned documents.
 - RPC saves use expected versions. Stale clients cannot overwrite newer versions.
 - Private media: immutable originals, owner-prefixed paths, maximum 50 MB/file.

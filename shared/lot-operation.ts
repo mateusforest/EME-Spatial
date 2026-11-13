@@ -9,6 +9,7 @@ export type Stage = {id: string; authorized: string; progress: string; cap: stri
 export type LotReceipt = {id: string; lot: string; entryDate: string; dueDate: string; fee: string; received: string; paidDate: string};
 export type Operation = {
   version: 1; name: string; units: string; fee: string; base: string;
+  sourceBudget?: {id:string;revision:number;name:string;scope:string;package:string;revisions:string;deliveryWeeks:string;units:string;fee:string;media:{name:string;quantity:string}[]};
   stages: Stage[]; receipts: LotReceipt[];
   cloud: {planned: string; activated: string; pilot: boolean; regular: boolean; authorized: boolean; minutes: string; monthly: string};
   cancellation: {thirdParty: string; thirdPartyEvidence: string; advances: string};
@@ -55,6 +56,8 @@ export function validateOperation(value: unknown): Operation {
   if (!cl || !validDate(cl.planned) || !validDate(cl.activated) || !['pilot', 'regular', 'authorized'].every(k => typeof cl[k as 'pilot'] === 'boolean') || !amount(cl.minutes) || !amount(cl.monthly)) throw Error('Confira o planejamento do Vagon.');
   if (cl.activated && (!cl.pilot || !cl.regular || !cl.authorized)) throw Error('Registre o piloto, a regularidade e a ordem de ativação antes de informar a ativação comercial.');
   const ca = x.cancellation;
+  const source=x.sourceBudget;
+  if(source&&(!/^[\w-]{1,100}$/.test(source.id)||!Number.isSafeInteger(source.revision)||source.revision<1||!text(source.name,180)||!text(source.scope,6000)||!text(source.package,80)||!amount(source.revisions,100)||!amount(source.deliveryWeeks,520)||!amount(source.units,10000)||!amount(source.fee)||!Array.isArray(source.media)||source.media.length!==4||source.media.some(m=>!text(m.name,100)||!amount(m.quantity,10000))))throw Error('A referência do orçamento está inválida.');
   if (!ca || !amount(ca.thirdParty) || !amount(ca.advances) || !text(ca.thirdPartyEvidence)) throw Error('Confira os dados da compensação.');
   if (!Array.isArray(x.receipts) || x.receipts.length > Number(x.units)) throw Error('A lista de repasses ultrapassa os lotes do projeto.');
   const lotIds = new Set<string>(), ids = new Set<string>();
