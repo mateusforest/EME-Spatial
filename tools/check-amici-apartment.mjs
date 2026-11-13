@@ -1,0 +1,52 @@
+import {createRequire} from 'node:module';
+import {dirname,join} from 'node:path';
+import {mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require=createRequire(join(dirname(process.execPath),'node_modules/playwright/package.json'));
+const {chromium}=require('playwright');
+const sharp=require('sharp');
+const base=process.argv[2]||'http://127.0.0.1:4214',out=process.argv[3]||'C:/Users/EME/Downloads/eme-spatial/output/amici-blender/apartment-check';
+await mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist']});
+const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],failed=[],report={rooms:[]};
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('requestfailed',r=>failed.push(r.url()));
+const state=()=>page.locator('.aa-canvas').evaluate(el=>JSON.parse(el.dataset.visit));
+try{
+ await page.goto(base+'/apresentar/amici');await page.getByRole('button',{name:'Apartamentos',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Visitar apartamento · Final 03',exact:true}).count(),1);
+ await page.getByRole('button',{name:'Visitar apartamento · Final 03',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('.aa-canvas')?.dataset.visit,null,{timeout:30000});await page.waitForTimeout(6500);
+ const pixels=await sharp(await page.locator('.aa-canvas canvas').screenshot()).stats();assert(pixels.channels.slice(0,3).every(c=>c.stdev>15),'Interior must render visible geometry, not a blank canvas');
+ await page.screenshot({path:join(out,'entrance.png')});
+ const first=await state();await page.locator('.aa-canvas canvas').focus();await page.keyboard.down('w');await page.waitForTimeout(1000);await page.keyboard.up('w');
+ const walked=await state();assert(Math.hypot(first.x-walked.x,first.z-walked.z)>.3);report.keyboard=true;
+ for(const [id,name] of [['living','Sala'],['kitchen','Cozinha'],['suite','Suíte'],['ensuite','Banheiro da suíte'],['bedroom','Dormitório'],['bath','Banheiro social']]){
+  await page.getByRole('navigation',{name:'Ambientes do apartamento'}).getByRole('button',{name,exact:true}).click();
+  await page.waitForFunction(id=>{const d=JSON.parse(document.querySelector('.aa-canvas').dataset.visit);return d.room===id&&!d.moving;},id,{timeout:30000});await page.waitForTimeout(1100);
+  const s=await state();report.rooms.push({id,...s});await page.screenshot({path:join(out,id+'.png')});
+ }
+ await page.getByRole('button',{name:'Planta oficial',exact:true}).click();await page.getByRole('dialog',{name:'Planta oficial do Final 03'}).waitFor();
+ await page.waitForFunction(()=>{const i=document.querySelector('.aa-plan img');return i?.complete&&i.naturalWidth>0;});await page.keyboard.press('Tab');assert(await page.getByRole('button',{name:'Fechar planta do apartamento'}).evaluate(el=>el===document.activeElement));await page.keyboard.press('Escape');report.plan=true;
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Voltar à entrada do apartamento',exact:true}).click();await page.waitForTimeout(300);
+ const before=await state(),pad=page.getByRole('button',{name:'Avançar no apartamento',exact:true}),r=await pad.boundingBox();await page.mouse.move(r.x+r.width/2,r.y+r.height/2);await page.mouse.down();await page.waitForTimeout(1200);await page.mouse.up();await page.waitForTimeout(150);
+ const after=await state();assert(Math.hypot(before.x-after.x,before.z-after.z)>.3);report.touch=true;
+ assert(!(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)));await page.screenshot({path:join(out,'mobile.png')});
+ await page.getByRole('button',{name:'Voltar ao prédio',exact:true}).click();await page.getByRole('button',{name:'Apartamentos',exact:true}).waitFor();assert.equal(await page.locator('.aa-canvas').count(),0);report.exit=true;
+ const direct=await browser.newPage({viewport:{width:390,height:844}}),requests=[];
+ direct.on('request',r=>requests.push(r.url()));direct.on('pageerror',e=>errors.push(e.message));
+ await direct.goto(base+'/apresentar/amici?apartamento=03');
+ await direct.waitForFunction(()=>document.querySelector('.aa-canvas')?.dataset.visit,null,{timeout:30000});await direct.waitForTimeout(1500);
+ assert.equal(requests.filter(u=>u.includes('.glb')).length,0,'The direct apartment link must defer the exterior model');
+ assert(await direct.getByRole('button',{name:'Planta oficial',exact:true}).isVisible());
+ await direct.screenshot({path:join(out,'direct-mobile.png')});
+ await direct.getByRole('button',{name:'Voltar ao prédio',exact:true}).click();
+ await direct.waitForFunction(()=>!document.querySelector('.am-model-loading'),null,{timeout:90000});
+ assert(await direct.getByRole('button',{name:'Vista aérea',exact:true}).isEnabled());
+ assert(requests.some(u=>u.includes('.glb')));report.directLink=true;report.deferredExterior=true;
+ await direct.getByRole('button',{name:'Passear',exact:true}).click();
+ await direct.getByRole('button',{name:'Entrar no hall',exact:true}).click();
+ await direct.getByRole('button',{name:'Visitar apartamento',exact:true}).click({timeout:30000});
+ await direct.waitForFunction(()=>document.querySelector('.aa-canvas')?.dataset.visit,null,{timeout:30000});report.hallEntry=true;
+ await direct.close();
+ report.errors=errors;report.failed=failed;await writeFile(join(out,'checks.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
+}finally{await browser.close();}
