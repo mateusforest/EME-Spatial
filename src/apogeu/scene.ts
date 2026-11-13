@@ -6,23 +6,20 @@ import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
 import {walkLocations,walkStep} from './navigation';
 import type {Obstacle,WalkZone} from './navigation';
 import {studyLevels} from './data';
-import {aerialCrop,calibration} from './aerial';
 
-type Events={onAerial:(value:boolean)=>void;onSelect:(id:number)=>void;onError:()=>void;onReady:()=>void;onWalk:(zone:WalkZone|null)=>void;onProgress:(value:number)=>void};
+type Events={onSelect:(id:number)=>void;onError:()=>void;onReady:()=>void;onWalk:(zone:WalkZone|null)=>void;onProgress:(value:number)=>void};
 export function createApogeuScene(host:HTMLDivElement,events:Events){
- const scene=new T.Scene();scene.background=new T.Color('#334840');
+ const scene=new T.Scene();scene.background=new T.Color('#dbe1db');scene.fog=new T.Fog('#dbe1db',100,250);
  const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
  renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width:700px)').matches?1.25:1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;renderer.shadowMap.autoUpdate=false;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;
  const canvas=renderer.domElement;canvas.setAttribute('aria-label','Modelo do Apogeu exportado do Blender. Arraste para olhar. Use os botões para visitar os ambientes.');canvas.tabIndex=0;host.append(canvas);
  const camera=new T.PerspectiveCamera(43,1,.08,500),controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=5;controls.maxDistance=95;controls.minPolarAngle=.24;controls.maxPolarAngle=Math.PI*.49;controls.rotateSpeed=.55;
  const sun=new T.DirectionalLight('#fff3df',3.2);sun.position.set(-25,45,38);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-38,right:38,top:48,bottom:-48,near:1,far:130});sun.shadow.normalBias=.025;sun.shadow.bias=-.0003;scene.add(sun,sun.target,new T.HemisphereLight('#d5e5ee','#68685b',.8));
  let environment:T.WebGLRenderTarget|undefined;
- let originalOnly=false;
- let aerialTexture:T.Texture|undefined,originalTexture:T.Texture|undefined;
- // The photographic background persists through every model view.
- // A transparent receiver grounds the building without adding a generic stage.
- const photoShadow=new T.Mesh(new T.PlaneGeometry(42,66),new T.ShadowMaterial({opacity:.24}));
- photoShadow.rotation.x=-Math.PI/2;photoShadow.position.set(0,-.04,-9);photoShadow.receiveShadow=true;scene.add(photoShadow);
+ const ground=new T.Mesh(new T.PlaneGeometry(500,500),new T.MeshStandardMaterial({color:'#dbe1db',roughness:1}));
+ ground.rotation.x=-Math.PI/2;ground.position.y=-.1;scene.add(ground);
+ const groundShadow=new T.Mesh(new T.PlaneGeometry(42,66),new T.ShadowMaterial({opacity:.24}));
+ groundShadow.rotation.x=-Math.PI/2;groundShadow.position.set(0,-.04,-9);groundShadow.receiveShadow=true;scene.add(groundShadow);
  const contactCanvas=document.createElement('canvas');contactCanvas.width=128;contactCanvas.height=128;
  const ctx=contactCanvas.getContext('2d')!;const gradient=ctx.createRadialGradient(64,64,22,64,64,63);gradient.addColorStop(0,'rgba(24,30,24,.3)');gradient.addColorStop(1,'rgba(24,30,24,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
  const contactTexture=new T.CanvasTexture(contactCanvas),contact=new T.Mesh(new T.PlaneGeometry(21,29),new T.MeshBasicMaterial({map:contactTexture,transparent:true,depthWrite:false}));
@@ -42,30 +39,18 @@ export function createApogeuScene(host:HTMLDivElement,events:Events){
  }
  function exitWalk(){walk=null;keys.clear();controls.enabled=true;events.onWalk(null);}
  function move(to:T.Vector3,target:T.Vector3){exitWalk();if(matchMedia('(prefers-reduced-motion: reduce)').matches){camera.position.copy(to);controls.target.copy(target);}else transition={from:camera.position.clone(),to,targetFrom:controls.target.clone(),targetTo:target,start:performance.now()};invalidate();}
- function showComplete(fullSite=false){cutaway=false;originalOnly=false;meshes.forEach(m=>m.visible=fullSite||!['site','leisure','landscape'].includes(String(m.userData.section)));marker.visible=false;photoShadow.visible=true;contact.visible=true;if(aerialTexture)scene.background=aerialTexture;renderer.shadowMap.needsUpdate=true;events.onAerial(true);}
+ function showComplete(fullSite=false){cutaway=false;meshes.forEach(m=>m.visible=fullSite||!['site','leisure','landscape'].includes(String(m.userData.section)));marker.visible=false;groundShadow.visible=true;contact.visible=true;renderer.shadowMap.needsUpdate=true;}
  function frameModel(){const mobile=host.clientWidth<700;camera.fov=mobile?49:40;camera.updateProjectionMatrix();return new T.Vector3(mobile?-30:-29,mobile?35:37,mobile?67:63);}
  function upright(){camera.up.set(0,1,0);camera.rotation.order='XYZ';camera.clearViewOffset();camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();}
- function overview(){leaveAerial();showComplete();move(frameModel(),new T.Vector3(0,11,0));}
- function select(id:number){leaveAerial();const level=studyLevels.find(l=>l.id===id);if(!level)return;showComplete();marker.box.set(new T.Vector3(-5.95,level.height,-9.95),new T.Vector3(5.95,level.height+3.2,9.95));marker.visible=true;move(new T.Vector3(21,level.height+9,32),new T.Vector3(0,level.height+1.4,0));}
- function enter(zone:WalkZone){if(!model)return;leaveAerial();showComplete(true);transition=null;keys.clear();walk=zone;controls.enabled=false;const loc=walkLocations[zone];camera.position.fromArray(loc.position);const delta=new T.Vector3().fromArray(loc.target).sub(camera.position);yaw=Math.atan2(-delta.x,-delta.z);pitch=0;camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);events.onWalk(zone);canvas.focus({preventScroll:true});invalidate();}
- function plan(){leaveAerial();showComplete();cutaway=true;meshes.forEach(m=>{const s=String(m.userData.section||'');m.visible=(s==='interior'||s==='floor_01');});renderer.shadowMap.needsUpdate=true;move(new T.Vector3(14,25,17),new T.Vector3(0,3.85,0));}
- function fitAerial(){
-  if(!aerialTexture||!originalTexture)return;
-  const crop=aerialCrop(host.clientWidth,host.clientHeight,host.clientWidth<700?1.05:1.25);
-  // Only the photograph is cropped: the camera stays upright during a full orbit.
-  for(const texture of [aerialTexture,originalTexture]){texture.repeat.set(crop.width/calibration.width,crop.height/calibration.height);texture.offset.set(crop.x/calibration.width,1-(crop.y+crop.height)/calibration.height);}
+ function overview(){prepareView();showComplete();move(frameModel(),new T.Vector3(0,11,0));}
+ function select(id:number){prepareView();const level=studyLevels.find(l=>l.id===id);if(!level)return;showComplete();marker.box.set(new T.Vector3(-5.95,level.height,-9.95),new T.Vector3(5.95,level.height+3.2,9.95));marker.visible=true;move(new T.Vector3(21,level.height+9,32),new T.Vector3(0,level.height+1.4,0));}
+ function enter(zone:WalkZone){if(!model)return;prepareView();showComplete(true);transition=null;keys.clear();walk=zone;controls.enabled=false;const loc=walkLocations[zone];camera.position.fromArray(loc.position);const delta=new T.Vector3().fromArray(loc.target).sub(camera.position);yaw=Math.atan2(-delta.x,-delta.z);pitch=0;camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);events.onWalk(zone);canvas.focus({preventScroll:true});invalidate();}
+ function plan(){prepareView();showComplete();cutaway=true;meshes.forEach(m=>{const s=String(m.userData.section||'');m.visible=(s==='interior'||s==='floor_01');});renderer.shadowMap.needsUpdate=true;move(new T.Vector3(14,25,17),new T.Vector3(0,3.85,0));}
+ function resetView(){
+  if(!model)return;exitWalk();showComplete();transition=null;upright();
+  camera.position.copy(frameModel());controls.target.set(0,11,0);controls.update();invalidate();
  }
- function applyPhotoVisibility(){
-  meshes.forEach(m=>{const section=String(m.userData.section||'');m.visible=!originalOnly&&!['site','leisure','landscape'].includes(section);});
-  marker.visible=false;photoShadow.visible=!originalOnly;contact.visible=!originalOnly;controls.enabled=!originalOnly;
-  scene.background=originalOnly?originalTexture!:aerialTexture!;renderer.shadowMap.needsUpdate=true;invalidate();
- }
- function aerial(){
-  if(!model||!aerialTexture)return;exitWalk();showComplete();transition=null;originalOnly=false;upright();
-  camera.position.copy(frameModel());controls.target.set(0,11,0);controls.update();
-  applyPhotoVisibility();fitAerial();events.onAerial(true);invalidate();
- }
- function leaveAerial(){originalOnly=false;controls.enabled=true;upright();scene.fog=null;if(aerialTexture)scene.background=aerialTexture;photoShadow.visible=true;contact.visible=true;events.onAerial(true);}
+ function prepareView(){controls.enabled=true;upright();groundShadow.visible=true;contact.visible=true;}
  function point(e:PointerEvent){const r=canvas.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);return ray.intersectObjects(meshes.filter(m=>m.visible),false)[0];}
  function down(e:PointerEvent){if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY};if(walk)canvas.setPointerCapture(e.pointerId);}
  function motion(e:PointerEvent){if(!walk||!drag||drag.id!==e.pointerId)return;yaw-=(e.clientX-drag.x)*.004;pitch=T.MathUtils.clamp(pitch-(e.clientY-drag.y)*.0035,-1.25,1.25);drag.x=e.clientX;drag.y=e.clientY;camera.rotation.set(pitch,yaw,0);invalidate();}
@@ -74,17 +59,17 @@ export function createApogeuScene(host:HTMLDivElement,events:Events){
  function keyup(e:KeyboardEvent){keys.delete(e.key.length===1?e.key.toLowerCase():e.key);}
  const clearKeys=()=>{keys.clear();drag=null;};
  const onVisibility=()=>{clearKeys();lastTime=0;invalidate();};
- const resize=()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();fitAerial();invalidate();};
+ const resize=()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();};
  const observer=new ResizeObserver(resize);observer.observe(host);controls.addEventListener('change',invalidate);controls.addEventListener('start',()=>{transition=null;});
  const lost=(e:Event)=>{e.preventDefault();paused=true;clearKeys();events.onError();};
  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',motion);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',clearKeys);canvas.addEventListener('keydown',keydown);canvas.addEventListener('webglcontextlost',lost);window.addEventListener('keyup',keyup);window.addEventListener('blur',clearKeys);document.addEventListener('visibilitychange',onVisibility);
  const abort=new AbortController();
- Promise.all([loader.loadAsync('/assets/apogeu/model-realism-v2/apogeu.glb',e=>{if(!disposed&&e.total)events.onProgress(Math.round(e.loaded/e.total*100));}),fetch('/assets/apogeu/model-realism-v2/manifest.json',{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('Model metadata');return r.json();}),new T.TextureLoader().loadAsync('/assets/apogeu/aerial/entorno.webp'),new T.TextureLoader().loadAsync('/assets/apogeu/aerial/original.jpg')]).then(([gltf,manifest,photoTexture,originalPhoto])=>{
-  if(disposed){disposeTree(gltf.scene);photoTexture.dispose();originalPhoto.dispose();return;}aerialTexture=photoTexture;originalTexture=originalPhoto;for(const t of [aerialTexture,originalTexture]){t.colorSpace=T.SRGBColorSpace;t.minFilter=T.LinearFilter;t.generateMipmaps=false;}model=gltf.scene;obstacles=manifest.zoneObstacles;scene.add(model);model.traverse(o=>{if(o instanceof T.Mesh){meshes.push(o);o.castShadow=!o.name.includes('Vidro');o.receiveShadow=true;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m instanceof T.MeshStandardMaterial){if(m.name.includes('Concreto')){m.color.set('#a4aba4');m.normalScale.set(.12,.12);}if(m.name.includes('Cortina')){m.color.set('#bcb8aa');m.roughness=.95;}if(m.name.includes('Vidro')){m.color.set('#47616a');m.opacity=.38;m.envMapIntensity=.8;}if(m.name.includes('Folha')||m.name.includes('Cortina'))m.side=T.DoubleSide;for(const tex of [m.map,m.normalMap,m.roughnessMap])if(tex)tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(m.transparent)m.depthWrite=false;}}}});renderer.shadowMap.needsUpdate=true;events.onReady();aerial();invalidate();
+ Promise.all([loader.loadAsync('/assets/apogeu/model-realism-v2/apogeu.glb',e=>{if(!disposed&&e.total)events.onProgress(Math.round(e.loaded/e.total*100));}),fetch('/assets/apogeu/model-realism-v2/manifest.json',{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('Model metadata');return r.json();})]).then(([gltf,manifest])=>{
+  if(disposed){disposeTree(gltf.scene);return;}model=gltf.scene;obstacles=manifest.zoneObstacles;scene.add(model);model.traverse(o=>{if(o instanceof T.Mesh){meshes.push(o);o.castShadow=!o.name.includes('Vidro');o.receiveShadow=true;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m instanceof T.MeshStandardMaterial){if(m.name.includes('Concreto')){m.color.set('#a4aba4');m.normalScale.set(.12,.12);}if(m.name.includes('Cortina')){m.color.set('#bcb8aa');m.roughness=.95;}if(m.name.includes('Vidro')){m.color.set('#47616a');m.opacity=.38;m.envMapIntensity=.8;}if(m.name.includes('Folha')||m.name.includes('Cortina'))m.side=T.DoubleSide;for(const tex of [m.map,m.normalMap,m.roughnessMap])if(tex)tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(m.transparent)m.depthWrite=false;}}}});renderer.shadowMap.needsUpdate=true;events.onReady();resetView();invalidate();
  }).catch(e=>{if(!disposed&&e.name!=='AbortError'){console.error('Apogeu asset load',e);events.onError();}});
  resize();camera.position.set(28,23,49);controls.target.set(0,11,0);overview();
- return {aerial,compareOriginal(value:boolean){originalOnly=value;applyPhotoVisibility();},select,overview,enter,plan,clear(){marker.visible=false;invalidate();},view(kind:'front'|'aerial'|'garden'|'site'){
-  leaveAerial();showComplete(kind==='garden'||kind==='site');
+ return {select,overview,enter,plan,clear(){marker.visible=false;invalidate();},view(kind:'front'|'aerial'|'garden'|'site'){
+  prepareView();showComplete(kind==='garden'||kind==='site');
   if(kind==='front')move(new T.Vector3(0,15,47),new T.Vector3(0,11,0));
   else if(kind==='garden')move(new T.Vector3(25,19,-48),new T.Vector3(0,2,-28));
   else if(kind==='site')move(new T.Vector3(35,75,24),new T.Vector3(5,0,-13));else overview();
@@ -92,7 +77,7 @@ export function createApogeuScene(host:HTMLDivElement,events:Events){
   sun.position.set(-32,54,35);sun.intensity=2.1+value/100*2;sun.color.set('#fff3df');
   renderer.toneMappingExposure=.78+value/100*.34;scene.environmentIntensity=.5+value/100*.35;
   renderer.shadowMap.needsUpdate=true;invalidate();
- },hold(key:string,value:boolean){if(value)keys.add(key);else keys.delete(key);invalidate();},zoom(factor:number){if(walk||originalOnly)return;transition=null;camera.position.sub(controls.target).multiplyScalar(factor).clampLength(8,95).add(controls.target);invalidate();},pause(value:boolean){paused=value;clearKeys();lastTime=0;if(!value)invalidate();},capture(){renderer.render(scene,camera);return canvas.toDataURL('image/png');},dispose(){disposed=true;abort.abort();cancelAnimationFrame(frame);observer.disconnect();controls.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',motion);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',clearKeys);canvas.removeEventListener('keydown',keydown);canvas.removeEventListener('webglcontextlost',lost);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);document.removeEventListener('visibilitychange',onVisibility);disposeTree(scene);sun.shadow.dispose();environment?.dispose();aerialTexture?.dispose();originalTexture?.dispose();draco.dispose();renderer.dispose();canvas.remove();}};
+ },hold(key:string,value:boolean){if(value)keys.add(key);else keys.delete(key);invalidate();},zoom(factor:number){if(walk)return;transition=null;camera.position.sub(controls.target).multiplyScalar(factor).clampLength(8,95).add(controls.target);invalidate();},pause(value:boolean){paused=value;clearKeys();lastTime=0;if(!value)invalidate();},capture(){renderer.render(scene,camera);return canvas.toDataURL('image/png');},dispose(){disposed=true;abort.abort();cancelAnimationFrame(frame);observer.disconnect();controls.dispose();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',motion);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',clearKeys);canvas.removeEventListener('keydown',keydown);canvas.removeEventListener('webglcontextlost',lost);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);document.removeEventListener('visibilitychange',onVisibility);disposeTree(scene);sun.shadow.dispose();environment?.dispose();draco.dispose();renderer.dispose();canvas.remove();}};
 }
 function disposeTree(root:T.Object3D){const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>(),ts=new Set<T.Texture>();root.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){gs.add(o.geometry);(Array.isArray(o.material)?o.material:[o.material]).forEach((m:T.Material)=>{ms.add(m);Object.values(m).forEach(v=>{if(v instanceof T.Texture)ts.add(v);});});}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());ts.forEach(t=>t.dispose());}
 export type ApogeuScene=ReturnType<typeof createApogeuScene>;
