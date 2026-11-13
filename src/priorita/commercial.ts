@@ -6,7 +6,7 @@ const currency=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',ma
 export const money=(value:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
 export function commercialTerms(id:string,area:number):CommercialTerms{
   const terms:CommercialTerms={...data.defaults,...overrides[id]};
-  if(terms.price===null&&terms.illustrative&&terms.pricePerSquareMeter)terms.price=Math.round(area*terms.pricePerSquareMeter/1000)*1000;
+  if(terms.price===null&&terms.illustrative&&terms.pricePerSquareMeter)terms.price=Math.round(area*terms.pricePerSquareMeter*100)/100;
   return terms;
 }
 export function paymentExample(terms:CommercialTerms){

@@ -1,11 +1,11 @@
 {
   "defaults": {
     "price": null,
-    "pricePerSquareMeter": 650,
-    "downPaymentPercent": 20,
-    "installments": 60,
+    "pricePerSquareMeter": 538.47,
+    "downPaymentPercent": 10,
+    "installments": 140,
     "illustrative": true,
-    "paymentConditions": "Exemplo sem juros ou correção monetária. Valores ilustrativos, sem validade de oferta."
+    "paymentConditions": "Simulação baseada na referência Santorini Vacaria: R$ 538,47/m², entrada de 10% em até 6x e saldo em 140x. Valores base antes de INCC/IPCA e encargos. Não é oferta do Priorità."
   },
   "lots": {}
 }
