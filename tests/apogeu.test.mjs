@@ -4,8 +4,7 @@ import {readFileSync} from 'node:fs';
 import {canStand,walkStep,walkLocations} from '../src/apogeu/navigation.ts';
 import {studyLevels,parseLevel} from '../src/apogeu/data.ts';
 import {aerialCrop,calibration} from '../src/apogeu/aerial.ts';
-import {PerspectiveCamera,Matrix4,Vector3} from 'three';
-const base=new URL('../public/assets/apogeu/model-photo-v1/',import.meta.url);
+const base=new URL('../public/assets/apogeu/model-realism-v2/',import.meta.url);
 const manifest=JSON.parse(readFileSync(new URL('manifest.json',base),'utf8'));
 const bytes=readFileSync(new URL('apogeu.glb',base));
 const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString('utf8'));
@@ -16,7 +15,7 @@ test('the Blender export contains all six independently selectable floors and th
  for(const name of ['interior','base','roof','leisure','landscape','site'])assert.ok(sections.has(name));
  assert.equal(manifest.source,'apogeu_estudo.blend');
  assert.equal(manifest.sourceSha256.length,64);
- assert.ok(bytes.length<5*1024*1024);
+ assert.ok(bytes.length<8*1024*1024);
  assert.ok(gltf.meshes.length<=150);
 });
 test('view selection uses the exact elevations exported from Blender',()=>{
@@ -50,7 +49,7 @@ test('the site has the documented lateral extension instead of a generic rectang
  assert.match(manifest.siteAccuracy,/sem cotas/);
 });
 
-test('photo and 3D share a valid crop on desktop, portrait and zoomed views',()=>{
+test('the photographic background covers desktop, portrait and zoomed viewports',()=>{
  for(const [w,h] of [[1366,792],[390,720],[1920,1080],[844,336]])for(const zoom of [1,1.4,2.2]){
   const c=aerialCrop(w,h,zoom);
   assert.ok(c.x>=0&&c.y>=0);
@@ -62,16 +61,17 @@ test('photo and 3D share a valid crop on desktop, portrait and zoomed views',()=
  }
 });
 
-test('the photographic camera is above the ground and registers the parcel controls',()=>{
- const camera=new PerspectiveCamera(calibration.fov,1920/1080,.08,500),r=calibration.rotation;
- camera.position.fromArray(calibration.position);assert.ok(camera.position.y>10);
- camera.quaternion.setFromRotationMatrix(new Matrix4().set(r[0][0],r[0][1],r[0][2],0,r[1][0],r[1][1],r[1][2],0,r[2][0],r[2][1],r[2][2],0,0,0,0,1));
- camera.updateMatrixWorld();
- calibration.controlWorld.forEach((point,i)=>{
-  const p=new Vector3().fromArray(point).project(camera),target=calibration.controlPixels[i];
-  assert.ok(Math.hypot((p.x+1)*960-target[0],(1-p.y)*540-target[1])<15);
- });
+test('the browser model retains texture maps, metric UVs and baked recess shading',()=>{
+ for(const name of ['Madeira natural','Pedra natural','Linho claro']){
+  const material=gltf.materials.find(m=>m.name.includes(name));
+  assert.ok(material?.pbrMetallicRoughness.baseColorTexture,name+' color');
+  assert.ok(material?.normalTexture,name+' normals');
+ }
+ const textured=gltf.meshes.flatMap(m=>m.primitives).filter(p=>gltf.materials[p.material].pbrMetallicRoughness.baseColorTexture);
+ assert.ok(textured.length>10);
+ textured.forEach(p=>assert.ok(p.attributes.TEXCOORD_0!==undefined));
+ assert.ok(textured.some(p=>p.attributes.COLOR_0!==undefined),'ambient occlusion survives Draco compression');
  const sections=new Set(gltf.nodes.map(n=>n.extras?.section));
- assert.ok(!sections.has('context'),'no neighborhood geometry is shipped in the photographic model');
+ assert.ok(!sections.has('context'),'no neighborhood geometry is shipped');
  assert.match(calibration.source,/aporteconstrutora/);
 });

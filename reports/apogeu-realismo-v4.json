@@ -1,0 +1,31 @@
+{
+  "revision": "v4",
+  "date": "2026-11-13",
+  "model": "/assets/apogeu/model-realism-v2/apogeu.glb",
+  "modelBytes": 6768044,
+  "blender": "4.5.16 LTS",
+  "editableBlend": "output/apogeu-blender/apogeu_refinado-v4.blend",
+  "changes": [
+    "Persistent photographic backdrop during orbit, selection, and visits",
+    "Upright camera without the previous registration roll",
+    "Recessed side windows and partially gathered front curtains",
+    "Metric UV coordinates and oak, stone, linen texture maps",
+    "Baked short-range ambient occlusion and contact shadows",
+    "Daylight exposure/fill control available in the photo view"
+  ],
+  "validation": {
+    "automated": "8/8 Apogeu tests passed",
+    "browser": [
+      "Desktop and 390x844 mobile inspected",
+      "Pointer drag changes building orientation while background stays fixed",
+      "Light slider verified with keyboard: 55 to 56",
+      "Apartment visit opens and exits",
+      "No browser console errors"
+    ]
+  },
+  "limits": [
+    "Architecture reconstructed from public reference images; not the official BIM",
+    "A single fixed photograph cannot represent the correct surrounding perspective at every orbit angle",
+    "No neighborhood mesh is shipped"
+  ]
+}

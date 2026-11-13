@@ -1,6 +1,6 @@
 import calibration from './aerial-camera.json' with {type:'json'};
 
-/** One crop drives both the photographic background and the 3D projection. */
+/** Cover-crop the fixed photographic backdrop independently of the upright orbit camera. */
 export function aerialCrop(width:number,height:number,zoom=1){
  const scale=Math.max(width/calibration.width,height/calibration.height)*zoom;
  const w=width/scale,h=height/scale;

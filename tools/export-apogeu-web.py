@@ -5,10 +5,11 @@ Run Blender --background --python this-file.py.
 import bpy, math, json, random, hashlib
 from pathlib import Path
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT.parents[1]/'output/apogeu-blender/apogeu_estudo.blend'
-OUT=ROOT/'public/assets/apogeu/model-photo-v1'
+OUT=ROOT/'public/assets/apogeu/model-realism-v2'
 OUT.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 scene=bpy.data.scenes['Apogeu | Estudo arquitetonico'];bpy.context.window.scene=scene
@@ -75,6 +76,9 @@ for x,y in [(-6,26),(6,29),(-5,35),(6,43),(-6,45),(-6,17),(8,-11),(-5,-17)]:
 for j in range(36):foliage(8.3,-16+j*1.3,.45,(.4,.5,.45))
 for j in range(23):foliage(-7.8,16+j*1.3,.5,(.5,.6,.5))
 
+# Refine the architecture in the editable scene before generating the web mesh.
+exec(compile((ROOT/'tools/refine-apogeu-architecture.py').read_text(encoding='utf-8'), 'refine-apogeu-architecture.py', 'exec'))
+
 # Capture the wall/furniture footprints for bounded first-person navigation.
 bpy.context.view_layer.update()
 colliders=[]
@@ -101,7 +105,7 @@ manifest={'source':'apogeu_estudo.blend','sourceSha256':hashlib.sha256(SOURCE.re
 
 # Revision remains editable in Blender. Save separately from the original source.
 scene['implantacao_revisada']='Interpretacao da planta p-002: extensao lateral, quadra e bosque posterior. Dimensoes ainda estimadas.'
-editable=SOURCE.parent/'apogeu_fotoinsercao.blend'
+editable=SOURCE.parent/'apogeu_refinado-v4.blend'
 bpy.ops.wm.save_as_mainfile(filepath=str(editable))
 
 # Evaluate modifiers, group by section and material, then merge for lower draw count.
@@ -133,9 +137,32 @@ for ob in list(scene.objects):
   buf['v'].extend(tuple(mesh.vertices[i].co) for i in used);buf['f'].extend(tuple(lookup[i] for i in p.vertices) for p in polys)
  bpy.data.meshes.remove(mesh)
 
+# Bake short-range ambient occlusion into vertex colors. This adds recess depth
+# without an additional full-screen rendering pass on the visitor's device.
+ao_v=[];ao_f=[]
+for buf in groups.values():
+ if any(n in buf['mat'].name for n in ['Vidro','Agua','Folha']):continue
+ offset=len(ao_v);ao_v.extend(buf['v']);ao_f.extend(tuple(i+offset for i in f) for f in buf['f'])
+ao_tree=BVHTree.FromPolygons(ao_v,ao_f)
+ao_rays=[Vector((math.cos(i*2.399)*.8,math.sin(i*2.399)*.8,.6)) for i in range(8)]
+
 # glTF standard materials. Procedural Blender shaders use matching base palettes
 # plus shared metre-scaled texture maps where available; glass stays transparent.
 web_materials={}
+maps=ROOT/'public/assets/m/materials/refinement48'
+texture_sets={'Madeira natural | veio procedural':'oak','Piso de madeira':'oak','Pedra natural':'limestone','Piso mineral claro':'limestone','Linho claro':'linen','Cortina de linho':'linen'}
+images={}
+texture_cache=SOURCE.parent/'web-texture-cache';texture_cache.mkdir(exist_ok=True)
+def image_node(material,preset,suffix):
+ path=str(ROOT/'public/assets/m/materials/realism50'/f'oak-{suffix}.webp') if preset=='oak' else str(maps/f'{preset}-{suffix}.png')
+ if path not in images:
+  images[path]=bpy.data.images.load(path,check_existing=True)
+  _=images[path].pixels[0] # Load the source before changing its cache path.
+  if preset=='oak':images[path].scale(512,512)
+  if suffix!='color':images[path].scale(256,256)
+  images[path].filepath_raw=str(texture_cache/f'{preset}-{suffix}.png');images[path].file_format='PNG';images[path].save()
+  if suffix!='color':images[path].colorspace_settings.name='Non-Color'
+ node=material.node_tree.nodes.new('ShaderNodeTexImage');node.image=images[path];return node
 colors={'Concreto mineral':'A8ABA5','Revestimento grafite':'384541','Madeira natural | veio procedural':'9D774A','Piso de madeira':'AF8B63','Pedra natural':'918773','Piso mineral claro':'BFB9A9','Linho claro':'D4CEBA','Substrato':'3B392A','Forracao rasteira':'64734B','Asfalto':'4A504D','Casca de arvore':'74634C'}
 for key,buf in groups.items():
  source_mat=buf['mat'];name=source_mat.name.split(' | ',1)[-1]
@@ -147,15 +174,43 @@ for key,buf in groups.items():
   if name in colors:
    h=colors[name];cs=[int(h[i:i+2],16)/255 for i in (0,2,4)];bs.inputs['Base Color'].default_value=tuple(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in cs)+(1,)
   if name=='Vidro incolor':
-   bs.inputs['Transmission Weight'].default_value=0;bs.inputs['Alpha'].default_value=.23;bs.inputs['Metallic'].default_value=.12;wm.surface_render_method='DITHERED'
+   bs.inputs['Transmission Weight'].default_value=0;bs.inputs['Alpha'].default_value=.32;bs.inputs['Metallic'].default_value=.28;bs.inputs['Roughness'].default_value=.11;bs.inputs['Base Color'].default_value=(.24,.36,.39,1);wm.surface_render_method='DITHERED'
   if name=='Agua da piscina':bs.inputs['Transmission Weight'].default_value=0;bs.inputs['Base Color'].default_value=(.1,.35,.36,1)
+  if name in texture_sets:
+   preset=texture_sets[name];links=wm.node_tree.links
+   for socket in ['Base Color','Normal','Roughness']:
+    for l in list(bs.inputs[socket].links):links.remove(l)
+   links.new(image_node(wm,preset,'color').outputs['Color'],bs.inputs['Base Color'])
+   links.new(image_node(wm,preset,'rough').outputs['Color'],bs.inputs['Roughness'])
+   normal=wm.node_tree.nodes.new('ShaderNodeNormalMap');normal.inputs['Strength'].default_value=.22 if preset=='limestone' else .35
+   links.new(image_node(wm,preset,'normal').outputs['Color'],normal.inputs['Color']);links.new(normal.outputs['Normal'],bs.inputs['Normal'])
+  if name=='Revestimento grafite':bs.inputs['Roughness'].default_value=.48
   web_materials[source_mat.name]=wm
  mesh=bpy.data.meshes.new(key[0]+'__'+name);mesh.from_pydata(buf['v'],[],buf['f']);mesh.materials.append(web_materials[source_mat.name]);mesh.update()
+ # Per-face metric UVs survive merging. Box projection prevents stretched panels.
+ uv=mesh.uv_layers.new(name='UVMap');tile=2.0 if texture_sets.get(name)=='oak' else 1.7
+ for face in mesh.polygons:
+  axis=max(range(3),key=lambda a:abs(face.normal[a]))
+  axes=(1,2) if axis==0 else (0,2) if axis==1 else (0,1)
+  for li in face.loop_indices:
+   p=mesh.vertices[mesh.loops[li].vertex_index].co;uv.data[li].uv=(p[axes[0]]/tile,p[axes[1]]/tile)
+ if not any(n in name for n in ['Vidro','Agua','Folha']):
+  color=mesh.color_attributes.new(name='AmbientOcclusion',type='BYTE_COLOR',domain='CORNER')
+  for face in mesh.polygons:
+   rotation=Vector((0,0,1)).rotation_difference(face.normal)
+   directions=[rotation@v for v in ao_rays]
+   for li in face.loop_indices:
+    position=mesh.vertices[mesh.loops[li].vertex_index].co.lerp(face.center,.025)+face.normal*.025
+    occlusion=0
+    for direction in directions:
+     hit=ao_tree.ray_cast(position,direction,2.0)
+     if hit[0] is not None:occlusion+=1-hit[3]/2.0
+    value=1-.48*occlusion/len(directions);color.data[li].color=(value,value,value,1)
  obj=bpy.data.objects.new(mesh.name,mesh);obj['section']=key[0];export_scene.collection.objects.link(obj)
  if key[0].startswith('floor_'):obj['floor']=int(key[0].split('_')[1])
  for p in mesh.polygons:p.use_smooth='Folha' in name
 bpy.context.window.scene=export_scene
-bpy.ops.export_scene.gltf(filepath=str(OUT/'apogeu.glb'),export_format='GLB',use_active_scene=True,export_extras=True,export_cameras=False,export_lights=False,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6)
-manifest.update({'bytes':(OUT/'apogeu.glb').stat().st_size,'meshes':len(export_scene.objects),'blender':bpy.app.version_string,'materials':len(web_materials)})
+bpy.ops.export_scene.gltf(filepath=str(OUT/'apogeu.glb'),export_format='GLB',use_active_scene=True,export_extras=True,export_cameras=False,export_lights=False,export_vertex_color='ACTIVE',export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6)
+manifest.update({'bytes':(OUT/'apogeu.glb').stat().st_size,'meshes':len(export_scene.objects),'blender':bpy.app.version_string,'materials':len(web_materials),'revision':'v4: open side windows, graphite reveals, metric UVs and PBR wood/stone/linen','textureSource':'Locally authored refinement48 maps plus Poly Haven oak_veneer_01 (CC0); see materials/realism50/sources.json'})
 (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
 print('APOGEU_WEB_READY',manifest['bytes'],manifest['meshes'],flush=True)
