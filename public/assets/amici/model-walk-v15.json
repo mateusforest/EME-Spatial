@@ -1,0 +1,11 @@
+{
+  "source_sha256": "257cdadfc1fbe8ff45f9794729b15ce12e7814e8d0ec616a72e96fa907ba87dc",
+  "objects_before": 5065,
+  "meshes": 51,
+  "triangles": 4406761,
+  "bytes": 32365884,
+  "source_unchanged": true,
+  "building_height_m_estimated": 36.21,
+  "source": "Approved Amici V15 facade; ZM marketing references; retained walkable interior",
+  "limitations": "Approximate dimensions and external context; not official BIM; no confirmed unit inventory"
+}

@@ -62,7 +62,7 @@ await page.screenshot({path:join(output,'mobile-plans.png')});
 checks.dialogVisible=await page.getByRole('dialog').isVisible();
 await page.keyboard.press('Escape');checks.dialogEscape=!(await page.getByRole('dialog').isVisible());
 const fallback=await browser.newPage({viewport:{width:390,height:844}});
-await fallback.route('**/assets/amici/amici-walk-v6.glb',route=>route.abort());
+await fallback.route('**/assets/amici/amici-walk-*.glb',route=>route.abort());
 await fallback.goto(base+'/apresentar/amici');
 await fallback.getByText('Veja o Amici pelas imagens oficiais',{exact:true}).waitFor();
 await fallback.getByRole('button',{name:'Ver galeria',exact:true}).click();

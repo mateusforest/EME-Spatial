@@ -35,6 +35,16 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
  const fill=new T.DirectionalLight('#a8c9ee',.35);fill.position.set(35,25,25);scene.add(fill);
  for(const z of [8.5,12,15.5]){const light=new T.PointLight('#fff0d7',12,8,2);light.position.set(0,3.2,z);scene.add(light);}
  const hallLights:T.SpotLight[]=[];
+ // Warm entrance lights matched to the approved V15 facade study.
+ for(const x of [-2.15,0,2.15]){
+  const light=new T.SpotLight('#ffd09a',32,9,.96,.75,2);
+  light.position.set(x,6.29,18.12);light.target.position.set(x,5.46,17.76);
+  scene.add(light,light.target);
+ }
+ for(const x of [-1.6,1.6]){
+  const light=new T.PointLight('#ffc58d',13,5,2);light.position.set(x,2.55,15.5);scene.add(light);
+ }
+
  for(const z of [10.2,14.5]){
   const light=new T.SpotLight('#ffe9cb',42,8,1.15,.65,2);light.position.set(2.3,3.42,z);light.target.position.set(2.5,.3,z);
   light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.bias=-.0002;light.shadow.normalBias=.018;
@@ -67,7 +77,7 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
   textures.forEach(t=>t.dispose());geometries.forEach(g=>g.dispose());
  };
  let model:T.Group|undefined;
- loader.load(asset('amici-walk-v6.glb'),gltf=>{
+ loader.load(asset('amici-walk-v15.glb'),gltf=>{
   if(disposed){disposeModel(gltf.scene);return;}
   model=gltf.scene;
   model.traverse(o=>{if(o.userData.walkDoor)doors.push({object:o,sign:Number(o.userData.walkDoor),origin:o.position.x});});

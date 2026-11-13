@@ -34,7 +34,7 @@ Priorità and Apogeu source and assets remain unchanged.
 
 ## Eye-level walk
 
-The current viewer uses `amici-walk-v6.glb`; the earlier facade-only export is
+The current viewer uses `amici-walk-v15.glb`; the earlier facade-only export is
 retained for compatibility. The export script first applies
 `tools/amici-walkable-hall.py` to the in-memory source. This hollows the podium,
 replaces the shallow lobby with an interpreted furnished hall, and preserves
@@ -73,3 +73,25 @@ entry improve depth without changing walk controls. Hall additions include oak,
 stone, smoother upholstered furniture, coworking furniture, smaller accessories,
 and curved plant leaves. The footprint includes the added coworking chairs.
 The original native Blender scene is preserved; these are export-time changes.
+
+## Approved facade V15
+
+The V15 release uses the approved `amici_revisao_fachada_v15_02.blend` source
+(SHA-256 in `public/assets/amici/model-walk-v15.json`). Export with
+`tools/export-amici-v15-web.py -- <absolute source blend path>` from Blender.
+The exporter preserves the rebuilt portal, lettering, doors, floor-by-floor
+facade and irregular cypress sprays. Portal color conversion follows the V15
+saturation, tint and lightening adjustments; the browser supplies warm entrance
+lighting. Cycles indirect lighting is not baked into the interactive model.
+
+`amici-v15-walk-adapter.py` connects the approved frontage to the existing
+interpreted walkable interior, removes the duplicate old entrance and shallow
+back wall, and tags the V15 doors and handles for automatic opening. The original
+native scene remains unchanged. The approved Cycles image is available under
+About / View model render (`render-v15.webp`); the comparison is also packaged as
+`comparacao-hall-v15.webp`. No Priorita modules or assets change in this release.
+
+Validation: TypeScript/build, navigation unit tests, browser desktop/mobile
+walkthrough including automatic entry/exit and modal pause, and presentation
+gallery/plan/fallback checks. The model is approximately 32.4 MB compressed and
+4.4 million triangles, including the retained surrounding trees and interior.
