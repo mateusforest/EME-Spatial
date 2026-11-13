@@ -13,4 +13,5 @@ prepare-assets.cjs
 
 dist/
 *.tsbuildinfo
+supabase/.temp/
 __pycache__/

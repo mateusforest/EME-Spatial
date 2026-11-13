@@ -1,0 +1,94 @@
+EME Spatial — private portal activation
+Updated 2026-11-13. Database migration and public build configuration are active.
+Production frontend has not yet been replaced.
+
+Provisioning status
+The owner authorized sharing EME Select after a dedicated Free project was blocked
+by the two-active-project limit. The target is vjoajqrwqdeujqaognac, organization
+mggwkxodarykjdzzlkwj. No paid plan was purchased and other projects were not paused.
+Applied migrations:
+- 20261113060601_spatial_portal_private_workspace.sql
+- 20261113062509_spatial_portal_member_initplan.sql
+The existing storage policy allowed all buckets except eme-marketing-materials.
+Spatial now has scoped RESTRICTIVE guards so this broad policy cannot expose
+Spatial media or let clients replace originals; other buckets retain their behavior.
+Actual hosted RLS tests passed in one rolled-back transaction; fixtures did not
+persist. Bucket is private. Advisors show no findings for the new Spatial objects.
+An existing project-level leaked-password-protection warning remains; production
+email/password settings still need review through the Supabase dashboard.
+Vercel preview and production environments have the project URL and publishable key.
+Pending: dashboard login, Auth redirect/SMTP configuration, first user sign-in,
+live preview save/reload, then production deployment.
+
+Application
+- Supabase Auth: email/password, confirmed email, password recovery, PKCE.
+- Allowed emails live in spatial_portal_members, editable only by an administrator.
+  Initial allowed address: hub@groupmf.com.br. This does not create an Auth account.
+- Documents belong to auth.uid(); RLS also requires enabled membership.
+- Studio projects have individual IDs. The current commercial budget and lot
+  operation remain one working document per account, matching the existing UI.
+- Management, briefings and production request lists are versioned documents.
+- RPC saves use expected versions. Stale clients cannot overwrite newer versions.
+- Private media: immutable originals, owner-prefixed paths, maximum 50 MB/file.
+  Previews load on demand. Approval is versioned metadata; no public media URL.
+- All local drafts remain untouched; import is explicit after sign-in and skips
+  existing cloud documents. Media migration is a separate explicit action.
+- JSON backup/restore includes documents; restore preserves existing documents.
+  Media binaries use Production visual > Exportar biblioteca / Importar pacote.
+- New portal data is not written into localStorage; only the Auth session persists.
+  Public 3D experience preferences and MF rendering remain separate local features.
+
+Required activation steps
+1. Resolve project placement/cost. Inspect target tables AND storage.objects RLS
+   policies before migration. If sharing a project, existing permissive storage
+   policies must not expose this bucket; investigate before activation.
+2. Both spatial_portal migrations above have been applied.
+   It uses distinct spatial_portal_* names and does not modify EME Select tables.
+3. Configure Auth:
+   - Email provider enabled; Confirm email ON; password minimum 12 characters.
+   - Site URL https://www.emespatial.com/portal.
+   - Redirect allowlist includes exactly that URL (and explicit preview origins
+     only while testing). Preserve existing URLs if sharing an Auth project.
+   - Configure custom SMTP for confirmation/recovery to the business address.
+     Built-in SMTP only delivers to organization team emails and is not production
+     email infrastructure. Do not bypass this by disabling email confirmation.
+   - Credentials entered directly by the owner in the service's secure UI; no
+     passwords or service-role keys in this repository or conversation.
+   - Review signup abuse protection/rate limits for the chosen mail provider.
+4. Add Vercel build variables, with values from the selected Supabase project:
+   VITE_SPATIAL_SUPABASE_URL=https://<project-ref>.supabase.co
+   VITE_SPATIAL_SUPABASE_PUBLISHABLE_KEY=<publishable key>
+   Never put a service_role key, secret key, database password or SMTP password
+   in any VITE_ variable. Missing configuration intentionally closes the portal.
+5. Run Supabase security/performance advisors. Verify actual remote RLS and
+   private bucket behavior with permitted users and anonymous requests.
+6. Deploy to preview, then the owner creates/confirms the first account directly.
+   Check login, recovery, save/reload from a second browser, stale-write handling,
+   logout, import preservation and binary media retrieval against the live service.
+7. Publish production only after real configuration and those checks pass.
+   Do not publish an unconfigured login gate over the currently working portal.
+
+Verification completed locally
+npm run test:portal — calculations, document state, legacy preservation, revision
+conflicts, media validation, and a PostgreSQL instance running the actual SQL
+migration. Mock auth/storage infrastructure is explicit in portal-database.test.mjs.
+Browser integration: tests/portal-browser.mjs runs against the Vite app with a
+controlled transport, NOT the hosted Supabase project. It exercises 15 user flows.
+Results and screenshots: reports/portal-cloud/.
+npm run build — production bundle compilation.
+Hosted SQL isolation checks passed via tests/portal-remote-rls.sql. SMTP delivery,
+first sign-in and cross-computer UI against the live service remain pending.
+
+Browser test configuration
+Start Vite with VITE_SPATIAL_SUPABASE_URL=https://portal-test.supabase.invalid and
+VITE_SPATIAL_SUPABASE_PUBLISHABLE_KEY=sb_publishable_fixture_only.
+Run node tests/portal-browser.mjs. The script uses Playwright from the installed
+package or the optional PLAYWRIGHT_MODULE URL; TEST_BROWSER_PATH optionally sets
+an installed browser executable. All test requests are intercepted; no mail sent.
+Never deploy those fixture environment values.
+
+Sources checked
+https://supabase.com/docs/guides/auth/auth-smtp
+https://supabase.com/docs/guides/database/postgres/row-level-security
+https://supabase.com/docs/guides/storage/security/access-control
+https://supabase.com/pricing

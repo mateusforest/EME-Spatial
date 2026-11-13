@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "transport": "mock only; SQL policies tested separately",
+  "checks": [
+    "unauthenticated route",
+    "mobile layout",
+    "password recovery request",
+    "save contract",
+    "save budget",
+    "second computer reload",
+    "stale write rejection",
+    "studio project",
+    "financial record",
+    "legacy import preserves source",
+    "private media import and approval",
+    "logout and different account",
+    "backup restore",
+    "unapproved account denied"
+  ],
+  "documents": 7
+}

@@ -1,11 +1,12 @@
 import {useEffect, useRef, useState} from 'react';
 import type {FormEvent} from 'react';
 import {ArrowDownToLine, ArrowUpFromLine, Check, ChevronRight, Cloud, FileText, Plus, Wallet} from 'lucide-react';
-import {addBusinessDays, calculateOperation, newOperation, operationKey, persistOperation, stageDefinitions, validateOperation} from '../../shared/lot-operation';
+import {addBusinessDays, calculateOperation, newOperation, operationKey, stageDefinitions, validateOperation} from '../../shared/lot-operation';
 import type {LotReceipt, Operation, Stage} from '../../shared/lot-operation';
 import {calculateBudget, validateBudget} from '../../shared/commercial-budget';
 import './commercial-budget.css';
 import './lot-operation.css';
+import {workspace,setEditorDirty} from './cloud';
 
 const money = (n: number) => n.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 const date = (s: string) => s ? s.split('-').reverse().join('/') : 'A definir';
@@ -22,18 +23,20 @@ export default function LotOperation() {
   const [data, setData] = useState<Operation>(newOperation);
   const [ready, setReady] = useState(false), [blocked, setBlocked] = useState(false), [notice, setNotice] = useState('');
   const [tab, setTab] = useState('plan'), [editing, setEditing] = useState<LotReceipt | null>(null), [formOpen, setFormOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(''), [dirty,setDirty]=useState(false), [saving,setSaving]=useState(false);
   const previous = useRef<string | null>(null), file = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    try { const raw = localStorage.getItem(operationKey); previous.current = raw; if (raw) setData(validateOperation(JSON.parse(raw))); }
+    try { const raw = workspace.readRaw(operationKey); previous.current = raw; if (raw) setData(validateOperation(JSON.parse(raw))); }
     catch { setBlocked(true); setNotice('Não foi possível ler o acompanhamento. Seus dados não foram substituídos. Exporte o arquivo salvo para recuperação.'); }
     setReady(true);
   }, []);
   function commit(next: Operation) {
     if (!ready || blocked) return false;
-    try { previous.current = persistOperation(localStorage, previous.current, next); setData(next); setNotice('Salvo neste navegador.'); return true; }
+    try { validateOperation(next); setData(next); setDirty(true); setNotice('Alterações ainda não salvas.'); return true; }
     catch (e) { setNotice(e instanceof Error ? e.message : 'Não foi possível salvar.'); return false; }
   }
+  useEffect(()=>{setEditorDirty('operation',dirty||saving);const leave=(e:BeforeUnloadEvent)=>{if(dirty||saving)e.preventDefault();};window.addEventListener('beforeunload',leave);return()=>{setEditorDirty('operation',false);window.removeEventListener('beforeunload',leave);};},[dirty,saving]);
+  async function save(){if(saving)return;setSaving(true);try{previous.current=await workspace.saveRaw(operationKey,data,previous.current);setDirty(false);setNotice('Acompanhamento salvo na sua conta.');}catch(e){setNotice((e as Error).message);}finally{setSaving(false);}}
   function update<K extends keyof Operation>(key: K, value: Operation[K]) { return commit({...data, [key]: value}); }
   function stage(index: number, changes: Partial<Stage>) { update('stages', data.stages.map((s, i) => i === index ? {...s, ...changes} : s)); }
   function cloud(changes: Partial<Operation['cloud']>) { update('cloud', {...data.cloud, ...changes}); }
@@ -41,7 +44,7 @@ export default function LotOperation() {
   const result = calculateOperation(data, today());
   function useBudget() {
     try {
-      const raw = localStorage.getItem('eme-spatial:commercial-budget:v1');
+      const raw = workspace.readRaw('eme-spatial:commercial-budget:v1');
       if (!raw) throw Error('Salve um orçamento na área Orçamentos primeiro.');
       const b = validateBudget(JSON.parse(raw));
       if (b.commercial.mode !== 'lot') throw Error('Este acompanhamento usa valor fixo por lote. Escolha essa condição no orçamento.');
@@ -56,13 +59,13 @@ export default function LotOperation() {
     try {
       if (f.size > 1000000) throw Error('O arquivo deve ter até 1 MB.');
       const next = validateOperation(JSON.parse(await f.text()));
-      if (!confirm('Substituir o acompanhamento deste navegador pelo arquivo? Exporte antes se quiser preservar a versão atual.')) return;
+      if (!confirm('Carregar o acompanhamento do arquivo para revisão? Exporte antes se quiser preservar a versão atual.')) return;
       commit(next);
     } catch (e) { setNotice((e as Error).message); }
     finally { if (file.current) file.current.value = ''; }
   }
   function exportData() {
-    try { download(blocked ? localStorage.getItem(operationKey) || '{}' : JSON.stringify(data, null, 2), 'acompanhamento-loteamento.json'); }
+    try { download(blocked ? workspace.readRaw(operationKey) || '{}' : JSON.stringify(data, null, 2), 'acompanhamento-loteamento.json'); }
     catch { setNotice('Não foi possível acessar os dados salvos.'); }
   }
   function saveReceipt(event: FormEvent<HTMLFormElement>) {
@@ -79,13 +82,13 @@ export default function LotOperation() {
   const visible = data.receipts.filter(r => r.lot.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')));
   return <section className="cb lo" aria-label="Acompanhamento do loteamento">
     <div className="cb-intro"><div><span className="cb-kicker">DO CONTRATO À ENTREGA</span><h2>Produza por etapas.<br/>Acompanhe cada repasse.</h2><p>Organize o loteamento com pagamento após a entrada do comprador, operação no lançamento e investimento controlado.</p></div><FileText size={46} strokeWidth={1}/></div>
-    <div className="cb-top"><label>Nome do projeto<input value={data.name} maxLength={180} disabled={!ready || blocked} onChange={e => update('name', e.target.value)}/></label><div className="cb-actions"><button onClick={useBudget} disabled={!ready || blocked}>Usar orçamento salvo</button><button onClick={exportData}><ArrowDownToLine size={16}/>Exportar dados</button><button onClick={() => file.current?.click()} disabled={!ready || blocked}><ArrowUpFromLine size={16}/>Importar</button><button onClick={exportReport}><FileText size={16}/>Baixar acompanhamento</button></div></div>
+    <div className="cb-top"><label>Nome do projeto<input value={data.name} maxLength={180} disabled={!ready || blocked || saving} onChange={e => update('name', e.target.value)}/></label><div className="cb-actions"><button onClick={()=>void save()} disabled={!ready||blocked||saving}>{saving?'Salvando…':'Salvar acompanhamento'}</button><button onClick={useBudget} disabled={!ready || blocked || saving}>Usar orçamento salvo</button><button onClick={exportData}><ArrowDownToLine size={16}/>Exportar dados</button><button onClick={() => file.current?.click()} disabled={!ready || blocked || saving}><ArrowUpFromLine size={16}/>Importar</button><button onClick={exportReport}><FileText size={16}/>Baixar acompanhamento</button></div></div>
     <input ref={file} type="file" accept="application/json,.json" hidden onChange={e => void importFile(e.target.files?.[0])}/>
-    <p className="cb-note">Rascunho local, sem autenticação ou sincronização. Use para planejamento; não inclua dados pessoais de compradores. Alterações válidas são salvas automaticamente. Exporte uma cópia para guardar.</p>
+    <p className="cb-note">{dirty?'Há alterações não salvas. ':' '}Use Salvar acompanhamento para atualizar sua conta. Identifique os lotes sem incluir dados pessoais dos compradores.</p>
     {notice && <p role="status" className="cb-notice">{notice}</p>}
     <div className="cb-results lo-metrics"><article><span>Recebido pelo Grupo MF</span><strong>{money(result.received)}</strong><small>Repasses registrados, sem adiantamentos</small></article><article><span>Saldo das vendas registradas</span><strong>{money(result.due)}</strong><small>{money(result.overdue)} com vencimento anterior a hoje</small></article><article><span>Investimento registrado</span><strong>{money(result.spent)}</strong><small>Desembolsos das etapas; não é custo total do projeto</small></article></div>
     <nav className="cb-tabs" aria-label="Acompanhamento"><button aria-current={tab === 'plan' ? 'page' : undefined} onClick={() => setTab('plan')}>01 · Etapas</button><button aria-current={tab === 'cloud' ? 'page' : undefined} onClick={() => setTab('cloud')}>02 · Lançamento e Vagon</button><button aria-current={tab === 'receipts' ? 'page' : undefined} onClick={() => setTab('receipts')}>03 · Repasses por lote</button><button aria-current={tab === 'cancel' ? 'page' : undefined} onClick={() => setTab('cancel')}>04 · Cancelamento</button></nav>
-    <fieldset disabled={!ready || blocked} className="lo-fields">
+    <fieldset disabled={!ready || blocked || saving} className="lo-fields">
     {tab === 'plan' && <><section className="cb-panel"><h3>Condições em negociação</h3><div className="cb-fields"><label>Quantidade de lotes<input type="number" min="1" max="10000" step="1" value={data.units} onChange={e => update('units', e.target.value)}/></label><NumberField label="Valor por lote · R$" value={data.fee} onChange={v => update('fee', v)}/><NumberField label="Base de compensação B · R$" value={data.base} onChange={v => update('base', v)}/></div><p className="cb-note">{result.potential === null ? 'Preço por lote ainda não definido.' : money(result.potential) + ' de receita bruta potencial se todos os lotes venderem.'} A base B precisa ser negociada a partir da produção. Não é receita garantida nem cobrança por etapa.</p></section>
       <div className="lo-stages">{data.stages.map((s, i) => <section className="cb-panel" key={s.id}><div className="lo-stage-head"><span className="lo-step">0{i + 1}</span><div><h3>{stageDefinitions[i].name}</h3><p>{stageDefinitions[i].detail}</p></div><span className="cb-chip">{stageDefinitions[i].weight}% de B</span></div><div className="cb-fields"><label>Data da autorização escrita<input type="date" value={s.authorized} disabled={i > 0 && !data.stages[i - 1].accepted} onChange={e => stage(i, {authorized: e.target.value})}/></label><NumberField label="Teto de investimento · R$" value={s.cap} onChange={v => stage(i, {cap: v})}/><NumberField label="Desembolso realizado · R$" value={s.spent} onChange={v => stage(i, {spent: v})}/></div><label>Referência da autorização, entregas e medição<textarea rows={2} maxLength={3000} placeholder="Identifique o e-mail, a versão entregue e os subitens medidos no plano assinado." value={s.evidence} onChange={e => stage(i, {evidence: e.target.value})}/></label><div className="lo-stage-bottom"><NumberField label="Execução comprovada (%)" value={s.progress} max={100} onChange={v => stage(i, {progress: v})}/><label className="cb-check"><input type="checkbox" checked={s.accepted} onChange={e => stage(i, {accepted: e.target.checked})}/>Aceite da etapa registrado</label><span>{!s.authorized ? 'Aguardando autorização' : s.accepted ? 'Etapa aceita' : 'Etapa autorizada'}</span></div>{result.stages[i].overCap && <p className="cb-error" role="alert">O desembolso supera o teto. Interrompa novos compromissos e revise o limite antes de avançar.</p>}</section>)}</div><p className="cb-note">O registro não substitui a autorização do cliente. Medições parciais devem seguir subitens e pesos acordados; a próxima etapa só é liberada após o aceite da anterior. Atraso no lançamento permite reprogramar a produção, sem transformar lotes não vendidos em dívida.</p></>}
     {tab === 'cloud' && <section className="cb-panel"><span className="cb-kicker">OPERAÇÃO NO LANÇAMENTO</span><h3><Cloud size={23}/> Vagon com início e término definidos</h3><p>Antes do lançamento, apenas testes privados com orçamento próprio. Registre aqui a ativação comercial efetiva, depois de verificar os requisitos.</p><div className="cb-fields"><label>Lançamento previsto<input type="date" value={data.cloud.planned} onChange={e => cloud({planned: e.target.value})}/></label><NumberField label="Franquia mensal · minutos" value={data.cloud.minutes} onChange={v => cloud({minutes: v})}/><NumberField label="Custo mensal estimado · R$" value={data.cloud.monthly} onChange={v => cloud({monthly: v})}/></div><div className="lo-checklist">{([['pilot', 'Piloto e capacidade validados'], ['regular', 'Documentação para lançamento conferida'], ['authorized', 'Ordem escrita de ativação recebida']] as const).map(([key, label]) => <label className="cb-check" key={key}><input type="checkbox" checked={data.cloud[key]} onChange={e => cloud({[key]: e.target.checked})}/>{label}</label>)}</div><div className="cb-fields"><label>Data efetiva de lançamento e ativação<input type="date" max={today()} value={data.cloud.activated} disabled={!data.cloud.pilot || !data.cloud.regular || !data.cloud.authorized} onChange={e => { if (e.target.value > today()) { setNotice('Para datas futuras, use o lançamento previsto.'); return; } cloud({activated: e.target.value}); }}/></label><div className="lo-date"><small>Fim dos 24 meses</small><strong>{date(result.cloudEnd)}</strong></div><div className="lo-date"><small>Custo estimado de 24 meses</small><strong>{data.cloud.monthly === '' ? 'A apurar' : money(Number(data.cloud.monthly) * 24)}</strong></div></div><p className="cb-note">Este registro não contrata nem liga o Vagon. O custo acima é uma estimativa sem câmbio futuro, excedentes ou testes. A janela começa na ativação comercial; depois disso, falta de vendas não interrompe a contagem. Renovação e ampliação exigem acordo.</p></section>}
