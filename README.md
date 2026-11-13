@@ -100,3 +100,14 @@ Validação: `node --experimental-strip-types --test tests/commercial-budget.tes
 - Persistência automática dos valores válidos na chave `eme-spatial:lot-operation:v1`, com validação, proteção de conflitos entre abas e bloqueio de sobrescrita de dados ilegíveis. Exportação/importação JSON e relatório HTML imprimível. O registro é local e não substitui contrato, assinatura, comprovação de medição ou documento fiscal.
 
 Validação: `node --experimental-strip-types --test tests/lot-operation.test.mjs tests/commercial-budget.test.mjs tests/portal-storage.test.mjs`, TypeScript, build e fluxo no navegador (etapas, repasse, recarga, compensação e ativação).
+
+## Apogeu · apresentação independente
+
+`/apresentar/apogeu` reutiliza a interface de apresentação do Priorità e carrega o modelo Apogeu exportado do Blender (3,5 MB), em arquivos e dados separados. Não altera o cenário, os lotes ou a apresentação do Priorità.
+
+- Visita em primeira pessoa ao apartamento tipo, hall, terraço e bosque; arraste para olhar, WASD/setas ou controle de toque para caminhar, Escape para sair.
+- Seleção de seis níveis visuais, planta 3D do apartamento tipo, vistas da implantação, galeria, plantas e mapa do endereço informado pela Aporte. Favoritos ficam somente no navegador, na chave `apogeu:favorites:v1`.
+- O modelo e os interiores são estudos aproximados. A revisão de implantação interpreta a silhueta e a distribuição da planta humanizada p-002; não é levantamento cadastral. Vizinhança, relevo e norte real não foram reconstruídos.
+- Sem preços, estoque ou áreas validadas: as metragens divergentes da página oficial estão explicitadas.
+- Origem do modelo e limites de caminhada: `public/assets/apogeu/model-v2/manifest.json`. Exportador: `tools/export-apogeu-web.py`, executado no Blender com o arquivo fonte local.
+- Verificação: `node --experimental-strip-types --test tests/apogeu.test.mjs`, TypeScript e compilação de produção; revisão visual da visita em desktop e 390 px.
