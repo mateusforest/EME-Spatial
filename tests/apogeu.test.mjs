@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {canStand,walkStep,walkLocations} from '../src/apogeu/navigation.ts';
 import {studyLevels,parseLevel} from '../src/apogeu/data.ts';
-const base=new URL('../public/assets/apogeu/model-v2/',import.meta.url);
+import {aerialCrop,calibration} from '../src/apogeu/aerial.ts';
+import {PerspectiveCamera,Matrix4,Vector3} from 'three';
+const base=new URL('../public/assets/apogeu/model-photo-v1/',import.meta.url);
 const manifest=JSON.parse(readFileSync(new URL('manifest.json',base),'utf8'));
 const bytes=readFileSync(new URL('apogeu.glb',base));
 const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString('utf8'));
@@ -46,4 +48,30 @@ test('the site has the documented lateral extension instead of a generic rectang
  assert.ok(manifest.siteOutline.some(([x])=>x>25));
  assert.ok(manifest.siteOutline.some(([,z])=>z<-45));
  assert.match(manifest.siteAccuracy,/sem cotas/);
+});
+
+test('photo and 3D share a valid crop on desktop, portrait and zoomed views',()=>{
+ for(const [w,h] of [[1366,792],[390,720],[1920,1080],[844,336]])for(const zoom of [1,1.4,2.2]){
+  const c=aerialCrop(w,h,zoom);
+  assert.ok(c.x>=0&&c.y>=0);
+  assert.ok(c.x+c.width<=1920.00001&&c.y+c.height<=1080.00001);
+  assert.ok(Math.abs(c.width/c.height-w/h)<1e-9);
+  const anchor=[calibration.focus[0]*1920,calibration.focus[1]*1080];
+  assert.ok(anchor[0]>=c.x&&anchor[0]<=c.x+c.width);
+  assert.ok(anchor[1]>=c.y&&anchor[1]<=c.y+c.height);
+ }
+});
+
+test('the photographic camera is above the ground and registers the parcel controls',()=>{
+ const camera=new PerspectiveCamera(calibration.fov,1920/1080,.08,500),r=calibration.rotation;
+ camera.position.fromArray(calibration.position);assert.ok(camera.position.y>10);
+ camera.quaternion.setFromRotationMatrix(new Matrix4().set(r[0][0],r[0][1],r[0][2],0,r[1][0],r[1][1],r[1][2],0,r[2][0],r[2][1],r[2][2],0,0,0,0,1));
+ camera.updateMatrixWorld();
+ calibration.controlWorld.forEach((point,i)=>{
+  const p=new Vector3().fromArray(point).project(camera),target=calibration.controlPixels[i];
+  assert.ok(Math.hypot((p.x+1)*960-target[0],(1-p.y)*540-target[1])<15);
+ });
+ const sections=new Set(gltf.nodes.map(n=>n.extras?.section));
+ assert.ok(!sections.has('context'),'no neighborhood geometry is shipped in the photographic model');
+ assert.match(calibration.source,/aporteconstrutora/);
 });

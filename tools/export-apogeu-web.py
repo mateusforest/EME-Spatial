@@ -8,7 +8,7 @@ from mathutils import Vector
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT.parents[1]/'output/apogeu-blender/apogeu_estudo.blend'
-OUT=ROOT/'public/assets/apogeu/model-v2'
+OUT=ROOT/'public/assets/apogeu/model-photo-v1'
 OUT.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 scene=bpy.data.scenes['Apogeu | Estudo arquitetonico'];bpy.context.window.scene=scene
@@ -35,11 +35,8 @@ def xy(u,v):return ((v-220)*.049,(730-u)*.069)
 outline=[xy(u,v) for u,v in [(60,45),(1040,45),(1040,405),(615,405),(585,790),(405,790),(425,405),(50,395)]]
 mesh=bpy.data.meshes.new('Implantacao | silhueta interpretada p-002');mesh.from_pydata([(x,y,.02) for x,y in outline],[],[tuple(range(len(outline)))]);mesh.materials.append(mat('Forracao rasteira'))
 ob=bpy.data.objects.new(mesh.name,mesh);site.objects.link(ob)
-box('Contexto neutro | entorno nao levantado',(0,5,-.24),(250,250,.2),mat('Piso mineral claro'),site)
-box('Rua frontal | posicao aproximada',(0,-25,-.04),(90,8,.1),mat('Asfalto'),site)
 box('Passeio frontal',(0,-19.8,.04),(28,2.5,.18),mat('Piso mineral claro'),site)
 box('Meio fio',(0,-21.05,.08),(28,.14,.22),mat('Concreto mineral'),site)
-for x in range(-35,36,9):box('Sinalizacao de contexto',(x,-25,.02),(4,.12,.02),mat('Sinalizacao'),site)
 for x in range(-13,14,2):box('Junta passeio',(x,-19.8,.139),(.013,2.4,.005),mat('Revestimento grafite'),site)
 # Main street access and pedestrian route follow the right-hand garden in the plan.
 box('Entrada | continuidade passeio',(6.8,-16.0,.10),(2.4,5.2,.15),mat('Piso mineral claro'),site)
@@ -68,7 +65,6 @@ box('Quadra | prolongamento lateral',(cx,cy,.10),(12.0,8.6,.15),court,leisure)
 for a,b in [((-5.8,-4), (5.8,-4)),((-5.8,4),(5.8,4)),((-5.8,-4),(-5.8,4)),((5.8,-4),(5.8,4)),((0,-4),(0,4))]:
  line('Quadra | linha',(cx+a[0],cy+a[1],.185),(cx+b[0],cy+b[1],.185),.04,.015,mat('Sinalizacao'),leisure)
 box('Acesso secundario | indicativo',(27.6,cy,.1),(3.2,11,.18),mat('Piso mineral claro'),site)
-box('Via secundaria | indicativa',(31.5,cy,-.03),(5.5,26,.1),mat('Asfalto'),site)
 # Keep botanical geometry from the delivered Blender source, with relocated planting.
 leaf=bpy.data.meshes.get('Folhagem | folhas geometricas compartilhadas')
 def foliage(x,y,z,scale):
@@ -105,7 +101,7 @@ manifest={'source':'apogeu_estudo.blend','sourceSha256':hashlib.sha256(SOURCE.re
 
 # Revision remains editable in Blender. Save separately from the original source.
 scene['implantacao_revisada']='Interpretacao da planta p-002: extensao lateral, quadra e bosque posterior. Dimensoes ainda estimadas.'
-editable=SOURCE.parent/'apogeu_implantacao-v2.blend'
+editable=SOURCE.parent/'apogeu_fotoinsercao.blend'
 bpy.ops.wm.save_as_mainfile(filepath=str(editable))
 
 # Evaluate modifiers, group by section and material, then merge for lower draw count.

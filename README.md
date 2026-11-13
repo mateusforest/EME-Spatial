@@ -111,3 +111,23 @@ Validação: `node --experimental-strip-types --test tests/lot-operation.test.mj
 - Sem preços, estoque ou áreas validadas: as metragens divergentes da página oficial estão explicitadas.
 - Origem do modelo e limites de caminhada: `public/assets/apogeu/model-v2/manifest.json`. Exportador: `tools/export-apogeu-web.py`, executado no Blender com o arquivo fonte local.
 - Verificação: `node --experimental-strip-types --test tests/apogeu.test.mjs`, TypeScript e compilação de produção; revisão visual da visita em desktop e 390 px.
+
+### Apogeu — photographic context
+
+`/apresentar/apogeu` opens with the Blender tower over the real aerial shot at 2.5 s
+in Aporte's `https://aporteconstrutora.com.br/APO_VAC_FILME_EF.mp4`. The treated
+background removes promotional text and the glowing parcel outline using the
+built-in image editing tool. It is an edited reference, not a current orthophoto.
+The original frame is retained in `public/assets/apogeu/aerial/original.jpg` and
+can be compared in the presentation. Source/provenance: `aerial/source.json`.
+
+The photographic camera stays fixed. Its crop and the image crop share the same
+calculation on desktop/mobile and zoom, preserving registration. The calibration
+is approximate, using the existing model's estimated parcel dimensions. The user
+switches to condominium-only 3D for orbit and interior visits; no neighborhood
+geometry or Google imagery is loaded. `model-photo-v1/apogeu.glb` is ~3.5 MB;
+the WebP background is ~0.55 MB. Run the existing exporter for the updated Blender
+model and `tools/calibrate-apogeu-aerial.py` (OpenCV/NumPy) for the camera.
+
+Validation: `node --test tests/apogeu.test.mjs`, `tsc -b`, `vite build`, and desktop
+and portrait browser checks for photo comparison, orbit and apartment entry.

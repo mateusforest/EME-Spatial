@@ -1,0 +1,82 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fov": 48,
+  "position": [
+    -82.48249457405028,
+    79.52588152126887,
+    69.59097104898014
+  ],
+  "rotation": [
+    [
+      0.5782215278365705,
+      0.4232467441870522,
+      -0.6975113320093109
+    ],
+    [
+      -0.20659531211358773,
+      0.9030117269117512,
+      0.3766804986623893
+    ],
+    [
+      0.7892897071158551,
+      -0.07370220210358,
+      0.6095816136056361
+    ]
+  ],
+  "controlWorld": [
+    [
+      -8.575,
+      0.0,
+      21.39
+    ],
+    [
+      9.065,
+      0.0,
+      21.39
+    ],
+    [
+      -8.575,
+      0.0,
+      -46.23
+    ],
+    [
+      8.575,
+      0.0,
+      -46.92
+    ]
+  ],
+  "controlPixels": [
+    [
+      1196.0,
+      944.0
+    ],
+    [
+      1262.0,
+      831.0
+    ],
+    [
+      693.0,
+      798.0
+    ],
+    [
+      803.0,
+      719.0
+    ]
+  ],
+  "residualPixels": [
+    5.019776286860349,
+    6.36392412615395,
+    10.251019267368882,
+    12.083834276989158
+  ],
+  "focus": [
+    0.59,
+    0.67
+  ],
+  "source": "https://aporteconstrutora.com.br/APO_VAC_FILME_EF.mp4",
+  "frameSeconds": 2.5,
+  "description": "Fotograma real do filme da Aporte, com tratamento por IA para retirar texto e brilho promocional. Encaixe visual aproximado; não é levantamento topográfico.",
+  "imageEdit": "Removed promotional text and glowing parcel outline using built-in image generation; original frame retained for comparison.",
+  "cameraStatus": "visual approximation; parcel dimensions estimated from the original model"
+}
