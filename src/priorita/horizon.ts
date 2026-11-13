@@ -96,12 +96,12 @@ export function createHorizonSky(){
       float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
       void main(){
         vec3 d=normalize(vDirection);float h=smoothstep(-.025,.64,d.y);
-        vec3 color=mix(bottomColor,topColor,pow(h,.65));
+        vec3 color=mix(bottomColor,topColor,pow(h,.85));
         // A few thin high clouds; no volumetric march, texture download or animation loop.
-        vec2 p=d.xz/max(.06,d.y)*vec2(.8,2.4);
+        vec2 p=d.xz/max(.12,d.y)*vec2(1.6,1.9);
         float n=noise(p)*.6+noise(p*2.03+7.)*.28+noise(p*4.07+13.)*.12;
-        float clouds=smoothstep(.61,.8,n)*smoothstep(.08,.24,d.y)*(1.-smoothstep(.6,.95,d.y));
-        color=mix(color,cloudColor,clouds*.4);
+        float clouds=smoothstep(.60,.80,n)*smoothstep(.08,.24,d.y)*(1.-smoothstep(.72,.98,d.y));
+        color=mix(color,cloudColor,clouds*.45);
         float alignment=max(0.,dot(d,sunDirection));
         float glow=pow(alignment,110.)*.2,disc=smoothstep(.99991,.99996,alignment);
         color=mix(color,sunColor,clamp((glow+disc)*daylight,0.,1.));

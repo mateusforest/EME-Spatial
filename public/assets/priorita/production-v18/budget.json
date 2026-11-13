@@ -1,0 +1,12 @@
+{
+  "tree.glb": {
+    "bytes": 122040,
+    "triangles": 1632,
+    "objects": 2
+  },
+  "grass-tuft.glb": {
+    "bytes": 256596,
+    "triangles": 96,
+    "objects": 1
+  }
+}

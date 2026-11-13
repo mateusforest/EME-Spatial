@@ -1,0 +1,12 @@
+User-supplied assets adapted in Blender for this isolated study.
+
+Tree low poly lowpoly — 00amza — CC-BY-4.0
+https://sketchfab.com/3d-models/tree-low-poly-lowpoly-73201f05280d48dcb10ed4ca362d69f8
+Changes: one tree isolated, normalized, shared across distance levels; material adapted for web rendering.
+
+Patch of Grass — assetfactory — Sketchfab Standard (embedded source metadata)
+https://sketchfab.com/3d-models/patch-of-grass-74d524a8fb4246fe9aaac63bcd5dec58
+Changes: 12 complete blades isolated, merged into a 96-triangle tuft; texture limited to 1024px.
+Local evaluation. Commercial license entitlement was not included in the supplied files.
+
+The forest and aerial montage images are not included in the interactive scene.
