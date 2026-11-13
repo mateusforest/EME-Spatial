@@ -88,3 +88,15 @@ Custos desconhecidos bloqueiam indicadores de viabilidade. O módulo considera c
 O rascunho usa `eme-spatial:commercial-budget:v1`, separado dos projetos antigos. Salvar é explícito, com proteção contra sobrescrita por outra aba. Exportar/importar JSON permite guardar versões. O resumo comercial HTML omite custos e margem; pode ser impresso em PDF. O portal continua demonstrativo e sem autenticação.
 
 Validação: `node --experimental-strip-types --test tests/commercial-budget.test.mjs tests/portal-storage.test.mjs`, TypeScript e build.
+
+## Acompanhamento do loteamento
+
+`/portal/contratos` inclui um acompanhamento independente para o loteamento, preservando a lista anterior. O botão **Usar orçamento salvo** copia, mediante confirmação, nome, unidades, preço fixo por lote e custo mensal estimado de nuvem. Não importa automaticamente base de compensação, pagamentos ou dados pessoais.
+
+- Quatro etapas com autorização registrada, percentual medido, referência das entregas, teto de investimento, desembolso e aceite. A etapa seguinte depende do aceite anterior. Pesos para a base de compensação: 15%, 30%, 25% e 30%.
+- Vagon: lançamento previsto separado da ativação comercial; registro condicionado a piloto, documentação e ordem de ativação. Os 24 meses contam da ativação. Não há contratação nem acionamento do provedor.
+- Repasses: uma linha por lote após entrada integral recebida pela loteadora, com vencimento, remuneração, total recebido e saldo. A sugestão de cinco dias úteis exclui fins de semana, **não feriados**; a data pode ser corrigida. Não há integração bancária ou fiscal.
+- Cancelamento: simula `max(0, E + T - R - V)` conforme a minuta. Dados desconhecidos e execução sem comprovação bloqueiam o resultado. O cálculo não gera cobrança. Adiantamentos não podem repetir repasses; retomada, estornos e créditos de compensação exigem conciliação manual.
+- Persistência automática dos valores válidos na chave `eme-spatial:lot-operation:v1`, com validação, proteção de conflitos entre abas e bloqueio de sobrescrita de dados ilegíveis. Exportação/importação JSON e relatório HTML imprimível. O registro é local e não substitui contrato, assinatura, comprovação de medição ou documento fiscal.
+
+Validação: `node --experimental-strip-types --test tests/lot-operation.test.mjs tests/commercial-budget.test.mjs tests/portal-storage.test.mjs`, TypeScript, build e fluxo no navegador (etapas, repasse, recarga, compensação e ativação).
