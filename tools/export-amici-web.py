@@ -34,6 +34,14 @@ def texture(name,color,material_name):
             if not path.exists():raise FileNotFoundError(f'Run tools/fetch-amici-pbr.py "{pbr}" before export: {path}')
             im=bpy.data.images.load(str(path),check_existing=True)
             im.colorspace_settings.name='sRGB' if channel=='Diffuse' else 'Non-Color';images.append(im)
+            if channel=='Diffuse' and 'tijolo' in material_name:
+                # Match the reference's mixed grey-brown and muted terracotta courses.
+                w,h=im.size;px=np.array(im.pixels[:],dtype=np.float32).reshape(h,w,4)
+                yy,xx=np.indices((h,w));rows=yy*16//h;cols=((xx+(rows%2)*w//8)%w)*4//w
+                tones=np.array([[.76,.66,.62],[.91,.73,.66],[.68,.68,.69],[.85,.78,.72],[.70,.59,.55]])
+                palette=np.random.default_rng(113).integers(0,len(tones),(16,4));px[:,:,:3]*=tones[palette[rows,cols]]
+                tinted=bpy.data.images.new('Amici tijolo referencia',width=w,height=h,alpha=False)
+                tinted.pixels.foreach_set(px.ravel());tinted.filepath_raw=str(cache/'amici-tijolo.jpg');tinted.file_format='JPEG';tinted.save();images[-1]=tinted
         return tuple(images)
     n=512
     yy,xx=np.indices((n,n));u=xx/n;v=yy/n
@@ -180,7 +188,7 @@ for img in bpy.data.images:
     if img.name.startswith('tree_small') and max(img.size)>1024:
         img.scale(1024,1024)
 bpy.ops.object.select_all(action='SELECT')
-target=out/'amici-walk-v4.glb'
+target=out/'amici-walk-v5.glb'
 bpy.ops.export_scene.gltf(filepath=str(target),export_format='GLB',use_selection=True,
     export_image_format='JPEG',export_jpeg_quality=85,
     export_animations=False,export_cameras=False,export_lights=False,export_extras=True,
@@ -191,6 +199,6 @@ report={'source_sha256':source_hash,'objects_before':len(objects),'meshes':len(b
         'triangles':triangles,'bytes':target.stat().st_size,'source_unchanged':source_hash==hashlib.sha256(source.read_bytes()).hexdigest(),
         'building_height_m_estimated':36.21,'source':'Amici reconstruction v2; ZM marketing references',
         'limitations':'Approximate dimensions and external context; not official BIM; no confirmed unit inventory'}
-(out/'model-walk-v4.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+(out/'model-walk-v5.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 assert report['source_unchanged']
 print('AMICI_WEB_OK',json.dumps(report),flush=True)

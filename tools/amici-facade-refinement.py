@@ -19,8 +19,8 @@ def refine_facade(scene):
             rng=random.Random(901+int(abs(obj.location.x)*100));verts=[];faces=[];indices=[]
             for i in range(26000):
                 t=rng.uniform(.04,.998);a=rng.random()*math.tau
-                envelope=.46*math.sin(math.pi*t)**.68
-                r=envelope*rng.random()**.3*(.94+.06*math.sin(t*60+a*3))
+                envelope=.34*math.sin(math.pi*t)**.48
+                r=envelope*rng.random()**.3*(.85+.15*math.sin(t*39+a*3))
                 center=Vector((math.cos(a)*r,math.sin(a)*r,t*height))
                 outward=Vector((math.cos(a),math.sin(a),rng.uniform(.7,1.8))).normalized()
                 side=Vector((-math.sin(a),math.cos(a),0));length=rng.uniform(.025,.065);width=rng.uniform(.009,.020)
@@ -32,9 +32,19 @@ def refine_facade(scene):
             obj.data=mesh
         elif obj.name.startswith('Folhagem irregular de sacada'):
             # Full crowns hide the planter edge without a uniform hedge silhouette.
-            obj.scale.z*=1.24;obj.scale.y*=1.12
+            variation=random.Random(obj.name).uniform(.85,1.45)
+            obj.scale.z*=variation;obj.scale.y*=1.20
         elif obj.name.startswith('Ramo pendente'):
-            obj.scale.z*=1.15
+            variation=random.Random(obj.name).uniform(1.15,1.9)
+            obj.scale.z*=variation;obj.location.z-=.07*variation
+        elif obj.name.startswith('Painel letreiro'):
+            obj.dimensions.y=.12
+            for mod in obj.modifiers:
+                if mod.type=='BEVEL':mod.width=.015
+        elif obj.name.startswith('Letreiro Amici'):
+            obj.data.size=1.02;obj.data.extrude=.035
+        elif obj.name.startswith('Hall fechamento frontal'):
+            pass
         elif obj.name.startswith('Vaso entrada'):
             # Narrow rim and foot give the existing terracotta pots their real profile.
             obj.data=obj.data.copy()
