@@ -16,6 +16,7 @@ import {demoStatus} from './demo-stock';
 import {openingHour} from './visual-profile';
 import {createStreetLighting,streetLampLayout} from './street-lighting';
 import {createSurfaceFinish} from './surface-finish';
+import {projectLotAnchor,walkFieldOfView} from './walk-view';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -46,6 +47,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   renderer.domElement.tabIndex=0;
   host.append(renderer.domElement);
   const camera=new T.PerspectiveCamera(47,1,1.5,30000);
+  let walkZoom=0;
   camera.position.set(132,103,182);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.target.set(8,0,23);controls.enableDamping=true;controls.dampingFactor=.085;
@@ -127,15 +129,26 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         float siteMask=texture2D(prLawnMask,(prWorldXZ+vec2(150.0,180.0))/vec2(300.0,360.0)).r;
         float detail=dot(texture2D(prLawnDetail,prWorldXZ/5.2).rgb,vec3(.2126,.7152,.0722));
         float lawnPatch=dot(texture2D(prLawnDetail,mat2(.8,-.6,.6,.8)*prWorldXZ/31.0).rgb,vec3(.2126,.7152,.0722));
-        float fibers=mix(.67,1.30,smoothstep(.07,.18,detail));
-        float variation=mix(.78,1.18,smoothstep(.09,.155,lawnPatch));
+        float fibers=mix(.80,1.22,smoothstep(.07,.18,detail));
+        float variation=mix(.88,1.12,smoothstep(.09,.155,lawnPatch));
         float mowing=.5+.5*sin(prWorldXZ.x*.46+prWorldXZ.y*.12);
-        vec3 lawnFinish=mix(vec3(.96,1.10,.78),vec3(1.10,1.09,.88),smoothstep(.09,.16,lawnPatch));
+        vec3 lawnFinish=mix(vec3(.97,1.02,.87),vec3(1.09,1.04,.89),smoothstep(.09,.16,lawnPatch));
         lawnMix.rgb*=mix(vec3(1.0),lawnFinish*fibers*variation*(.95+mowing*.10),siteMask);
         diffuseColor*=lawnMix;
       #endif`);
     };
-    material.customProgramCacheKey=()=> 'priorita-lawn-v10';
+    const lawnCompile=material.onBeforeCompile;
+    material.onBeforeCompile=(shader,renderer)=>{
+      lawnCompile.call(material,shader,renderer);
+      shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+        float bladeHeight=dot(texture2D(prLawnDetail,prWorldXZ/5.2).rgb,vec3(.2126,.7152,.0722))*.055*texture2D(prLawnMask,vec2((prWorldXZ.x+150.0)/300.0,(prWorldXZ.y+180.0)/360.0)).r;
+        vec3 dpdx=dFdx(-vViewPosition),dpdy=dFdy(-vViewPosition);
+        vec3 rx=cross(dpdy,normal),ry=cross(normal,dpdx);
+        float det=dot(dpdx,rx);
+        normal=normalize(abs(det)*normal-sign(det)*(dFdx(bladeHeight)*rx+dFdy(bladeHeight)*ry));
+      `);
+    };
+    material.customProgramCacheKey=()=> 'priorita-lawn-v15';
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
@@ -271,7 +284,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh)||Array.isArray(o.material))return;
       const geometry=o.geometry.clone();geometry.applyMatrix4(o.matrixWorld);
-      const material=o.material as T.MeshStandardMaterial;material.side=T.DoubleSide;material.color.set('#7c9356');material.roughness=.9;streetLighting.apply(material);
+      const material=o.material as T.MeshStandardMaterial;material.side=T.DoubleSide;material.color.set('#9caa77');material.roughness=.9;streetLighting.apply(material);
       const chunks=new Map<string,number[][]>();
       for(const lot of lots){
         const {a,b}=lot.front,len=Math.hypot(a[0]-b[0],a[1]-b[1]);
@@ -291,7 +304,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       }
       for(const positions of chunks.values()){
         const inst=new T.InstancedMesh(geometry,material,positions.length);
-        positions.forEach(([x,z,s,r],i)=>{dummy.position.set(x,terrainHeight(x,z)+.045,z);dummy.scale.setScalar(s);dummy.rotation.set(0,r,0);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);inst.setColorAt(i,new T.Color().setRGB(.8+random()*.2,.85+random()*.15,.7+random()*.2));});
+        positions.forEach(([x,z,s,r],i)=>{dummy.position.set(x,terrainHeight(x,z)+.045,z);dummy.scale.set(s,s*.62,s);dummy.rotation.set(0,r,0);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);inst.setColorAt(i,new T.Color().setRGB(.8+random()*.2,.85+random()*.15,.7+random()*.2));});
         inst.receiveShadow=true;inst.castShadow=false;inst.computeBoundingSphere();scene.add(inst);grassChunks.push(inst);
       }
       o.geometry.dispose();
@@ -334,11 +347,17 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
           if(materialCache.has(m.uuid))return materialCache.get(m.uuid)!;
           const mat=m as T.MeshStandardMaterial;mat.side=T.DoubleSide;mat.envMapIntensity=.55;
           if(/folh|leaf|forra/i.test(mat.name)){
-            mat.transparent=false;mat.alphaTest=0;mat.roughness=.78;mat.normalScale.set(.3,.3);
+            mat.transparent=false;mat.alphaTest=0;mat.roughness=.69;mat.normalScale.set(.48,.48);
             // The supplied leaf image is very dark. Correct its albedo rather
             // than brightening the whole scene or making the trees emissive.
-            mat.color.setRGB(1.95,1.9,1.55);
+            mat.color.setRGB(2.05,1.92,1.60);
             mat.onBeforeCompile=shader=>{
+              // Gentle crown normals remove the harsh planar facets in the
+              // supplied leaf mesh without subdividing or adding draw calls.
+              shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>',`#include <beginnormal_vertex>
+                vec3 crownNormal=normalize(vec3(position.x,(position.y-.62)*.75,position.z)+vec3(.0001));
+                objectNormal=normalize(mix(objectNormal,crownNormal,.28));
+              `);
               shader.fragmentShader=shader.fragmentShader.replace('#include <lights_physical_pars_fragment>',`#include <lights_physical_pars_fragment>
                 void RE_Direct_Leaf(const in IncidentLight light, const in vec3 position, const in vec3 normal, const in vec3 viewDir, const in vec3 coatNormal, const in PhysicalMaterial material, inout ReflectedLight reflected) {
                   RE_Direct_Physical(light,position,normal,viewDir,coatNormal,material,reflected);
@@ -349,7 +368,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
                 #undef RE_Direct
                 #define RE_Direct RE_Direct_Leaf`);
             };
-            mat.customProgramCacheKey=()=> 'priorita-leaf-v14';
+            mat.customProgramCacheKey=()=> 'priorita-leaf-v15';
             mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.035*sunlightAmount;foliageMaterials.push(mat);
           }
           if(mat.emissiveIntensity>0&&!/folh|leaf|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
@@ -444,9 +463,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
 
     const daylight=T.MathUtils.smoothstep(solar.elevation,-7,15),gold=1-T.MathUtils.smoothstep(solar.elevation,6,55);
     sunlightAmount=daylight;for(const material of foliageMaterials)material.emissiveIntensity=.035*daylight;
-    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(4.4-gold*.4)*T.MathUtils.smoothstep(solar.elevation,-1,9);
+    sunDirection.copy(dir);sun.position.copy(sun.target.position).addScaledVector(dir,420);sun.intensity=(3.8-gold*.3)*T.MathUtils.smoothstep(solar.elevation,-1,9);
     sun.color.set('#fff7eb').lerp(new T.Color('#ffd9ad'),gold*.62);
-    hemi.intensity=.25+daylight*.48;hemi.color.set('#bcd4ed');hemi.groundColor.set('#77786b');scene.environmentIntensity=.08+daylight*.22;
+    hemi.intensity=.25+daylight*.75;hemi.color.set('#bcd4ed');hemi.groundColor.set('#92917b');scene.environmentIntensity=.08+daylight*.34;
     const haze=new T.Color('#90b5cd').lerp(new T.Color('#ccb28c'),gold*.38).lerp(new T.Color('#24364d'),1-daylight);
     (scene.fog as T.Fog).color.copy(haze);
     skyMaterial.uniforms.bottomColor.value.copy(haze);
@@ -460,7 +479,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     host.dataset.streetLights=JSON.stringify({count:lampLayout.length,level:+streetLevel.toFixed(3),elevation:+solar.elevation.toFixed(2)});
     renderer.shadowMap.needsUpdate=true;invalidate();
   }
-  function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();invalidate();}
+  function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.fov=['walk','lot','area'].includes(mode)?walkFieldOfView(camera.aspect,walkZoom):47;camera.updateProjectionMatrix();invalidate();}
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);resize();
   // Frame portrait screens vertically instead of shrinking the site into a
   // narrow horizontal strip. Keep both the search bar and thumb controls clear.
@@ -472,7 +491,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     camera.position.copy(frame.position);controls.target.copy(frame.target);
   }
   function stopWalk(){route=[];walkPicking=false;destination.visible=false;events.onWalkState('idle');invalidate();}
-  function setMode(value:ViewMode){stopWalk();mode=value;controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
+  function setMode(value:ViewMode){stopWalk();mode=value;camera.fov=['walk','lot','area'].includes(mode)?walkFieldOfView(camera.aspect,walkZoom):47;camera.updateProjectionMatrix();controls.enabled=value==='aerial'||value==='plan';controls.enableRotate=value==='aerial';events.onMode(value);held.clear();updateLotColors();invalidate();}
   function fly(to:T.Vector3,target:T.Vector3,done?:()=>void){
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fromTarget=controls.enabled?controls.target.clone():camera.position.clone().add(camera.getWorldDirection(new T.Vector3()).multiplyScalar(10));
@@ -629,11 +648,13 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const lotPreview=host.parentElement!.querySelector<HTMLElement>('.pr-walk-lot'),previewLot=lotById.get(selected);
       if(lotPreview&&previewLot&&mode==='walk'){
         const [px,pz]=previewLot.center;
-        targetProjection.set(px,terrainHeight(px,pz)+1.1,pz).project(camera);
-        const x=(targetProjection.x+1)*host.clientWidth/2,y=(1-targetProjection.y)*host.clientHeight/2;
-        lotPreview.hidden=targetProjection.z< -1||targetProjection.z>1||Math.abs(targetProjection.x)>1.5;
-        lotPreview.style.left=`${T.MathUtils.clamp(x,150,Math.max(150,host.clientWidth-150))}px`;
-        lotPreview.style.top=`${T.MathUtils.clamp(y-90,135,Math.max(135,host.clientHeight-320))}px`;
+        const anchor=projectLotAnchor(new T.Vector3(px,terrainHeight(px,pz)+.12,pz),camera,host.clientWidth,host.clientHeight,host.offsetLeft,host.offsetTop);
+        lotPreview.hidden=!anchor.visible;
+        lotPreview.style.left=`${anchor.x}px`;
+        lotPreview.style.top=`${anchor.y}px`;
+        const half=lotPreview.offsetWidth/2;
+        const cardShift=Math.max(12+half,Math.min(host.clientWidth-12-half,anchor.x))-anchor.x;
+        lotPreview.style.setProperty("--anchor-shift",`${cardShift}px`);
       }
       walkTarget.hidden=true;
       if(mode==='walk'&&(roadPreview||route.length)||walkPicking&&roadPreview){
@@ -644,7 +665,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const north=host.parentElement!.querySelector<HTMLElement>('.pr-north svg');
       if(north){const origin=new T.Vector3().copy(controls.target).project(camera),n=new T.Vector3(controls.target.x+plan.northVector[0]*10,controls.target.y,controls.target.z+plan.northVector[1]*10).project(camera);north.style.transform=`rotate(${Math.atan2(n.x-origin.x,n.y-origin.y)*180/Math.PI-45}deg)`;}
       renderer.render(scene,camera);
-      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,localShadowLight:localLamp.intensity>0,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
+      if(import.meta.env.DEV)host.dataset.renderStats=JSON.stringify({mode,block:focusedBlock,selected,selectedArea,walking:route.length>0,walkSpeed,fov:camera.fov,position:camera.position.toArray().map(v=>+v.toFixed(3)),target:controls.target.toArray(),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,localShadowLight:localLamp.intensity>0,quality:lightQuality?'light':'balanced',plants:plantLevels.filter(p=>p.mesh.visible).map(p=>[p.kind,p.level,p.mesh.count])});
       dirty=false;frameTime=now;
     }
   }
@@ -673,7 +694,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     setContours(show:boolean){contours.visible=show;invalidate();},
     setQuality(light:boolean){lightQuality=light;vegetationDirty=true;renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,1.5));sun.shadow.mapSize.setScalar(light?1024:2048);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;resize();},
     hold(key:string,value:boolean){if(value&&mode==='walk'){if(route.length)stopWalk();held.add(key);}else held.delete(key);},
-    zoom(direction:number){if(!controls.enabled)return;camera.position.sub(controls.target).multiplyScalar(direction>0?.8:1.25).add(controls.target);controls.update();invalidate();},
+    zoom(direction:number){if(['walk','lot','area'].includes(mode)){const next=walkFieldOfView(camera.aspect,walkZoom)+(direction>0?-7:7);walkZoom=T.MathUtils.clamp(next,45,96)-walkFieldOfView(camera.aspect);camera.fov=walkFieldOfView(camera.aspect,walkZoom);camera.updateProjectionMatrix();invalidate();return;}if(!controls.enabled)return;camera.position.sub(controls.target).multiplyScalar(direction>0?.8:1.25).add(controls.target);controls.update();invalidate();},
     screenshot(){
       camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea,filtered);renderer.render(scene,camera);
       const output=document.createElement('canvas');output.width=renderer.domElement.width;output.height=renderer.domElement.height;

@@ -1,0 +1,63 @@
+/* Compact, progressive controls: leave the parcel visible on portrait screens. */
+.pr-lot-compact{display:none}
+.pr-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.pr-walk-lot{width:208px;padding:10px 12px;top:0;left:0;transform:translate(calc(-50% + var(--anchor-shift,0px)),calc(-100% - 16px));border-radius:12px;box-shadow:0 5px 18px #081e2740}
+.pr-walk-lot:after{left:calc(50% - var(--anchor-shift,0px));height:16px;pointer-events:none}
+.pr-walk-lot:before{content:'';position:absolute;top:calc(100% + 13px);left:calc(50% - 3px - var(--anchor-shift,0px));width:6px;height:6px;background:#e6ce90;border-radius:50%;box-shadow:0 0 0 4px #e6ce9022;pointer-events:none}
+.pr-walk-lot-heading>span{display:flex;align-items:center;gap:6px;font-size:10px;color:#c4d1c5}
+.pr-walk-lot-heading i{width:5px;height:5px;border-radius:50%}
+.pr-walk-lot-heading button{min-width:28px;min-height:28px}
+.pr-walk-lot-open{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;text-align:left;padding:5px 0 4px;min-height:44px;color:#ead39b}
+.pr-walk-lot-open strong{font-size:20px;font-weight:400;letter-spacing:-.035em}
+.pr-walk-lot-open small{display:block;font-size:9px;color:#aebfb2;margin-top:3px}
+.pr-solar-more{border-top:1px solid var(--pr-line)}
+.pr-solar-more summary{display:flex;align-items:center;justify-content:space-between;list-style:none;cursor:pointer;min-height:42px;font-size:11px;color:#c6d3c2}
+.pr-solar-scale{display:flex;justify-content:space-between;font-size:9px;color:#acbdae}
+.pr-solar-reset{display:flex;align-items:center;gap:7px;background:none;padding:12px 0;color:#e2c990;font-size:11px}
+.pr-solar-actions{justify-content:space-between}
+.pr-solar-sheet>.pr-panel-heading h2{margin:0;font-size:19px}
+.pr-solar-sheet>.pr-street-light-status{margin:0;font-size:9px}
+.pr-mode-walk .pr-walk-options{bottom:77px;left:26px;transform:none;padding:4px 10px}
+.pr-mode-walk .pr-walk-controls{bottom:130px;left:70px}
+@media(max-width:700px){
+ .pr-solar-bar .pr-solar-play span{display:none}
+ .pr-solar-bar .pr-solar-play{width:34px;height:34px;padding:0;justify-content:center;border:0;background:transparent}
+ .pr-solar-expand{width:28px;min-height:34px}
+ .pr-solar{top:108px;left:12px}
+ .pr-solar-sheet{left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));padding:14px 17px;max-height:42dvh;border-radius:18px}
+ .pr-solar-sheet .pr-sun-summary{margin-top:8px;gap:12px;align-items:center}
+ .pr-solar-sheet .pr-sun-summary b{font-size:25px}
+ .pr-solar-sheet .pr-sun-summary span{font-size:10px}
+ .pr-solar-sheet input[type=range]{height:24px;margin:5px 0 0}
+ .pr-solar-actions{margin:10px 0 4px;gap:10px}
+ .pr-solar-more summary{min-height:38px;font-size:10px}
+ .pr-solar-curve{height:62px}
+ .priorita:has(.pr-solar-open) .pr-sheet,.priorita:has(.pr-solar-open) .pr-walk-lot,.priorita:has(.pr-solar-open) .pr-view-controls,.priorita:has(.pr-solar-open) .pr-walk-options,.priorita:has(.pr-solar-open) .pr-instructions{visibility:hidden;pointer-events:none}
+ .pr-detail.pr-sheet{max-height:44dvh;padding:0 16px 12px;left:10px;right:10px}
+ .pr-detail.pr-sheet.is-collapsed{max-height:none;padding-bottom:13px}
+ .pr-detail.is-collapsed .pr-lot-compact{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:11px;margin-top:11px;border-top:1px solid var(--pr-line)}
+ .pr-lot-compact strong{display:block;color:#efd49a;font-size:24px;letter-spacing:-.04em;font-weight:400}
+ .pr-lot-compact span{display:block;color:#b4c6b7;font-size:10px;margin-top:4px}
+ .pr-lot-compact button{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:1px solid #dac48950;border-radius:8px;background:#ffffff06;color:#ebd29b;font-size:11px}
+ .pr-lot-title h2{font-size:23px}
+ .pr-lot-title{margin:3px 0 7px}
+ .pr-commercial.pr-commercial-featured{padding:12px;margin-top:7px}
+ .pr-commercial.pr-commercial-featured>strong{font-size:27px;margin-top:8px}
+ .pr-payment-featured{gap:8px;margin:12px 0;padding-top:10px}
+ .pr-payment-featured b{font-size:16px}
+ .pr-detail-actions{padding-top:7px}
+ .pr-sheet:not(.is-collapsed) .pr-sheet-body{padding-bottom:6px}
+ .pr-walk-lot{width:184px;padding:8px 10px}
+ .pr-walk-lot-open strong{font-size:19px}
+ .pr-pan-controls{display:none}
+ .pr-view-controls{bottom:calc(80px + env(safe-area-inset-bottom,0px));right:12px;gap:3px}
+ .pr-view-controls button{width:36px;height:36px;border-radius:20px}
+ .pr-view-controls button[aria-label='Restaurar vista aérea']{display:none}
+ .pr-mode-walk .pr-walk-options{left:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px));padding:0 10px;height:36px;border-radius:20px}
+ .pr-walk-options button{min-height:34px;font-size:10px;gap:7px}
+ .pr-walk-breadcrumb,.pr-instructions,.pr-north{display:none}
+ .pr-mode-walk .pr-walk-controls{left:50%;bottom:125px;transform:translateX(-50%)}
+ .pr-settings{max-height:calc(100dvh - 190px);overflow:auto}
+ .pr-sheet .pr-panel-heading button{min-width:32px;min-height:32px}
+ .pr-solar-sheet .pr-panel-heading button{min-width:34px;min-height:34px}
+}
