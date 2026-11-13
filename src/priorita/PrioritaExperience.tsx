@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,Box,Camera,ChevronDown,Compass,Footprints,Info,Map,Maximize,Minus,Plus,RotateCcw,Search,Settings2,Trees,X} from 'lucide-react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,BookOpen,Box,Camera,ChevronDown,Compass,Footprints,Info,Map,Maximize,Minus,Plus,RotateCcw,Search,Settings2,Trees,X} from 'lucide-react';
 import {createPrioritaScene} from './scene';
 import type {PrioritaScene,WalkState} from './scene';
 import {areas,areaById,lotById,lots,number,plan} from './model';
@@ -8,6 +8,10 @@ import {validFavorites,toggleComparison} from './experience-state';
 import {LotComparison,LotDetail,LotFinder} from './LotPanels';
 import SolarControls from './SolarControls';
 import './priorita.css';
+import './premium.css';
+import {filterLots} from './presentation-model';
+import type {StockFilter} from './presentation-model';
+const PresentationCenter=lazy(()=>import('./PresentationCenter'));
 
 const startingStock=()=>Object.fromEntries(lots.map(l=>[l.id,'available' as LotStatus]));
 const ids=new Set(lots.map(l=>l.id));
@@ -17,6 +21,8 @@ function loadFavorites(){try{return validFavorites(JSON.parse(localStorage.getIt
 export default function PrioritaExperience(){
  const canvas=useRef<HTMLDivElement>(null),scene=useRef<PrioritaScene|null>(null),shell=useRef<HTMLDivElement>(null),info=useRef<HTMLDialogElement>(null);
  const [ready,setReady]=useState(false),[error,setError]=useState(''),[retry,setRetry]=useState(0);
+ const [capture,setCapture]=useState('');
+ const [presentation,setPresentation]=useState(false),[statusFilter,setStatusFilter]=useState<StockFilter>('all');
  const [selected,setSelected]=useState(''),[selectedArea,setSelectedArea]=useState(''),[mode,setMode]=useState<ViewMode>('aerial');
  const [listOpen,setListOpen]=useState(false),[areasOpen,setAreasOpen]=useState(false),[settingsOpen,setSettingsOpen]=useState(false),[infoOpen,setInfoOpen]=useState(false),[collapsed,setCollapsed]=useState(false);
  const [block,setBlock]=useState('Todas'),[query,setQuery]=useState(''),[stock,setStock]=useState<Record<string,LotStatus>>(startingStock);
@@ -25,6 +31,8 @@ export default function PrioritaExperience(){
  const [contours,setContours]=useState(false),[light,setLight]=useState(()=>matchMedia('(max-width:700px)').matches),[showStock,setShowStock]=useState(true),[showLabels,setShowLabels]=useState(true),[notice,setNotice]=useState('');
  const solarValue=useRef({hour:15.5,date:new Date().toLocaleDateString('en-CA'),trajectory:false});
  const lot=lotById.get(selected),area=areaById.get(selectedArea);
+ const matching=useMemo(()=>filterLots(lots,stock,statusFilter,block,query,favorites,onlyFavorites),[stock,statusFilter,block,query,favorites,onlyFavorites]);
+ const filtering=statusFilter!=='all'||block!=='Todas'||Boolean(query.trim())||onlyFavorites;
  const simulated=Object.values(stock).some(s=>s!=='available');
  const panelOpen=Boolean(lot||area||listOpen||areasOpen||compareOpen);
  useEffect(()=>{const old=document.title;document.title='Priorità · Seu próximo lugar | EME Spatial';return()=>{document.title=old;};},[]);
@@ -45,6 +53,8 @@ export default function PrioritaExperience(){
  useEffect(()=>{scene.current?.setLabels(showLabels);},[showLabels,ready,retry]);
  useEffect(()=>{scene.current?.setWalkSpeed(walkSpeed);},[walkSpeed,ready,retry]);
  useEffect(()=>{for(const [id,status] of Object.entries(stock))scene.current?.setStatus(id,status);},[stock,ready,retry]);
+ useEffect(()=>{scene.current?.setFilter(filtering?matching.map(l=>l.id):null);},[matching,filtering,ready,retry]);
+ useEffect(()=>{scene.current?.setPaused(presentation||Boolean(capture));},[presentation,capture,ready,retry]);
  useEffect(()=>{scene.current?.setComparison(comparison);},[comparison,ready,retry]);
  useEffect(()=>{scene.current?.refresh();},[panelOpen,collapsed,listOpen,compareOpen,settingsOpen]);
  useEffect(()=>{try{localStorage.setItem(favoriteKey,JSON.stringify(favorites));}catch{/* private browsing may disable storage */}},[favorites]);
@@ -57,6 +67,7 @@ export default function PrioritaExperience(){
  function choose(id:string){clearPanels();setSelected(id);setCollapsed(false);scene.current?.select(id,true);}
  function overview(flat=false){clearPanels();scene.current?.overview(flat);}
  function find(){scene.current?.stopWalk();setListOpen(v=>!v);setAreasOpen(false);setCompareOpen(false);setCollapsed(false);setSettingsOpen(false);}
+ function chooseStatus(value:StockFilter){setStatusFilter(value);const ids=filterLots(lots,stock,value,block,query,favorites,onlyFavorites).map(l=>l.id);if(ids.length)scene.current?.focusLots(ids);}
  function chooseBlock(b:string){setBlock(b);setSelected('');scene.current?.focusBlock(b);setListOpen(true);setCollapsed(false);}
  function openAreas(){clearPanels();scene.current?.stopWalk();setAreasOpen(true);setCollapsed(false);}
  function addCompare(id:string){const next=toggleComparison(comparison,id);setComparison(next);if(next.length===2){clearPanels();setCompareOpen(true);setCollapsed(false);scene.current?.focusComparison(next);}else if(next.length===1){setNotice('Primeiro lote adicionado. Escolha outro lote e toque em Comparar.');setListOpen(true);setCollapsed(false);}}
@@ -69,17 +80,20 @@ export default function PrioritaExperience(){
  const closeLot=()=>{setSelected('');scene.current?.select('');if(mode==='lot')overview();};
  return <div className={'priorita '+(panelOpen?'pr-panel-open ':'')+(collapsed?'pr-panel-collapsed ':'')+`pr-mode-${mode}`} ref={shell}>
   <div className="pr-canvas" ref={canvas}/><div className="pr-vignette"/>
-  <header className="pr-header"><a href="/" className="pr-brand" aria-label="EME Spatial início"><Box size={22} strokeWidth={1.3}/><span>EME SPATIAL</span></a><span className="pr-header-center">Priorità <i/> <span>Vacaria, RS</span></span><div><button aria-label="Sobre este estudo" onClick={()=>setInfoOpen(true)}><Info size={17}/></button><button aria-label="Ampliar experiência" onClick={fullscreen}><Maximize size={18}/></button></div></header>
+  <header className="pr-header"><a href="/" className="pr-brand" aria-label="EME Spatial início"><Box size={22} strokeWidth={1.3}/><span>EME SPATIAL</span></a><span className="pr-header-center"><b>Priorità</b><i/><span>UM NOVO OLHAR PARA O SEU LUGAR</span></span><div><button className="pr-material-trigger" onClick={()=>{scene.current?.stopWalk();setPresentation(true);}}><BookOpen size={16}/><span>Apresentação</span></button><button aria-label="Sobre este estudo" onClick={()=>setInfoOpen(true)}><Info size={17}/></button><button aria-label="Ampliar experiência" onClick={fullscreen}><Maximize size={18}/></button></div></header>
   <div className="pr-search-pill"><button onClick={find} aria-expanded={listOpen}><Search size={16}/><span>Encontrar lote</span></button><span className="pr-separator"/><button onClick={openAreas}><span>Explorar</span><ChevronDown size={14}/></button></div>
   <div className="pr-top-actions"><button aria-label="Opções da experiência" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)}><Settings2 size={18}/><span>Opções</span></button></div>
-  {settingsOpen&&<section className="pr-settings" aria-label="Opções da experiência"><div className="pr-panel-heading"><b>Personalize a vista</b><button aria-label="Fechar opções" onClick={()=>setSettingsOpen(false)}><X size={17}/></button></div><label className="pr-toggle">Identificar lotes<input type="checkbox" checked={showLabels} onChange={e=>setShowLabels(e.target.checked)}/></label><label className="pr-toggle">Cores de disponibilidade<input type="checkbox" checked={showStock} onChange={e=>setShowStock(e.target.checked)}/></label><label className="pr-toggle">Curvas de nível<input type="checkbox" checked={contours} onChange={e=>setContours(e.target.checked)}/></label><label className="pr-toggle">Qualidade<select aria-label="Qualidade do cenário" value={light?'light':'balanced'} onChange={e=>setLight(e.target.value==='light')}><option value="balanced">Equilibrada</option><option value="light">Leve</option></select></label><button className="pr-text-button" onClick={()=>{scene.current?.screenshot();setSettingsOpen(false);}}><Camera size={16}/>Salvar imagem desta vista</button></section>}
-  {listOpen&&<LotFinder block={block} query={query} favorites={favorites} onlyFavorites={onlyFavorites} stock={stock} onBlock={chooseBlock} onQuery={setQuery} onFavorites={setOnlyFavorites} onChoose={choose} onClose={()=>setListOpen(false)} onCollapse={()=>setCollapsed(v=>!v)} collapsed={collapsed}/>}
+  {settingsOpen&&<section className="pr-settings" aria-label="Opções da experiência"><div className="pr-panel-heading"><b>Personalize a vista</b><button aria-label="Fechar opções" onClick={()=>setSettingsOpen(false)}><X size={17}/></button></div><label className="pr-toggle">Identificar lotes<input type="checkbox" checked={showLabels} onChange={e=>setShowLabels(e.target.checked)}/></label><label className="pr-toggle">Cores de disponibilidade<input type="checkbox" checked={showStock} onChange={e=>setShowStock(e.target.checked)}/></label><label className="pr-toggle">Curvas de nível<input type="checkbox" checked={contours} onChange={e=>setContours(e.target.checked)}/></label><label className="pr-toggle">Qualidade<select aria-label="Qualidade do cenário" value={light?'light':'balanced'} onChange={e=>setLight(e.target.value==='light')}><option value="balanced">Equilibrada</option><option value="light">Leve</option></select></label><button className="pr-text-button" onClick={()=>{const image=scene.current?.screenshot();if(image)setCapture(image);setSettingsOpen(false);}}><Camera size={16}/>Salvar imagem desta vista</button></section>}
+  {listOpen&&<LotFinder statusFilter={statusFilter} onStatusFilter={chooseStatus} block={block} query={query} favorites={favorites} onlyFavorites={onlyFavorites} stock={stock} onBlock={chooseBlock} onQuery={setQuery} onFavorites={setOnlyFavorites} onChoose={choose} onClose={()=>setListOpen(false)} onCollapse={()=>setCollapsed(v=>!v)} collapsed={collapsed}/>}
   {lot&&!listOpen&&!areasOpen&&!compareOpen&&<LotDetail key={lot.id} lot={lot} status={stock[lot.id]} inside={mode==='lot'} favorite={favorites.includes(lot.id)} comparing={comparison.includes(lot.id)} collapsed={collapsed} onCollapse={()=>setCollapsed(v=>!v)} onClose={closeLot} onEnter={()=>{scene.current?.enterLot(lot.id);setCollapsed(true);}} onBack={()=>overview()} onFavorite={()=>setFavorites(f=>f.includes(lot.id)?f.filter(id=>id!==lot.id):[...f,lot.id])} onCompare={()=>addCompare(lot.id)} onShare={shareLot} onStatus={status=>setStock(s=>({...s,[lot.id]:status}))}/>}
   {compareOpen&&comparison.length===2&&<LotComparison items={comparison.map(id=>lotById.get(id)!)} stock={stock} onChoose={choose} onClose={()=>setCompareOpen(false)} onRemove={removeCompare} collapsed={collapsed} onCollapse={()=>setCollapsed(v=>!v)}/>}
   {comparison.length>0&&!compareOpen&&!listOpen&&!lot&&<button className="pr-compare-basket" onClick={showCompare}><Map size={15}/>Comparar {comparison.length}/2<ArrowRight size={14}/></button>}
   {areasOpen&&<aside className={'pr-lot-list pr-sheet '+(collapsed?'is-collapsed':'')} aria-label="Áreas do loteamento"><button className="pr-sheet-handle" onClick={()=>setCollapsed(v=>!v)} aria-label="Recolher áreas"><span/></button><div className="pr-panel-heading"><div><span className="pr-eyebrow">EXPLORE O LOTEAMENTO</span><h2>Além do seu lote</h2></div><button aria-label="Fechar áreas" onClick={()=>setAreasOpen(false)}><X size={18}/></button></div><div className="pr-sheet-body"><div className="pr-area-results">{areas.map(a=><button key={a.id} onClick={()=>{clearPanels();scene.current?.selectArea(a.id,true);}}><Trees size={20}/><span><b>{a.name}</b><small>Conheça a área e o entorno</small></span><ArrowRight size={15}/></button>)}</div><p className="pr-panel-note">Áreas do urbanístico · paisagismo ilustrativo</p></div></aside>}
   {area&&!listOpen&&!areasOpen&&!compareOpen&&<aside className={'pr-detail pr-sheet '+(collapsed?'is-collapsed':'')} aria-label={'Informações de '+area.name}><button className="pr-sheet-handle" onClick={()=>setCollapsed(v=>!v)} aria-label="Recolher detalhes da área"><span/></button><div className="pr-panel-heading"><span className="pr-eyebrow">ÁREAS DO LOTEAMENTO</span><button aria-label="Fechar detalhes da área" onClick={()=>{if(mode==='area')overview();else scene.current?.selectArea('');}}><X size={18}/></button></div><div className="pr-lot-title"><h2>{area.name}</h2></div><div className="pr-sheet-body"><div className="pr-specs"><span className="pr-eyebrow">ÁREA APROXIMADA</span><div className="pr-area-total"><strong>{number(area.areaGeometric)} <small>m²</small></strong></div></div><p className="pr-area-copy">{mode==='area'?'Arraste para olhar ao redor a partir do centro da área.':area.kind==='Institucional'?'Espaço destinado ao uso institucional no urbanístico.':'Espaço destinado à recreação no urbanístico.'}</p><button className="pr-primary" onClick={()=>{if(mode==='area')overview();else {scene.current?.enterArea(area.id);setCollapsed(true);}}}><Compass size={17}/>{mode==='area'?'Voltar à vista aérea':'Entrar nesta área'}<ArrowRight size={16}/></button><p className="pr-panel-note">Área medida no desenho. Relevo e paisagismo ilustrativos; equipamentos dependem do projeto.</p></div></aside>}
-  <SolarControls onChange={changeSun} onTrajectory={changeTrajectory} onOpen={openSolar} selected={Boolean(lot||area)}/>
+  {filtering&&<button className="pr-filter-indicator" onClick={()=>{setStatusFilter('all');setBlock('Todas');setQuery('');setOnlyFavorites(false);scene.current?.focusBlock('Todas');}}>{matching.length} {matching.length===1?'lote destacado':'lotes destacados'} <X size={13}/></button>}
+  {presentation&&<Suspense fallback={<div className="pr-center-loading" role="status">Abrindo apresentação…</div>}><PresentationCenter selected={selected} onClose={()=>setPresentation(false)} onExplore={id=>{setPresentation(false);clearPanels();if(id)scene.current?.selectArea(id,true);else scene.current?.overview();}}/></Suspense>}
+  {capture&&<CapturePreview source={capture} onClose={()=>setCapture('')}/>}
+  <SolarControls paused={presentation||Boolean(capture)} onChange={changeSun} onTrajectory={changeTrajectory} onOpen={openSolar} selected={Boolean(lot||area)}/>
   <div className="pr-legend"><i/><button onClick={()=>setInfoOpen(true)}>Disponibilidade demonstrativa</button>{simulated&&<button onClick={()=>setStock(startingStock())}>Limpar teste</button>}</div>
   <div className="pr-north" title="Norte da prancha"><Compass size={22}/><span>N</span></div>
   <nav className="pr-dock" aria-label="Navegação do cenário"><button aria-pressed={mode==='aerial'} onClick={()=>overview()}><Box size={18}/><span>Aérea</span></button><span className="pr-separator"/><button aria-pressed={mode==='walk'||walkState==='choosing'} onClick={()=>{clearPanels();scene.current?.chooseWalkStart();}}><Footprints size={18}/><span>Passear</span></button><span className="pr-separator"/><button aria-pressed={mode==='plan'} onClick={()=>overview(true)}><Map size={18}/><span>Planta</span></button></nav>
@@ -95,3 +109,8 @@ export default function PrioritaExperience(){
  </div>;
 }
 function NavigationIcon(){return <Footprints size={20}/>;}
+
+function CapturePreview({source,onClose}:{source:string;onClose:()=>void}){
+ const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{ref.current?.showModal();},[]);
+ return <dialog ref={ref} className="pr-capture-preview" onClose={onClose} onCancel={onClose}><header><div><span className="pr-eyebrow">SUA PERSPECTIVA</span><h2>Uma vista para compartilhar.</h2></div><button aria-label="Fechar imagem da vista" onClick={onClose}><X size={20}/></button></header><img src={source} alt="Imagem capturada da vista do Priorità"/><footer><span>Estudo visual · relevo e paisagismo ilustrativos</span><a href={source} download="priorita-vista.png">Baixar imagem <ArrowDown size={16}/></a></footer></dialog>;
+}

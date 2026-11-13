@@ -30,7 +30,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
   for(const road of plan.roads)add(road.name,'road',road.name,point(...road.label as [number,number]));
   for(const area of areas)add(area.name,'area',area.id,point(...area.center as [number,number]),undefined,()=>selectArea(area.id));
   const projected=new T.Vector3(),view=new T.Vector3();
-  function update(camera:T.PerspectiveCamera,mode:ViewMode,selected:string,block:string,visible:boolean,selectedArea=''){
+  function update(camera:T.PerspectiveCamera,mode:ViewMode,selected:string,block:string,visible:boolean,selectedArea='',filtered:Set<string>|null=null){
     if(currentLot!==selected){
       dimensions.forEach(m=>{m.element.remove();markers.splice(markers.indexOf(m),1);});dimensions=[];currentLot=selected;
       const lot=lotById.get(selected);
@@ -58,6 +58,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
     let count=0;
     for(const {marker:m,distance,active} of candidates){
       m.element.hidden=true;
+      if(m.kind==='lot'&&filtered&&!filtered.has(m.id)&&!active)continue;
       const isBlock=m.kind==='block',near=distance<155;
       if(m.kind==='lot'&&!active&&((!near&&m.block!==block)||(block&&m.block!==block)))continue;
       if(isBlock&&near&&m.id!==block)continue;
