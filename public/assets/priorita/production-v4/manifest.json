@@ -1,0 +1,12 @@
+{
+  "blender": "4.5.14 LTS",
+  "engine": "Cycles / OptiX",
+  "lots": 96,
+  "terrain": "illustrative",
+  "site_bytes": 3144964,
+  "grass_bytes": 3100,
+  "maps": "Cycles procedural baking · color, normal, roughness · 1024 px",
+  "source": "Projeto Urbanístico · prancha 01 · julho de 2024",
+  "vegetation_bytes": 3866548,
+  "position_quantization_bits": 18
+}

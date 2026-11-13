@@ -1,0 +1,37 @@
+[
+  {
+    "kind": "tree",
+    "level": "near",
+    "triangles": 58927
+  },
+  {
+    "kind": "tree",
+    "level": "mid",
+    "triangles": 21549
+  },
+  {
+    "kind": "tree",
+    "level": "far",
+    "triangles": 7887
+  },
+  {
+    "kind": "shrub0",
+    "level": "near",
+    "triangles": 2824
+  },
+  {
+    "kind": "shrub0",
+    "level": "far",
+    "triangles": 903
+  },
+  {
+    "kind": "shrub1",
+    "level": "near",
+    "triangles": 2335
+  },
+  {
+    "kind": "shrub1",
+    "level": "far",
+    "triangles": 747
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "tree",
+    "part": "bark",
+    "level": "near",
+    "triangles": 11068
+  },
+  {
+    "kind": "tree",
+    "part": "leaves",
+    "level": "near",
+    "triangles": 40512
+  },
+  {
+    "kind": "tree",
+    "part": "bark",
+    "level": "mid",
+    "triangles": 5958
+  },
+  {
+    "kind": "tree",
+    "part": "leaves",
+    "level": "mid",
+    "triangles": 15192
+  },
+  {
+    "kind": "tree",
+    "part": "bark",
+    "level": "far",
+    "triangles": 2042
+  },
+  {
+    "kind": "tree",
+    "part": "leaves",
+    "level": "far",
+    "triangles": 2532
+  }
+]

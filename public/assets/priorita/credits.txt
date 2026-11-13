@@ -1,0 +1,31 @@
+Priorità — estudo de apresentação EME Spatial, 12/11/2026.
+
+Implantação, identificação e áreas extraídas do urbanístico fornecido pelo usuário, prancha 01, julho/2024. Não foi fornecido levantamento altimétrico. Relevo, paisagismo e mobiliário são ilustrativos. O horizonte é um contexto atmosférico genérico.
+
+Árvore tree_small_02 e textura grass_ground: Poly Haven, CC0, reutilizadas da biblioteca local Casa M. Árvore reduzida para navegação no navegador.
+https://polyhaven.com/a/tree_small_02
+https://polyhaven.com/a/grass_ground
+
+Pavimentação e asfalto: biblioteca de materiais EME Spatial / Botanique v6.
+Vegetação distante: geometria de folhas EME Spatial mCanopy51.
+
+Produção v4: Blender 4.5.14 LTS, Cycles/OptiX e Geometry Nodes.
+Asfalto e calçada: materiais procedurais EME Spatial criados no Blender e baked em mapas PBR de cor, rugosidade e normal (1024 px).
+Meio-fio modular, grelhas pluviais, bancos e touceira de grama: geometria EME Spatial criada no Blender.
+Arquivo editável local: conteudos/priorita/Priorita-producao-v4.blend.
+GLB de produção otimizado: production-v4/site.glb. A interface, disponibilidade e navegação permanecem no Three.js.
+Luz ambiente: HDR daylight-1k reutilizado da biblioteca local Torre M.
+
+Sol: equações aproximadas NOAA para Vacaria, UTC−3. Norte interpretado da prancha, sem validação georreferenciada.
+https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+
+Arbustos da praça: Poly Haven shrub_02, CC0, variantes LOD2 a/c da biblioteca local Torre M. https://polyhaven.com/a/shrub_02
+
+Árvore usada na revisão v4: Poly Haven tree_small_02, CC0. Fonte Blender original obtida de https://polyhaven.com/a/tree_small_02. Novas versões por distância produzidas no Blender, preservando as folhas e a textura PBR.
+Decodificador Draco: distribuição glTF fornecida com Three.js, código Draco sob licença Apache 2.0. https://github.com/google/draco
+
+
+Revisão v5: árvore procedural fornecida pelo usuário em arvore_paisagismo.py, gerada e preparada no Blender. Modelo genérico, sem espécie botânica específica. Fonte preservada em conteudos/priorita/sources/user-tree.
+Novos níveis near/mid/far usam folhas inteiras, cores por vértice e geometria instanciada. A árvore substitui tree_small_02 dentro do loteamento; os arbustos Poly Haven são mantidos.
+Arquivo de vegetação atual: production-v5/vegetation.glb. Implantação e materiais permanecem em production-v4/site.glb.
+Arquivo editável atual: conteudos/priorita/Priorita-producao-v5.blend. Protótipo: Priorita-arvore-fornecida.blend.
