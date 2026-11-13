@@ -8,7 +8,7 @@ export const obstacles=[
  {minX:-4.3,maxX:-3.2,minZ:9.2,maxZ:12.0},
  {minX:1.45,maxX:4.2,minZ:13.0,maxZ:15.95},
  {minX:1.45,maxX:4.2,minZ:8.7,maxZ:11.65},
- {minX:3.15,maxX:4.6,minZ:6.7,maxZ:9.2},
+ {minX:2.45,maxX:4.6,minZ:6.7,maxZ:9.2},
  {minX:-4.4,maxX:-3.5,minZ:6.8,maxZ:7.9},
  {minX:3.6,maxX:4.4,minZ:15.9,maxZ:16.7},
 ] as const;

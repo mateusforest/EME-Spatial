@@ -14,10 +14,12 @@ def add_walkable_hall(scene):
         b.inputs['Base Color'].default_value=(*lin,1);b.inputs['Metallic'].default_value=metal;b.inputs['Roughness'].default_value=rough
         if emit:b.inputs['Emission Color'].default_value=(*lin,1);b.inputs['Emission Strength'].default_value=emit
         return m
-    wall=mat('Hall porcelanato claro','D9D5CA');floor=mat('Hall piso acetinado','BDBDB4',rough=.56)
+    wall=mat('Hall parede mineral','D9D5CA');floor=mat('Hall piso acetinado','B8B4AB',rough=.44)
     wood=mat('Hall madeira natural','9B764C');dark=mat('Hall metal grafite','343938',.55,.34)
     fabric=mat('Hall tecido cinza','9FA7A3',rough=.95);linen=mat('Hall linho claro','CCC7B8',rough=.95)
-    bronze=mat('Hall bronze','9B7C4A',.72,.32);stone=mat('Hall pedra natural','A7A18D')
+    bronze=mat('Hall bronze','9B7C4A',.72,.32);stone=mat('Hall pedra natural','A7A18D');steel=mat('Hall aco escovado','A3AAA7',.72,.34)
+    marble=mat('Hall marmore mesa','D8D8D0',rough=.27);ochre=mat('Hall couro ocre','926028',rough=.68)
+    charcoal=mat('Hall tecido banco','646B68',rough=.95);rug=mat('Hall tapete trama','77776D',rough=1)
     light=mat('Hall luz indireta','FFF0D4',rough=.4,emit=1.5);leaf=mat('Hall folhas','3A5435');soil=mat('Hall terra','38332B')
     glass=next(m for m in bpy.data.materials if 'Vidro' in m.name)
     cache={}
@@ -37,13 +39,18 @@ def add_walkable_hall(scene):
             mesh=bpy.data.meshes.new(name);mesh.from_pydata(verts,[],faces);mesh.materials.append(material);cache[key]=mesh
         o=bpy.data.objects.new(name,mesh);coll.objects.link(o);o.location=loc
         if bevel:
-            mod=o.modifiers.new('Cantos suaves','BEVEL');mod.width=bevel;mod.segments=3
+            for p in o.data.polygons:p.use_smooth=True
+            mod=o.modifiers.new('Cantos suaves','BEVEL');mod.width=bevel;mod.segments=5;mod.harden_normals=True
+            mod=o.modifiers.new('Normais ponderadas','WEIGHTED_NORMAL');mod.keep_sharp=True
         if door:o['walkDoor']=door
         if kind!='box':
             for p in o.data.polygons:p.use_smooth=True
         return o
     for o in list(scene.objects):
         if o.name.startswith(('Volume de embasamento','Hall |','Entrada |')):bpy.data.objects.remove(o,do_unlink=True)
+        elif o.name=='Base do predio':
+            # The original slab concealed the lobby tiles and their joints.
+            o.dimensions.z=.2;o.location.z=.1
     # Hollow the podium so the visitor can physically enter; keep its outside envelope.
     for sign in (-1,1):add('Hall envelope lateral',(sign*6.3,1,3.1),(3.2,32.8,6.2),wall)
     add('Hall envelope fundos',(0,6.55,3.1),(9.4,21.7,6.2),wall)
@@ -64,48 +71,87 @@ def add_walkable_hall(scene):
             for z in (.2,3):add('Hall porta travessa',(x,-17.66,z),(1.2,.06,.035),dark,door=door)
             if door:add('Hall porta puxador',(sign*.09,-17.72,1.45),(.025,.05,.5),bronze,.008,door=door)
     for x in (-2.43,2.43):add('Hall ombreira',(x,-17.65,1.6),(.08,.14,2.9),dark)
-    for i in range(10):add('Hall junta piso X',(-4.5+i,-11.9,.245),(.008,10.8,.003),stone)
-    for i in range(11):add('Hall junta piso Y',(0,-17+i,.245),(9.1,.008,.003),stone)
+    for i in range(9):add('Hall junta piso X',(-4.8+i*1.2,-11.9,.242),(.003,10.8,.002),stone)
+    for i in range(10):add('Hall junta piso Y',(0,-17+i*1.2,.242),(9.1,.003,.002),stone)
     # Slatted oak wall, lift bank and bronze signage read from the lobby rendering.
     for i in range(55):add('Hall ripado',(-4.5,-16.9+i*.105,1.95),(.08,.045,3.35),wood,.006)
     add('Hall painel elevadores',(-3.3,-6.52,1.8),(2.25,.12,3.1),dark,.06)
     for x in (-3.8,-2.8):
-        add('Hall elevador',(x,-6.61,1.54),(.87,.08,2.6),stone,.015)
+        add('Hall elevador',(x,-6.61,1.54),(.87,.08,2.6),steel,.015)
         add('Hall junta elevador',(x,-6.665,1.54),(.012,.01,2.57),dark)
     add('Hall porta apoio',(1.1,-6.52,1.53),(1,.1,2.6),wood,.025)
     for i in range(40):add('Hall ripado fundos',(-1.65+i*.15,-6.5,1.95),(.07,.08,3.35),wood,.006)
     add('Hall painel marca',(3,-6.66,2.05),(2.9,.14,2.5),wall,.28)
-    curve=bpy.data.curves.new('Hall amici marca','FONT');curve.body='amici';curve.align_x='CENTER';curve.size=.62;curve.extrude=.012
+    curve=bpy.data.curves.new('Hall amici marca','FONT');curve.body='amici';curve.align_x='CENTER';curve.size=.48;curve.extrude=.012
     label=bpy.data.objects.new('Hall amici marca',curve);coll.objects.link(label);label.location=(3,-6.77,2.2);label.rotation_euler=(math.pi/2,0,0);curve.materials.append(bronze)
     # Reception lounge. Keep the central x +/-1.2 corridor clear to the back.
     def sofa(x,y,length=2.7):
-        add('Hall sofa assento',(x,y,.61),(.85,length,.37),linen,.14)
-        add('Hall sofa encosto',(x-.33,y,1),(.22,length,.72),linen,.13)
+        add('Hall sofa estrutura',(x,y,.40),(.80,length,.12),dark,.035)
+        for dy in (-length*.245,length*.245):
+            add('Hall sofa almofada',(x,y+dy,.58),(.86,length*.48,.28),linen,.12)
+            add('Hall sofa encosto',(x-.33,y+dy,.9),(.24,length*.48,.67),linen,.12)
         for sign in (-1,1):add('Hall sofa braco',(x,y+sign*(length/2-.08),.82),(.83,.18,.65),linen,.08)
-        for dy in (-length*.4,length*.4):add('Hall sofa pe',(x,y+dy,.34),(.6,.06,.25),dark)
+        for dy in (-length*.4,length*.4):add('Hall sofa pe',(x,y+dy,.34),(.6,.035,.22),dark)
     sofa(-3.75,-14.2);sofa(-3.75,-10.6,2.5)
     def table(x,y,r=.55):
-        add('Hall mesa base',(x,y,.46),(r*.9,r*.9,.48),bronze,kind='cylinder')
-        add('Hall mesa tampo',(x,y,.72),(r*2,r*1.4,.08),wall,kind='cylinder')
+        add('Hall mesa base',(x,y,.43),(r*.9,r*.9,.36),bronze,kind='cylinder')
+        add('Hall mesa tampo',(x,y,.63),(r*2,r*1.4,.045),marble,.012,kind='cylinder')
+        add('Hall livro capa',(x-.16,y,.664),(.22,.16,.018),dark,.004)
+        add('Hall livro paginas',(x-.16,y,.678),(.21,.15,.012),wall)
+        add('Hall vaso mesa',(x+.2,y+.08,.75),(.095,.095,.20),bronze,kind='cylinder')
+        for a in (0,1.9,3.7):
+            o=add('Hall arranjo mesa',(x+.2+math.cos(a)*.045,y+.08+math.sin(a)*.045,.93),(.08,.055,.2),linen,kind='sphere');o.rotation_euler[1]=.45
     def chair(x,y,angle=0):
-        seat=add('Hall poltrona assento',(x,y,.63),(.82,.83,.45),fabric,.2);seat.rotation_euler[2]=angle
-        back=add('Hall poltrona encosto',(x,y+.3,.96),(.83,.22,.65),fabric,.13);back.rotation_euler[2]=angle
-        for dx in (-.34,.34):add('Hall poltrona braco',(x+dx,y,.85),(.18,.7,.4),fabric,.08)
-        for dx in (-.3,.3):add('Hall poltrona pe',(x+dx,y,.36),(.035,.5,.27),dark)
+        before=set(coll.objects)
+        add('Hall poltrona base',(x,y,.40),(.68,.69,.12),dark,.05)
+        add('Hall poltrona assento',(x,y,.59),(.82,.79,.27),fabric,.13)
+        add('Hall poltrona encosto',(x,y+.30,.94),(.82,.23,.64),fabric,.115)
+        for dx in (-.35,.35):add('Hall poltrona braco',(x+dx,y,.78),(.17,.7,.3),fabric,.08)
+        for dx in (-.30,.30):
+            for dy in (-.28,.28):add('Hall poltrona pe',(x+dx,y+dy,.33),(.027,.027,.19),dark)
+        for o in set(coll.objects)-before:
+            dx,dy=o.location.x-x,o.location.y-y
+            o.location.x=x+dx*math.cos(angle)-dy*math.sin(angle);o.location.y=y+dx*math.sin(angle)+dy*math.cos(angle);o.rotation_euler[2]=angle
     for y in (-14.45,-10.15):
-        add('Hall tapete',(2.7,y,.26),(3.1,2.8,.03),fabric,kind='cylinder')
+        add('Hall tapete',(2.7,y,.255),(3.1,2.8,.018),rug,kind='cylinder')
         table(2.5,y,.62);table(3.2,y-.38,.35)
-        chair(1.9,y+1);chair(3.65,y+.65);chair(3.2,y-1.1)
+        chair(1.9,y+.95,-.4);chair(3.65,y+.65,.7);chair(3.2,y-1.1,math.pi)
     # Background coworking nook, also visible in the published plan and render.
-    add('Hall bancada coworking',(4.17,-8.1,.94),(.8,2.8,.09),wood,.08)
-    for y in (-8.8,-7.5):add('Hall cadeira coworking',(3.5,y,.57),(.53,.6,.1),wood,.05)
+    add('Hall piso coworking',(3.5,-7.8,.253),(2.2,2.45,.02),wood)
+    add('Hall banco coworking',(4.12,-7.8,.54),(.7,2.4,.4),charcoal,.12)
+    add('Hall banco encosto',(4.38,-7.8,.91),(.19,2.4,.68),charcoal,.09)
+    for y in (-8.45,-7.2):
+        add('Hall mesa coworking',(3.38,y,.98),(.9,.75,.045),wood,.08)
+        add('Hall pedestal coworking',(3.38,y,.62),(.055,.055,.72),dark)
+        add('Hall base coworking',(3.38,y,.28),(.5,.5,.035),dark,kind='cylinder')
+        add('Hall cadeira coworking',(2.78,y,.60),(.47,.50,.1),ochre,.045)
+        add('Hall cadeira coworking encosto',(2.53,y,.86),(.10,.51,.48),ochre,.045)
+        for dx in (-.19,.19):
+            for dy in (-.20,.20):add('Hall cadeira coworking pernas',(2.78+dx,y+dy,.43),(.023,.023,.34),dark)
+    # Irregular stone wall and warm concealed wash from the published coworking.
+    add('Hall pedra revestimento',(4.49,-11.9,1.87),(.12,10.6,3.15),stone)
+    add('Hall luz parede pedra',(4.36,-11.9,3.35),(.03,10.3,.025),light)
+    # Decorative discs and slim lamp match the two reading areas.
+    for y,z,r in ((-12.1,2.05,.23),(-12.65,2.4,.34),(-12.8,1.83,.18)):
+        o=add('Hall disco decorativo',(4.38,y,z),(r*2,r*2,.035),bronze if r<.3 else dark,kind='cylinder');o.rotation_euler[1]=math.pi/2
+    add('Hall luminaria haste',(-3.7,-12.6,.85),(.035,.035,1.15),bronze)
+    add('Hall luminaria cupula',(-3.7,-12.6,1.48),(.48,.48,.23),dark,.05,kind='cylinder')
     random.seed(451)
     for x,y in ((-4,-7.35),(4,-16.3)):
         add('Hall vaso',(x,y,.56),(.55,.55,.63),dark,kind='cylinder')
         add('Hall substrato',(x,y,.88),(.48,.48,.02),soil,kind='cylinder')
-        for i in range(18):
-            theta=random.random()*math.tau;h=random.uniform(1,2.1)
-            o=add('Hall planta',(x+math.cos(theta)*.2,y+math.sin(theta)*.2,h),(.18,.48,.035),leaf,kind='sphere');o.rotation_euler=(random.uniform(-.7,.7),.4,theta)
+        for stem in range(5):
+            theta=stem*2.4;h=1.45+stem*.14;sx=x+math.cos(theta)*.09;sy=y+math.sin(theta)*.09
+            add('Hall caule planta',(sx,sy,(h+.85)/2),(.012,.012,h-.85),wood,kind='cylinder')
+            for j in range(5):
+                a=theta+j*2.4;z=h-.08-j*.12;length=random.uniform(.24,.36);verts=[]
+                for k in range(9):
+                    t=k/8;w=.085*math.sin(math.pi*t);bend=.12*math.sin(math.pi*t)-.06*t
+                    for side in (-1,0,1):verts.append((sx+math.cos(a)*length*t-math.sin(a)*w*side,sy+math.sin(a)*length*t+math.cos(a)*w*side,z+bend-abs(side)*.025*math.sin(math.pi*t)))
+                faces=[(k*3+i,k*3+i+1,(k+1)*3+i+1,(k+1)*3+i) for k in range(8) for i in range(2)]
+                mesh=bpy.data.meshes.new('Hall folha curvada');mesh.from_pydata(verts,[],faces);mesh.materials.append(leaf)
+                for p in mesh.polygons:p.use_smooth=True
+                o=bpy.data.objects.new('Hall folhagem natural',mesh);coll.objects.link(o)
     # Suspended rings and recessed ceiling ribbons.
     for x,y,r in ((2.5,-14.4,.58),(3,-10.1,.7),(2.3,-10.5,.43)):
         verts=[((r+.025*math.cos(math.tau*j/8))*math.cos(math.tau*i/48),(r+.025*math.cos(math.tau*j/8))*math.sin(math.tau*i/48),.025*math.sin(math.tau*j/8)) for i in range(48) for j in range(8)]

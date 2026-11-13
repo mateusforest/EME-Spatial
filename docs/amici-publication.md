@@ -34,14 +34,14 @@ Priorità and Apogeu source and assets remain unchanged.
 
 ## Eye-level walk
 
-The current viewer uses `amici-walk-v3.glb`; the earlier facade-only export is
+The current viewer uses `amici-walk-v4.glb`; the earlier facade-only export is
 retained for compatibility. The export script first applies
 `tools/amici-walkable-hall.py` to the in-memory source. This hollows the podium,
 replaces the shallow lobby with an interpreted furnished hall, and preserves
 sliding entrance leaves through `walkDoor` glTF extras. It uses the official
 lobby image and ground-floor plan as visual references, with estimated dimensions.
 The source .blend on disk remains unchanged. Metadata is recorded separately
-in `model-walk-v3.json`.
+in `model-walk-v4.json`.
 
 “Passear” begins at eye level in front of the building. WASD/arrows and held
 screen buttons move relative to the viewing direction; dragging looks around.
@@ -55,3 +55,21 @@ input focus stop movement; viewport resizing preserves the walk position.
 closed doors, swept movement and floor transitions. `tools/check-amici-walk.mjs`
 verifies keyboard and screen-pad entry, guided entry/exit, ground clicks,
 looking around, resize, modal pause, Escape and the mobile layout in a browser.
+
+## Material and planting refinement
+
+The v4 web derivative uses finer, denser cypress sprays, fuller hanging planters,
+and a less aggressive LOD for the existing Poly Haven trees. The facade geometry
+and surrounding massing remain estimates based on the published frontage.
+Tijolo, oak and stone surfaces use photographed diffuse, normal and roughness maps;
+the CC0 source URLs are recorded in `pbr-sources.json`. Download the source maps
+with `python tools/fetch-amici-pbr.py <model-bundle>/recursos/pbr` before exporting.
+Temporary generated textures stay outside the public directory. The GLB embeds
+its textures, using JPEG for opaque images and PNG where foliage requires alpha.
+
+The daylight HDR now supplies the visible sky as well as reflections. The closer
+sun shadow coverage, interior spot shadows and gradual exposure/ambient change on
+entry improve depth without changing walk controls. Hall additions include oak,
+stone, smoother upholstered furniture, coworking furniture, smaller accessories,
+and curved plant leaves. The footprint includes the added coworking chairs.
+The original native Blender scene is preserved; these are export-time changes.

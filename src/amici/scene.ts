@@ -12,7 +12,7 @@ type Events={onReady:()=>void;onError:()=>void;onProgress:(percent:number)=>void
 export function createAmiciScene(host:HTMLDivElement,events:Events){
  let disposed=false,paused=false,dirty=true,frame=0,mode:View='facade',loaded=false;
  let transition:{start:number;from:T.Vector3;to:T.Vector3;fromTarget:T.Vector3;target:T.Vector3}|null=null;
- let walk:WalkZone|null=null,yaw=0,pitch=0,lastTime=0,doorAmount=0;
+ let walk:WalkZone|null=null,yaw=0,pitch=0,lastTime=0,doorAmount=0,evening=false,interiorBlend=-1;
  let drag:{id:number;x:number;y:number;startX:number;startY:number}|null=null;
  let route:Point[]=[];const keys=new Set<string>(),doors:{object:T.Object3D;sign:number;origin:number}[]=[];
  const scene=new T.Scene();scene.background=new T.Color('#a7bccc');scene.fog=new T.Fog('#a7bccc',130,370);
@@ -28,20 +28,35 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
  controls.target.set(0,17,10);controls.screenSpacePanning=true;
  const invalidate=()=>{dirty=true;};controls.addEventListener('change',invalidate);
  controls.addEventListener('start',()=>{transition=null;});
- const hemi=new T.HemisphereLight('#d6e5f0','#b7ad96',1.25);scene.add(hemi);
- const sun=new T.DirectionalLight('#fff1d7',2.6);sun.position.set(-35,57,62);sun.target.position.set(0,14,0);
+ const hemi=new T.HemisphereLight('#d6e5f0','#b7ad96',.85);scene.add(hemi);
+ const sun=new T.DirectionalLight('#fff1d7',3);sun.position.set(-28,45,48);sun.target.position.set(0,14,0);
  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0003;sun.shadow.normalBias=.045;
- Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:180});scene.add(sun,sun.target);
- const fill=new T.DirectionalLight('#a8c9ee',.55);fill.position.set(35,25,25);scene.add(fill);
- for(const z of [8.5,12,15.5]){const light=new T.PointLight('#fff0d7',38,12,2);light.position.set(0,3.2,z);scene.add(light);}
+ Object.assign(sun.shadow.camera,{left:-32,right:32,top:40,bottom:-32,near:1,far:160});scene.add(sun,sun.target);
+ const fill=new T.DirectionalLight('#a8c9ee',.35);fill.position.set(35,25,25);scene.add(fill);
+ for(const z of [8.5,12,15.5]){const light=new T.PointLight('#fff0d7',12,8,2);light.position.set(0,3.2,z);scene.add(light);}
+ const hallLights:T.SpotLight[]=[];
+ for(const z of [10.2,14.5]){
+  const light=new T.SpotLight('#ffe9cb',42,8,1.15,.65,2);light.position.set(2.3,3.42,z);light.target.position.set(2.5,.3,z);
+  light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.bias=-.0002;light.shadow.normalBias=.018;
+  scene.add(light,light.target);hallLights.push(light);
+ }
+ function adaptLight(){
+  const blend=walk?T.MathUtils.smoothstep(18.7-camera.position.z,0,2.4):0;
+  if(Math.abs(blend-interiorBlend)<.001)return;interiorBlend=blend;
+  hemi.intensity=T.MathUtils.lerp(evening?.5:.85,evening?.18:.32,blend);
+  fill.intensity=T.MathUtils.lerp(.35,.12,blend);
+  scene.environmentIntensity=T.MathUtils.lerp(evening?.35:.45,.24,blend);
+  renderer.toneMappingExposure=T.MathUtils.lerp(1.05,.98,blend);invalidate();
+ }
  const marker=new T.Mesh(new T.RingGeometry(.24,.32,32),new T.MeshBasicMaterial({color:'#e3c28a',side:T.DoubleSide,depthWrite:false}));
  marker.rotation.x=-Math.PI/2;marker.visible=false;scene.add(marker);
- let environment:T.WebGLRenderTarget|undefined;
+ let environment:T.WebGLRenderTarget|undefined,sky:T.DataTexture|undefined;
  const pmrem=new T.PMREMGenerator(renderer);
  new HDRLoader().load(asset('daylight.hdr'),hdr=>{
   if(disposed){hdr.dispose();pmrem.dispose();return;}
-  environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.55;
-  hdr.dispose();pmrem.dispose();invalidate();
+  environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;interiorBlend=-1;adaptLight();
+  sky=hdr;sky.mapping=T.EquirectangularReflectionMapping;scene.background=sky;scene.backgroundBlurriness=.025;scene.backgroundIntensity=evening?.30:.65;
+  scene.backgroundRotation.y=.65;scene.environmentRotation.y=.65;pmrem.dispose();invalidate();
  },undefined,()=>pmrem.dispose());
  const draco=new DRACOLoader().setDecoderPath('/assets/draco/').setWorkerLimit(2);
  const loader=new GLTFLoader().setDRACOLoader(draco);
@@ -52,7 +67,7 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
   textures.forEach(t=>t.dispose());geometries.forEach(g=>g.dispose());
  };
  let model:T.Group|undefined;
- loader.load(asset('amici-walk-v3.glb'),gltf=>{
+ loader.load(asset('amici-walk-v4.glb'),gltf=>{
   if(disposed){disposeModel(gltf.scene);return;}
   model=gltf.scene;
   model.traverse(o=>{if(o.userData.walkDoor)doors.push({object:o,sign:Number(o.userData.walkDoor),origin:o.position.x});});
@@ -71,7 +86,7 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
   const narrow=camera.aspect<.8;
   if(view==='entrance')return{position:new T.Vector3(-8,5,17.4+(narrow?36:25)),target:new T.Vector3(0,3.4,17.4)};
   if(view==='aerial')return{position:new T.Vector3(-52,narrow?66:55,narrow?105:78),target:new T.Vector3(0,14,0)};
-  return{position:new T.Vector3(narrow?-5:-12,18,17.4+Math.max(63,16/(Math.tan(T.MathUtils.degToRad(20))*camera.aspect))),target:new T.Vector3(0,18,15)};
+  return{position:new T.Vector3(narrow?-4:-7,10,17.4+Math.max(63,16/(Math.tan(T.MathUtils.degToRad(20))*camera.aspect))),target:new T.Vector3(0,18,15)};
  }
  function view(value:View,instant=false){
   exitWalk();camera.fov=40;camera.updateProjectionMatrix();
@@ -129,7 +144,7 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
    if(dx||dz){const p=walkStep(camera.position.x,camera.position.z,dx,dz,doorAmount>.72);camera.position.set(p.x,floorHeight(p.z)+1.64,p.z);const zone=zoneAt(p.z);if(zone!==walk){walk=zone;events.onWalk(zone);}dirty=true;}
   }
   if(transition){const t=Math.min(1,(performance.now()-transition.start)/850),e=1-(1-t)**3;camera.position.lerpVectors(transition.from,transition.to,e);controls.target.lerpVectors(transition.fromTarget,transition.target,e);if(t===1)transition=null;dirty=true;}
-  if(!walk)controls.update();if(dirty){renderer.render(scene,camera);dirty=false;}
+  if(!walk)controls.update();adaptLight();if(dirty){renderer.render(scene,camera);dirty=false;}
  }
  tick();
  return {
@@ -140,10 +155,10 @@ export function createAmiciScene(host:HTMLDivElement,events:Events){
   stopMoving,
   hold:(key:string,value:boolean)=>{if(!walk||paused||!allowedKeys.has(key))return;if(value){stopMoving();keys.add(key);}else keys.delete(key);invalidate();},
   zoom:(factor:number)=>{if(walk)return;transition=null;camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);controls.update();invalidate();},
-  lighting:(evening:boolean)=>{sun.intensity=evening?1.05:2.6;hemi.intensity=evening?.7:1.25;scene.environmentIntensity=evening?.35:.55;sun.color.set(evening?'#ffd2a1':'#fff1d7');sun.position.set(-35,evening?21:57,62);scene.background=new T.Color(evening?'#73889d':'#a7bccc');scene.fog!.color.copy(scene.background);renderer.shadowMap.needsUpdate=true;invalidate();},
+  lighting:(value:boolean)=>{evening=value;interiorBlend=-1;adaptLight();sun.intensity=evening?1.05:3;sun.color.set(evening?'#ffd2a1':'#fff1d7');sun.position.set(-28,evening?21:45,48);scene.background=sky??new T.Color(evening?'#73889d':'#a7bccc');scene.backgroundIntensity=evening?.30:.65;scene.fog!.color.set(evening?'#73889d':'#a7bccc');renderer.shadowMap.needsUpdate=true;invalidate();},
   pause:(value:boolean)=>{paused=value;clearInput();stopMoving();invalidate();},
   capture:()=>{if(!loaded)throw new Error('Model not ready');renderer.render(scene,camera);return renderer.domElement.toDataURL('image/png');},
-  dispose:()=>{disposed=true;cancelAnimationFrame(frame);observer.disconnect();controls.dispose();draco.dispose();renderer.domElement.removeEventListener('webglcontextlost',onContextLost);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',motion);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('keydown',keydown);renderer.domElement.removeEventListener('blur',blur);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);if(model)disposeModel(model);marker.geometry.dispose();marker.material.dispose();environment?.dispose();sun.shadow.dispose();renderer.dispose();renderer.domElement.remove();},
+  dispose:()=>{disposed=true;cancelAnimationFrame(frame);observer.disconnect();controls.dispose();draco.dispose();renderer.domElement.removeEventListener('webglcontextlost',onContextLost);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',motion);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('keydown',keydown);renderer.domElement.removeEventListener('blur',blur);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);if(model)disposeModel(model);marker.geometry.dispose();marker.material.dispose();environment?.dispose();sky?.dispose();sun.shadow.dispose();hallLights.forEach(light=>light.shadow.dispose());renderer.dispose();renderer.domElement.remove();},
  };
 }
 export type AmiciScene=ReturnType<typeof createAmiciScene>;

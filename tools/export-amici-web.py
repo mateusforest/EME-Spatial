@@ -1,7 +1,7 @@
 """Produce a compressed web derivative without changing the source Amici .blend.
 Usage: blender -b --python tools/export-amici-web.py -- /path/to/amici_realista_v2.blend
 """
-import bpy, bmesh, sys, json, math, hashlib, runpy
+import bpy, bmesh, sys, json, math, hashlib, runpy, tempfile
 import numpy as np
 from pathlib import Path
 from mathutils import Vector
@@ -13,6 +13,7 @@ out=root/'public/assets/amici';out.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.open_mainfile(filepath=str(source))
 scene=next(s for s in bpy.data.scenes if s.name.startswith('Amici | Fachada refinada'))
 bpy.context.window.scene=scene
+runpy.run_path(str(root/'tools/amici-facade-refinement.py'))['refine_facade'](scene)
 runpy.run_path(str(root/'tools/amici-walkable-hall.py'))['add_walkable_hall'](scene)
 deps=bpy.context.evaluated_depsgraph_get()
 objects=[o for o in scene.objects if o.type in ('MESH','FONT') and not o.hide_render
@@ -22,25 +23,68 @@ print('AMICI_SOURCE',len(objects),flush=True)
 # Replace procedural shader graphs with portable PBR textures; procedural graphs
 # themselves do not survive glTF export. Tile dimensions below are in metres.
 rng=np.random.default_rng(271113)
-def texture(name,color,brick=False):
+pbr=source.parent/'recursos/pbr'
+texture_cache=tempfile.TemporaryDirectory(prefix='amici-web-');cache=Path(texture_cache.name)
+def texture(name,color,material_name):
+    photographed=next((asset for key,asset in [('tijolo','brick_wall_003'),('madeira','oak_veneer_01'),('pedra natural','stone_wall')] if key in material_name),None)
+    if photographed:
+        images=[]
+        for channel in ('Diffuse','nor_gl','rough'):
+            path=pbr/(photographed+'-'+channel+'.jpg')
+            if not path.exists():raise FileNotFoundError(f'Run tools/fetch-amici-pbr.py "{pbr}" before export: {path}')
+            im=bpy.data.images.load(str(path),check_existing=True)
+            im.colorspace_settings.name='sRGB' if channel=='Diffuse' else 'Non-Color';images.append(im)
+        return tuple(images)
     n=512
-    noise=rng.normal(0,.018,(n,n,1))
+    yy,xx=np.indices((n,n));u=xx/n;v=yy/n
+    noise=rng.normal(0,.0025,(n,n,1))
     pixels=np.tile(np.array(color[:3])[None,None,:],(n,n,1))
-    if brick:
-        yy,xx=np.indices((n,n));row=yy//32;shift=(row%2)*64
+    height=np.zeros((n,n));roughness=np.full((n,n),.72)
+    if 'tijolo' in material_name:
+        row=yy//32;shift=(row%2)*64
         col=((xx+shift)%n)//128
         palette=rng.uniform(.78,1.22,(16,4,1))
         pixels*=palette[row,col]
         mortar=(yy%32<2)|((xx+shift)%128<3)
-        pixels[mortar]=(.24,.23,.21)
+        # Subtle warm mortar avoids a white grid when seen from the sidewalk.
+        pixels[mortar]=np.array(color[:3])*.72
+        height=np.where(mortar,.1,.85)+rng.normal(0,.04,(n,n))
+    elif 'madeira' in material_name:
+        grain=np.sin(math.tau*(u*61+.7*np.sin(v*math.tau)+.18*np.sin(u*math.tau*3)))
+        broad=np.sin(math.tau*(u*7+.18*np.sin(v*math.tau)))
+        tone=.88+.12*broad+.045*grain
+        pixels*=tone[:,:,None];height=.5+.16*grain+.06*broad;roughness[:]=.56
+    elif 'tecido' in material_name or 'linho' in material_name or 'trama' in material_name:
+        weave=np.sin(u*math.tau*128)*np.sin(v*math.tau*128)
+        pixels*=(.94+.055*weave)[:,:,None];height=.5+.18*weave;roughness[:]=.96
+    elif 'marmore' in material_name:
+        vein=np.power(.5+.5*np.sin(math.tau*(u*2.5+v*3+.25*np.sin(v*math.tau*2)+.1*np.sin(u*math.tau*3))),24)
+        pixels*=(1-.40*vein)[:,:,None];roughness[:]=.27
+    elif 'piso acetinado' in material_name:
+        grid=rng.normal(0,.025,(17,17));q=np.linspace(0,16,n);horizontal=np.array([np.interp(q,np.arange(17),row) for row in grid])
+        cloud=np.array([np.interp(q,np.arange(17),horizontal[:,i]) for i in range(n)]).T
+        pixels*=(1+cloud)[:,:,None];height=.5+cloud;roughness=.44+cloud
+    elif 'pedra' in material_name:
+        relief=.16*np.sin(u*math.tau*7+np.sin(v*math.tau*4))+.13*np.sin(v*math.tau*13+np.sin(u*math.tau*3))
+        pixels*=(.92+relief)[:,:,None];height=.5+relief+rng.normal(0,.02,(n,n));roughness[:]=.86
+    else:
+        height=.5+rng.normal(0,.015,(n,n))
     pixels=np.clip(pixels+noise,0,1)
     # Image pixel assignment is stored as sRGB; material factors are scene-linear.
     # Encode once here so exported facade colours do not become too dark.
     pixels=np.where(pixels<=.0031308,pixels*12.92,1.055*np.power(pixels,1/2.4)-.055)
     rgba=np.concatenate([pixels,np.ones((n,n,1))],axis=2).astype(np.float32)
     img=bpy.data.images.new(name,width=n,height=n,alpha=False)
-    img.pixels.foreach_set(rgba.ravel());img.filepath_raw=str(out/(name+'.png'))
-    img.file_format='PNG';img.save();return img
+    img.pixels.foreach_set(rgba.ravel());img.filepath_raw=str(cache/(name+'.jpg'))
+    img.file_format='JPEG';img.save()
+    dy,dx=np.gradient(height);normal=np.stack([-dx*3,-dy*3,np.ones_like(dx)],axis=2)
+    normal/=np.linalg.norm(normal,axis=2,keepdims=True);normal=normal*.5+.5
+    maps=[]
+    for suffix,values in [('normal',normal),('rough',np.repeat(roughness[:,:,None],3,axis=2))]:
+        im=bpy.data.images.new(name+'-'+suffix,width=n,height=n,alpha=False);im.colorspace_settings.name='Non-Color'
+        im.pixels.foreach_set(np.concatenate([values,np.ones((n,n,1))],axis=2).astype(np.float32).ravel())
+        im.filepath_raw=str(cache/(name+'-'+suffix+'.jpg'));im.file_format='JPEG';im.save();maps.append(im)
+    return img,*maps
 
 materials={m for o in objects for m in o.data.materials if m}
 for mat in sorted(materials,key=lambda m:m.name):
@@ -58,12 +102,16 @@ for mat in sorted(materials,key=lambda m:m.name):
     bs.inputs['Emission Color'].default_value=emit;bs.inputs['Emission Strength'].default_value=min(emission,1.5)
     if 'Vidro' in mat.name or 'vidro' in mat.name:
         # Transparent approximation avoids full-resolution transmission buffers on phones.
-        bs.inputs['Base Color'].default_value=(.23,.34,.41,.40)
-        bs.inputs['Alpha'].default_value=.40;bs.inputs['Roughness'].default_value=.13
-        bs.inputs['Metallic'].default_value=.22;mat.surface_render_method='DITHERED'
-    if any(k in mat.name.lower() for k in ('tijolo','reboco','asfalto','pedra','madeira')):
-        tx=nodes.new('ShaderNodeTexImage');tx.image=texture('web-'+str(len(bpy.data.images)),color,'tijolo' in mat.name.lower())
+        bs.inputs['Base Color'].default_value=(.10,.16,.19,.28)
+        bs.inputs['Alpha'].default_value=.28;bs.inputs['Roughness'].default_value=.08
+        bs.inputs['Metallic'].default_value=.12;mat.surface_render_method='DITHERED'
+    if any(k in mat.name.lower() for k in ('tijolo','reboco','asfalto','pedra','madeira','tecido','linho','trama','marmore','piso acetinado')):
+        diffuse,normal,roughness=texture('web-'+str(len(bpy.data.images)),color,mat.name.lower())
+        tx=nodes.new('ShaderNodeTexImage');tx.image=diffuse
         links.new(tx.outputs['Color'],bs.inputs['Base Color'])
+        nt=nodes.new('ShaderNodeTexImage');nt.image=normal;nm=nodes.new('ShaderNodeNormalMap');nm.inputs['Strength'].default_value=.55
+        links.new(nt.outputs['Color'],nm.inputs['Color']);links.new(nm.outputs['Normal'],bs.inputs['Normal'])
+        rt=nodes.new('ShaderNodeTexImage');rt.image=roughness;links.new(rt.outputs['Color'],bs.inputs['Roughness'])
 
 # Merge repeated details by material set, leaving the original data intact on disk.
 web=bpy.data.scenes.new('Amici | Web');bpy.context.window.scene=web
@@ -89,7 +137,7 @@ for index,obj in enumerate(objects):
         bm=bmesh.new();bm.from_mesh(mesh)
         # Preserve complete leaf clusters rather than collapsing individual silhouettes.
         bm.faces.ensure_lookup_table()
-        keep_every=3 if obj.name.startswith('Cipreste') else 4
+        keep_every=1 if obj.name.startswith('Cipreste') else 2
         group_size=1 if obj.name.startswith('Cipreste') else 4
         remove=[f for i,f in enumerate(bm.faces) if (i//group_size)%keep_every!=0]
         bmesh.ops.delete(bm,geom=remove,context='FACES');bm.to_mesh(mesh);bm.free()
@@ -99,7 +147,10 @@ for index,obj in enumerate(objects):
             axis=max(range(3),key=lambda k:abs(face.normal[k]));axes=((1,2),(0,2),(0,1))[axis]
             for li in face.loop_indices:
                 co=mesh.vertices[mesh.loops[li].vertex_index].co
-                uv.data[li].uv=(co[axes[0]]/1.16,co[axes[1]]/1.36)
+                material=mesh.materials[face.material_index] if mesh.materials else None
+                name=material.name.lower() if material else ''
+                scale=(1.3,1.1) if 'tijolo' in name else (1.8,1.8) if 'pedra natural' in name else (1.2,2.4) if 'madeira' in name else (1.16,1.36)
+                uv.data[li].uv=(co[axes[0]]/scale[0],co[axes[1]]/scale[1])
     key=(str(obj.get('walkDoor',0)),)+tuple(m.name if m else '' for m in mesh.materials)
     buckets.setdefault(key,[]).append(portable)
     if index%1000==0:print('CONVERT',index,flush=True)
@@ -120,17 +171,18 @@ if tree_objects:
     first=tree_objects[0];first.data=first.data.copy()
     bpy.ops.object.select_all(action='DESELECT');first.select_set(True)
     bpy.context.view_layer.objects.active=first
-    modifier=first.modifiers.new('Web foliage LOD','DECIMATE');modifier.ratio=.25
+    modifier=first.modifiers.new('Web foliage LOD','DECIMATE');modifier.ratio=.60
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     for obj in tree_objects[1:]:obj.data=first.data
 for obj in tree_objects:
     obj.data.calc_loop_triangles();triangles+=len(obj.data.loop_triangles)
 for img in bpy.data.images:
-    if img.name.startswith('tree_small') and max(img.size)>512:
-        img.scale(512,512)
+    if img.name.startswith('tree_small') and max(img.size)>1024:
+        img.scale(1024,1024)
 bpy.ops.object.select_all(action='SELECT')
-target=out/'amici-walk-v3.glb'
+target=out/'amici-walk-v4.glb'
 bpy.ops.export_scene.gltf(filepath=str(target),export_format='GLB',use_selection=True,
+    export_image_format='JPEG',export_jpeg_quality=85,
     export_animations=False,export_cameras=False,export_lights=False,export_extras=True,
     export_apply=False,export_draco_mesh_compression_enable=True,
     export_draco_mesh_compression_level=6,export_draco_position_quantization=14,
@@ -139,6 +191,6 @@ report={'source_sha256':source_hash,'objects_before':len(objects),'meshes':len(b
         'triangles':triangles,'bytes':target.stat().st_size,'source_unchanged':source_hash==hashlib.sha256(source.read_bytes()).hexdigest(),
         'building_height_m_estimated':36.21,'source':'Amici reconstruction v2; ZM marketing references',
         'limitations':'Approximate dimensions and external context; not official BIM; no confirmed unit inventory'}
-(out/'model-walk-v3.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+(out/'model-walk-v4.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 assert report['source_unchanged']
 print('AMICI_WEB_OK',json.dumps(report),flush=True)
