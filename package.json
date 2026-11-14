@@ -9,11 +9,12 @@
     "check": "tsc --noEmit && node --check app.js",
     "preview": "vite preview --host 127.0.0.1 --port 4196",
     "test:walk": "node --experimental-strip-types tests/click-walk63.test.mjs",
-    "test:portal": "node --experimental-strip-types --test tests/portal-storage.test.mjs",
+    "test:portal": "node --experimental-strip-types --test tests/portal-storage.test.mjs tests/portal-database.test.mjs tests/commercial-budget.test.mjs tests/commercial-links.test.mjs tests/lot-operation.test.mjs tests/production74.test.mjs",
     "deliveries:manage": "node --use-system-ca --experimental-strip-types tools/manage-deliveries.mjs",
     "test:deliveries": "node --experimental-strip-types --test tests/deliveries.test.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.119.0",
     "gsap": "3.15.0",
     "lucide-react": "1.45.0",
     "peerjs": "1.5.5",
@@ -22,12 +23,13 @@
     "three": "0.186.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.16",
     "@types/node": "^26.6.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/three": "0.186.0",
     "@vitejs/plugin-react": "6.1.1",
     "typescript": "7.0.2",
-    "vite": "8.3.0"
+    "vite": "8.3.8"
   }
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newBudget,calculateBudget,validateBudget} from '../shared/commercial-budget.ts';
-function fixture(){const b=newBudget();b.include3d=true;b.tierCosts.evolved='20000';for(const x of Object.values(b.media)){x.quantity='0';x.cost='';}b.costs=[{id:'operation',name:'Operação',amount:'1500',monthly:true,cash:true}];b.cloud.mode='local';Object.assign(b.commercial,{months:'12',sold:'96',firstMonth:'1',salesMonths:'12',delay:'0',installments:'1',tax:'10',partner:'10',reserve:'0',margin:'30',discount:'0'});return b;}
+import {newBudget,newTimeline,calculateBudget,validateBudget} from '../shared/commercial-budget.ts';
+function fixture(){const b=newBudget();delete b.timeline;b.include3d=true;b.tierCosts.evolved='20000';for(const x of Object.values(b.media)){x.quantity='0';x.cost='';}b.costs=[{id:'operation',name:'Operação',amount:'1500',monthly:true,cash:true}];b.cloud.mode='local';Object.assign(b.commercial,{months:'12',sold:'96',firstMonth:'1',salesMonths:'12',delay:'0',installments:'1',tax:'10',partner:'10',reserve:'0',margin:'30',discount:'0'});return b;}
 test('96 lotes: valores, custos, margem e equilíbrio nominal',()=>{const r=calculateBudget(fixture());assert.equal(r.maxRevenue,144000);assert.equal(r.received,144000);assert.equal(r.economicCost,38000);assert.equal(r.profit,77200);assert.equal(r.breakEven,32);assert.equal(r.target,38000/(96*.5));assert.equal(r.complete,true);assert.equal(calculateBudget(fixture(),2000).maxRevenue,192000);});
 test('sem vendas continua havendo custo e caixa a financiar',()=>{const r=calculateBudget(fixture(),1500,0);assert.equal(r.profit,-38000);assert.equal(r.cashRequired,38000);assert.equal(r.target,null);assert.equal(r.received,0);});
 test('recebimentos posteriores não entram na receita atual',()=>{const b=fixture();Object.assign(b.commercial,{sold:'48',firstMonth:'7'});const r=calculateBudget(b);assert.equal(r.received,36000);assert.equal(r.future,36000);assert.equal(r.profit,-9200);assert.equal(r.cashRequired,29000);});
@@ -13,3 +13,17 @@ test('preço fechado independe de vendas de lotes',()=>{const b=fixture();Object
 test('percentual usa preço médio e preço zero mantém meta calculável',()=>{const b=fixture();Object.assign(b.commercial,{mode:'percent',price:'1',lotValue:'200000'});assert.equal(calculateBudget(b).maxRevenue,192000);Object.assign(b.commercial,{mode:'lot',price:'0'});assert.equal(calculateBudget(b).target,38000/(96*.5));});
 test('rejeita negativos, frações de lotes, taxas impossíveis e estoque excedido',()=>{for(const change of [{price:'-1'},{sold:'96.5'},{sold:'97'},{months:'121'},{tax:'80',partner:'10',margin:'30'}]){const b=fixture();Object.assign(b.commercial,change);assert.throws(()=>calculateBudget(b));}assert.throws(()=>validateBudget({}));});
 test('custo do capital aumenta preço necessário com recebimento adiado',()=>{const b=fixture();const baseline=calculateBudget(b).target;b.commercial.discount='1';assert.ok(calculateBudget(b).target>baseline);});
+
+function phased(){const b=fixture();b.timeline=newTimeline();b.timeline.launch='4';b.cloud={mode:'desktop',rate:'10',hours:'10',sessions:'',minutes:'',fixed:'0',fx:'1',extra:'0'};Object.assign(b.commercial,{months:'6',firstMonth:'4'});return b;}
+test('Vagon starts at launch; production and pre-receipt cash follow the selected months',()=>{
+ const r=calculateBudget(phased());assert.equal(r.complete,true);assert.equal(r.economicCost,29300);assert.equal(r.upfrontCash,26100);assert.equal(r.firstReceipt,4);
+ assert.deepEqual(r.rows.map(r=>r.cloudCost),[0,0,0,0,100,100,100]);assert.deepEqual(r.rows.map(r=>r.productionCost),[3000,6000,5000,6000,0,0,0]);assert.equal(r.cloudFuture,2100);
+ for(const row of r.rows)assert.equal(row.revenue-row.cashOut,row.net);
+});
+test('no sales still require financing production, administration and post-launch cloud',()=>{const r=calculateBudget(phased(),1500,0);assert.equal(r.firstReceipt,null);assert.equal(r.cashRequired,29300);assert.equal(r.upfrontCash,29300);assert.equal(r.received,0);});
+test('launch after the horizon postpones cloud without hiding the future commitment',()=>{const b=phased();b.timeline.launch='7';b.commercial.firstMonth='7';const r=calculateBudget(b);assert.equal(r.economicCost,29000);assert.equal(r.received,0);assert.equal(r.cloudFuture,2400);assert.ok(r.rows.every(r=>r.cloudCost===0));});
+test('unknown launch cannot present a complete viability estimate',()=>{const b=phased();b.timeline.launch='';assert.equal(calculateBudget(b).complete,false);});
+test('invalid distribution, reversed stages and sales before launch are rejected',()=>{
+ for(const change of [b=>b.timeline.stages[0].percent='14',b=>b.timeline.stages[2].month='0',b=>b.commercial.firstMonth='2']){const b=phased();change(b);assert.throws(()=>calculateBudget(b));}
+});
+test('production after the horizon is disclosed separately',()=>{const b=phased();b.timeline.stages[3].month='8';const r=calculateBudget(b);assert.equal(r.productionFuture,6000);assert.equal(r.economicCost,23300);});

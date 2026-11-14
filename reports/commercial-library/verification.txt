@@ -1,0 +1,36 @@
+Commercial portal verification — 2026-11-13
+
+44 automated tests passed, including PostgreSQL isolation, version conflicts,
+legacy documents, budget cash flows, and commercial-scope links. TypeScript and
+Vite production build passed. Existing large Three.js bundle warning remains.
+
+Manual browser checks used CUA with Vite on 127.0.0.1:4195 and the disposable
+in-memory transport in tests/portal-fixture-server.mjs on 127.0.0.1:54329.
+All amounts and documents shown in screenshots are synthetic test data.
+No actual Supabase accounts, financial records or customer contracts were changed.
+
+Verified:
+- Duplicate a saved R$1,500 proposal, rename it, save R$2,000 as a separate record.
+- Select the original and verify its fee remains R$1,500.
+- Create an operation from the R$2,000 saved proposal and save independently.
+- Reload and reopen the saved operation, retaining its copied scope and price.
+- Copy an operation plan to another document without recording income/approvals.
+- Edit the source budget to revision 2: operation retains revision 1's scope and
+  displays a warning that the source changed.
+- Monthly table includes all cash outflows, shows cloud as an included subset,
+  starts navigation cloud at month 4 and ends after month 27 (24 months).
+- Initial production is phased; capital before first receipts is displayed.
+
+Fixture CORS initially omitted a client request header; allowing the requested
+headers for the fixed localhost origin resolved the test transport failure.
+Vite hot updates emitted duplicate-root/auth warnings while cloud.ts was edited;
+a full reload and repeated navigation completed without new errors or warnings.
+This does not validate production SMTP, redirects or an actual user's login.
+Those checks remain pending the owner's Supabase dashboard access.
+
+Reproduce the manual fixture:
+Start node --experimental-strip-types tests/portal-fixture-server.mjs.
+Start Vite with VITE_SPATIAL_SUPABASE_URL=http://127.0.0.1:54329 and
+VITE_SPATIAL_SUPABASE_PUBLISHABLE_KEY=sb_publishable_fixture_only.
+Use owner@example.test and a nonempty dummy password only in this local fixture.
+Never deploy the fixture configuration. All fixture records disappear on exit.
