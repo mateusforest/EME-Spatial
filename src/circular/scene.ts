@@ -3,6 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
+import {loadUrbanContext} from './context';
 
 export type View='aerial'|'front'|'living'|'kitchen'|'bedroom'|'balcony'|'roof';
 const views:Record<View,{position:number[];target:number[];inside?:boolean}>={
@@ -26,16 +27,15 @@ export function createCircularScene(host:HTMLDivElement,onReady:()=>void,onError
  controls.enableDamping=true;controls.enablePan=false;controls.minDistance=16;controls.maxDistance=115;
  controls.maxPolarAngle=Math.PI*.49;controls.rotateSpeed=.5;
  const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{sunDirection:{value:new T.Vector3(0,1,0)},warmth:{value:0}},vertexShader:`varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec3 direction;uniform vec3 sunDirection;uniform float warmth;void main(){vec3 d=normalize(direction);float h=clamp(d.y,0.,1.);vec3 horizon=mix(vec3(.69,.81,.87),vec3(.91,.68,.46),warmth);vec3 color=mix(horizon,vec3(.18,.43,.68),pow(h,.45));float glow=pow(max(dot(d,normalize(sunDirection)),0.),48.);color+=vec3(.29,.22,.12)*glow;gl_FragColor=vec4(color,1.);
-#include <colorspace_fragment>
 }`,toneMapped:false});
  const sky=new T.Mesh(new T.SphereGeometry(450,24,12),skyMaterial);scene.add(sky);
  const sun=new T.DirectionalLight('#fff0da',2.5);sun.castShadow=true;sun.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);
- Object.assign(sun.shadow.camera,{left:-28,right:28,top:43,bottom:-30,near:1,far:150});sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;
+ Object.assign(sun.shadow.camera,{left:-50,right:50,top:55,bottom:-40,near:1,far:190});sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;
  sun.target.position.set(0,17,0);scene.add(sun,sun.target);
  const ambient=new T.HemisphereLight('#d7e8fa','#77745e',.65);scene.add(ambient);
  const apartmentLight=new T.PointLight('#ffe3bc',12,10,2);apartmentLight.position.set(-2.5,13.5,3.5);scene.add(apartmentLight);
- const ground=new T.Mesh(new T.CircleGeometry(240,64),new T.MeshStandardMaterial({color:'#8a9473',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.28;ground.receiveShadow=true;scene.add(ground);
- scene.fog=new T.Fog('#c3d2d6',145,360);
+ const ground=new T.Mesh(new T.PlaneGeometry(1600,1600),new T.MeshStandardMaterial({color:'#d1d5bc',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.28;ground.receiveShadow=true;scene.add(ground);
+ scene.fog=new T.Fog(new T.Color().setRGB(.69,.81,.87,T.SRGBColorSpace),150,370);
  let disposed=false,paused=false,frame=0,inside=false,yaw=0,pitch=0,current:View='aerial',environment:T.WebGLRenderTarget|undefined;
  let drag:{id:number;x:number;y:number}|null=null;
  const textures=new Set<T.Texture>();
@@ -47,7 +47,7 @@ export function createCircularScene(host:HTMLDivElement,onReady:()=>void,onError
  const pmrem=new T.PMREMGenerator(renderer);
  new HDRLoader().load('/assets/m/materials/daylight-1k.hdr',hdr=>{
   if(disposed){hdr.dispose();pmrem.dispose();return;}
-  environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.55;hdr.dispose();pmrem.dispose();invalidate();
+  environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.4;hdr.dispose();pmrem.dispose();invalidate();
  },undefined,()=>pmrem.dispose());
  function prepare(root:T.Group){
   root.traverse(o=>{if(!(o instanceof T.Mesh))return;
@@ -64,9 +64,9 @@ export function createCircularScene(host:HTMLDivElement,onReady:()=>void,onError
  }
  function release(root:T.Object3D){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}
  function apartment(){if(!apartmentPromise)apartmentPromise=loader.loadAsync('/assets/eme-circular/apartment.glb').then(g=>{if(disposed){release(g.scene);return;}prepare(g.scene);}).catch(e=>{apartmentPromise=undefined;throw e;});return apartmentPromise;}
- const ready=loader.loadAsync('/assets/eme-circular/tower.glb').then(g=>{if(disposed){release(g.scene);return;}prepare(g.scene);onReady();}).catch(()=>{if(!disposed)onError('Não foi possível carregar o edifício. Tente novamente.');});
+ const ready=Promise.all([loader.loadAsync('/assets/eme-circular/tower-v2.glb'),loadUrbanContext(loader,textures)]).then(([g,context])=>{if(disposed){release(g.scene);release(context.root);textures.forEach(t=>t.dispose());return;}prepare(g.scene);scene.add(context.root);const lawn=context.grass.clone();lawn.repeat.set(220,220);textures.add(lawn);ground.material.map=lawn;ground.material.needsUpdate=true;renderer.shadowMap.needsUpdate=true;invalidate();onReady();}).catch(()=>{if(!disposed)onError('Não foi possível carregar o edifício. Tente novamente.');});
  function invalidate(){if(!frame&&!disposed&&!paused&&!document.hidden)frame=requestAnimationFrame(render);}
- function render(){frame=0;if(disposed||paused||document.hidden)return;const moving=!inside&&controls.update();renderer.render(scene,camera);if(moving)invalidate();}
+ function render(){frame=0;if(disposed||paused||document.hidden)return;const moving=!inside&&controls.update();sky.position.copy(camera.position);renderer.render(scene,camera);if(moving)invalidate();}
  function look(){camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);invalidate();}
  function position(view:View){
   current=view;const v=views[view];inside=!!v.inside;controls.enabled=!inside;
@@ -80,6 +80,8 @@ export function createCircularScene(host:HTMLDivElement,onReady:()=>void,onError
   const a=(h-6)/12*Math.PI,alt=Math.max(.03,Math.sin(a));
   sun.position.set(Math.cos(a)*65,alt*65+6,30);sun.intensity=1.5+alt*1.3;
   sun.color.set(alt<.35?'#ffbd7b':'#fff1d9');skyMaterial.uniforms.sunDirection.value.copy(sun.position).normalize();skyMaterial.uniforms.warmth.value=Math.max(0,.35-alt)*2;
+  const warmth=skyMaterial.uniforms.warmth.value;
+  (scene.fog as T.Fog).color.setRGB(T.MathUtils.lerp(.69,.91,warmth),T.MathUtils.lerp(.81,.68,warmth),T.MathUtils.lerp(.87,.46,warmth),T.SRGBColorSpace);
   ambient.intensity=.5+alt*.15;renderer.shadowMap.needsUpdate=true;invalidate();
  }
  function down(e:PointerEvent){if(!inside)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);}

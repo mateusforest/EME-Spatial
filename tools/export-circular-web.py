@@ -66,7 +66,7 @@ def export_part(filename, group_names, exclude=()):
     return {'triangles':triangles,'bytes':(destination/(filename+'.glb')).stat().st_size}
 
 stats={}
-stats['tower']=export_part('tower',['01_Estrutura','02_Fachada','03_Paisagismo','05_Rooftop','06_Contexto'],('Terreno',))
+stats['tower']=export_part('tower',['01_Estrutura','02_Fachada','03_Paisagismo','05_Rooftop'],('Terreno',))
 stats['apartment']=export_part('apartment',['04_Apartamento'])
 stats['source']=source.name
 stats['note']='Conceptual model. AI references are visual direction, not renders of this mesh. Illustrative location and solar lighting.'

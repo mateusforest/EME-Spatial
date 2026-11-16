@@ -1,12 +1,19 @@
 {
   "tower": {
-    "triangles": 252080,
-    "bytes": 1459304
+    "triangles": 220140,
+    "bytes": 1296636,
+    "file": "tower-v2.glb"
   },
   "apartment": {
     "triangles": 17314,
     "bytes": 192652
   },
   "source": "EME_Circular_Conceito.blend",
-  "note": "Conceptual model. AI references are visual direction, not renders of this mesh. Illustrative location and solar lighting."
+  "note": "Conceptual model. AI references are visual direction, not renders of this mesh. Illustrative location and solar lighting.",
+  "context": {
+    "file": "context-v2.glb",
+    "bytes": 217544,
+    "trees": 62,
+    "method": "Shared instanced vegetation and static material groups"
+  }
 }
