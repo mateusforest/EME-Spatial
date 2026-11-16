@@ -2,6 +2,43 @@
   "origin": "https://www.emespatial.com",
   "projects": [
     {
+      "slug": "eme-circular",
+      "status": "public",
+      "title": "EME Circular",
+      "eyebrow": "Coleção EME · Arquitetura autoral",
+      "description": "Uma torre circular com varandas verdes, apartamento modelo e lazer na cobertura. Conheça a direção visual e explore a primeira versão em 3D.",
+      "cover": "/assets/eme-circular/00-fachada-frontal.webp",
+      "coverCredit": "Imagem conceitual criada com IA · referência de acabamento",
+      "viewer": "embedded",
+      "experience": "/apresentar/eme-circular",
+      "note": "Estudo conceitual em desenvolvimento. Imagens de IA representam a direção visual; o modelo navegável tem acabamento preliminar. Entorno ilustrativo e iluminação simulada, sem localização real validada.",
+      "category": "Edifícios",
+      "stage": "Estudo conceitual",
+      "highlights": [
+        "Torre circular",
+        "Apartamento modelo",
+        "Lazer na cobertura"
+      ],
+      "gallery": [
+        {
+          "image": "/assets/eme-circular/01-aerea.webp",
+          "caption": "Arquitetura e paisagismo · conceito visual criado com IA"
+        },
+        {
+          "image": "/assets/eme-circular/02-varanda-detalhes.webp",
+          "caption": "Varandas e materiais · conceito visual criado com IA"
+        },
+        {
+          "image": "/assets/eme-circular/03-estar-cozinha.webp",
+          "caption": "Estar, jantar e cozinha · conceito visual criado com IA"
+        },
+        {
+          "image": "/assets/eme-circular/04-quarto.webp",
+          "caption": "Quarto · conceito visual criado com IA"
+        }
+      ]
+    },
+    {
       "slug": "casa-m",
       "status": "public",
       "title": "Casa M",

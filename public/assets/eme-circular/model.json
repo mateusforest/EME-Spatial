@@ -1,0 +1,12 @@
+{
+  "tower": {
+    "triangles": 252080,
+    "bytes": 1459304
+  },
+  "apartment": {
+    "triangles": 17314,
+    "bytes": 192652
+  },
+  "source": "EME_Circular_Conceito.blend",
+  "note": "Conceptual model. AI references are visual direction, not renders of this mesh. Illustrative location and solar lighting."
+}

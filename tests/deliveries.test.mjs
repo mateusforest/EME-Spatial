@@ -5,10 +5,10 @@ import {readRegistry,validateRegistry,publicProjects,deliveryHead} from '../tool
 
 test('only deliberately public projects enter the public catalog',()=>{
   const registry=readRegistry();
-  assert.deepEqual(publicProjects(registry).map(p=>p.name),['Casa M','Torre M','Botanique Home Resort','Pátio M','Residencial Vacaria','G400','Moradas da Serra']);
+  assert.deepEqual(publicProjects(registry).map(p=>p.name),['EME Circular','Casa M','Torre M','Botanique Home Resort','Pátio M','Residencial Vacaria','G400','Moradas da Serra']);
   const copy=structuredClone(registry);copy.projects.forEach(p=>p.status='unlisted');
   assert.deepEqual(publicProjects(copy),[]);
-  copy.projects[1].status='public';copy.projects[2].status='draft';
+  copy.projects.find(p=>p.slug==='torre-m').status='public';copy.projects.find(p=>p.slug==='botanique').status='draft';
   assert.deepEqual(publicProjects(copy).map(p=>p.name),['Torre M']);
 });
 test('unlisted links have crawler-readable personalized metadata, not a public index directive',()=>{

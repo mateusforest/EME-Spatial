@@ -7,6 +7,51 @@
       "source": "/spatial",
       "destination": "/",
       "permanent": false
+    },
+    {
+      "source": "/apresentar/amici",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/visitar/amici",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/projetos/amici",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/apresentar/aminci",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/visitar/aminci",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/projetos/aminci",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/apresentar/apogeu",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/visitar/apogeu",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
+    },
+    {
+      "source": "/projetos/apogeu",
+      "destination": "/visitar/eme-circular",
+      "permanent": false
     }
   ],
   "rewrites": [
