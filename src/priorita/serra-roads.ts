@@ -16,7 +16,7 @@ type Line={at:(t:number)=>[number,number];out:[number,number];t0:number;t1:numbe
 /** Ruas transversais originais que terminavam no limite leste/oeste: faixa z e a linha do fim. */
 const cross=source.roads.filter(r=>/Rua 0[234]/.test(r.name)).map(r=>{
   const zs=r.polygon.map(p=>p[1]),z0=Math.min(...zs),z1=Math.max(...zs);
-  const at=(z:number,pick:(a:number,b:number)=>number)=>r.polygon.filter(p=>Math.abs(p[1]-z)<.01).map(p=>p[0]).reduce(pick);
+  const at=(z:number,pick:(a:number,b:number)=>number)=>r.polygon.filter(p=>Math.abs(p[1]-z)<.01).map(p=>p[0]).reduce((x,y)=>pick(x,y));
   const e0=at(z0,Math.max),e1=at(z1,Math.max),w0=at(z0,Math.min),w1=at(z1,Math.min);
   return {z0,z1,east:(z:number)=>e0+(e1-e0)*(z-z0)/(z1-z0),west:(z:number)=>w0+(w1-w0)*(z-z0)/(z1-z0)};
 });
