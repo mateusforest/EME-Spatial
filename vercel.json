@@ -9,6 +9,11 @@
       "permanent": false
     },
     {
+      "source": "/apresentar/priorita/",
+      "destination": "/apresentar/priorita-serra",
+      "permanent": false
+    },
+    {
       "source": "/spatial",
       "destination": "/",
       "permanent": false
