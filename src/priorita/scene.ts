@@ -17,6 +17,7 @@ import {createStreetLighting,streetLampLayout} from './street-lighting';
 import {createSurfaceFinish} from './surface-finish';
 import {projectLotAnchor,walkFieldOfView} from './walk-view';
 import {createSerraContext,reliefGeometry} from './serra';
+import {createSerraLook} from './serra-look';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -35,7 +36,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   const scene=new T.Scene();
   const solarGuide=createSolarGuide(scene,host);
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
-  scene.fog=new T.Fog('#9ebccc',900,10500);
+  scene.fog=serra?new T.Fog('#9ebccc',260,11500):new T.Fog('#9ebccc',900,10500);
   let serraContext:ReturnType<typeof createSerraContext>|undefined;
   const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -64,7 +65,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
     hdr.dispose();pmrem.dispose();invalidate();
   },undefined,()=>pmrem.dispose());
   scene.environmentIntensity=.24;
-  const sky=createHorizonSky(),skyMaterial=sky.material;scene.add(sky);
+  const sky=createHorizonSky(serra),skyMaterial=sky.material;scene.add(sky);
   const hemi=new T.HemisphereLight('#c2d6e6','#8a805f',.6);scene.add(hemi);
   const sun=new T.DirectionalLight('#fff3db',3.2);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   const sunDirection=new T.Vector3(),shadowFocus=new T.Vector3(9999,9999,9999);
@@ -110,12 +111,13 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   // masked to the subdivision. It does not add geometry or another render pass.
   const lawnDetail=new T.TextureLoader().load('/assets/priorita/production-v10/grass-detail.webp',invalidate);
   lawnDetail.wrapS=lawnDetail.wrapT=T.RepeatWrapping;lawnDetail.colorSpace=T.SRGBColorSpace;lawnDetail.anisotropy=4;textures.push(lawnDetail);
+  const serraLook=serra?createSerraLook(lawnDetail):undefined;
   function horizon(material:T.Material){
     const lawn=material.name.startsWith('Grama');
     if(!lawn)return material;
     material.onBeforeCompile=shader=>{
       shader.uniforms.prLawnMask={value:lawnMask};
-      shader.uniforms.prLawnDetail={value:lawnDetail};
+      shader.uniforms.prLawnDetail={value:lawnDetail};serraLook?.bind(shader);
       shader.vertexShader='varying vec2 prWorldXZ;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <fog_vertex>',`#include <fog_vertex>
         vec4 prPosition=vec4(transformed,1.0);
@@ -123,7 +125,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
           prPosition=instanceMatrix*prPosition;
         #endif
         prWorldXZ=(modelMatrix*prPosition).xz;`);
-      shader.fragmentShader='uniform sampler2D prLawnMask;uniform sampler2D prLawnDetail;varying vec2 prWorldXZ;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform sampler2D prLawnMask;uniform sampler2D prLawnDetail;varying vec2 prWorldXZ;\n'+(serraLook?.lawnHeader||'')+shader.fragmentShader;
       if(lawn)shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#ifdef USE_MAP
         vec4 lawnA=texture2D(map,vMapUv);
         vec4 lawnB=texture2D(map,mat2(.8,-.6,.6,.8)*vMapUv*.731+vec2(.173,.371));
@@ -141,7 +143,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         vec3 lawnFinish=mix(vec3(.96,1.025,.93),vec3(1.04,1.015,.95),smoothstep(.09,.16,lawnPatch));
         // Quiet, dry meadow outside; layered living grass only inside the development.
         float meadow=dot(lawnMix.rgb,vec3(.2126,.7152,.0722));
-        vec3 contextGrass=${serra?'mix(vec3(.13,.17,.05),vec3(.31,.27,.11),smoothstep(.09,.16,lawnPatch))*(.75+meadow*1.1)':'mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70)'};
+        vec3 contextGrass=${serra?'srGround(prWorldXZ,max(length(dFdx(prWorldXZ)),length(dFdy(prWorldXZ))))/max(diffuseColor.rgb,vec3(.001))+meadow*0.':'mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70)'};
         lawnMix.rgb=mix(contextGrass,mix(lawnMix.rgb,livingGrass,.76)*lawnFinish*fibers*variation*(.985+mowing*.03),siteMask);
         diffuseColor*=lawnMix;
       #endif`);
@@ -159,7 +161,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         normal=normalize(abs(det)*normal-sign(det)*(dFdx(bladeHeight)*rx+dFdy(bladeHeight)*ry));
       `);
     };
-    material.customProgramCacheKey=()=> serra?'priorita-lawn-v20-serra':'priorita-lawn-v20';
+    material.customProgramCacheKey=()=> serra?'priorita-lawn-v22-serra':'priorita-lawn-v20';
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
@@ -176,7 +178,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   const raycaster=new T.Raycaster(),pointer=new T.Vector2();
   const drag={active:false,x:0,y:0,lastX:0,lastY:0,moved:false,id:-1};
   function invalidate(){dirty=true;}
-  if(serra)serraContext=createSerraContext(scene,draco,invalidate,()=>{renderer.shadowMap.needsUpdate=true;invalidate();});
+  if((import.meta as any).env?.DEV)(window as any).__pr={scene,renderer,camera,controls,T,lighting:(h:number,d:string)=>lighting(h,d)};
+  if(serra)serraContext=createSerraContext(scene,draco,invalidate,()=>{renderer.shadowMap.needsUpdate=true;invalidate();},serraLook);
 
   function surface(polygon:number[][],offset=0,holes:number[][][]=[]){
     const contour=polygon.map(([x,z])=>new T.Vector2(x,z));
@@ -480,6 +483,12 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
     skyMaterial.uniforms.sunDirection.value.copy(dir);skyMaterial.uniforms.sunColor.value.set('#fff1ce').lerp(new T.Color('#ffbb77'),gold);
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
     streetLevel=streetLighting.setSun(solar.elevation);
+    if(serraLook){
+      serraLook.setSun(dir,T.MathUtils.smoothstep(solar.elevation,-1,9),streetLevel);
+      // Serra: sol um pouco mais quente e sombras mais frias dão volume ao relevo e às casas.
+      sun.intensity*=1.12;hemi.color.set('#b5d0ee');hemi.groundColor.set('#8f9468');hemi.intensity=.22+daylight*.55;
+      scene.environmentIntensity=.10+daylight*.62;
+    }
     for(const mat of fixtureMaterials)mat.emissiveIntensity=streetLevel*3;
     localLamp.shadow.needsUpdate=!localLamp.shadow.map||streetLevel>.01;
     host.dataset.streetLights=JSON.stringify({count:lampLayout.length,level:+streetLevel.toFixed(3),elevation:+solar.elevation.toFixed(2)});
@@ -711,7 +720,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       return output.toDataURL('image/png');
     },
-    dispose(){disposed=true;serraContext?.dispose();cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
+    dispose(){disposed=true;serraContext?.dispose();serraLook?.dispose();cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
   };
 }
 export type PrioritaScene=ReturnType<typeof createPrioritaScene>;

@@ -84,7 +84,7 @@ export function createDistantGroves(siteHeight:(x:number,z:number)=>number){
   crowns.computeBoundingSphere();return crowns;
 }
 
-export function createHorizonSky(){
+export function createHorizonSky(serra=false){
   const material=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,
     uniforms:{topColor:{value:new T.Color('#2e7db4')},bottomColor:{value:new T.Color('#9ebccc')},
       sunDirection:{value:new T.Vector3(1,1,1).normalize()},sunColor:{value:new T.Color('#ffdfac')},
@@ -109,9 +109,65 @@ export function createHorizonSky(){
         #include <colorspace_fragment>
       }`
   });
-  const sky=new T.Mesh(new T.SphereGeometry(25000,24,12),material);
+  if(serra){material.fragmentShader=serraSkyFragment;material.needsUpdate=true;}
+  const sky=new T.Mesh(new T.SphereGeometry(25000,serra?48:24,serra?24:12),material);
   sky.name='Céu · horizonte contínuo';
   // Draw last: opaque ground rejects hidden sky fragments on mobile GPUs.
   sky.renderOrder=10;
   return sky;
 }
+
+/**
+ * Serra sky: horizon-weighted atmosphere, warm scattering around the sun, sun-lit cumulus with grey bases,
+ * thin cirrus, layered blue coxilhas on the horizon and a few stars at night. One full-screen shader, no textures.
+ */
+const serraSkyFragment=`uniform vec3 topColor;uniform vec3 bottomColor;uniform vec3 sunDirection;uniform vec3 sunColor;
+  uniform float daylight;uniform vec3 cloudColor;varying vec3 vDirection;
+  float hash(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
+  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
+  float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*noise(p);p=mat2(1.6,1.2,-1.2,1.6)*p+9.7;a*=.5;}return s;}
+  void main(){
+    vec3 d=normalize(vDirection);float y=max(d.y,0.);
+    float toSun=max(0.,dot(d,sunDirection));
+    float lowSun=1.-smoothstep(.05,.55,sunDirection.y);
+    // atmosphere: deep zenith, pale and slightly warm towards the horizon
+    float t=1.-exp(-y*3.4);
+    vec3 color=mix(bottomColor*1.06,topColor,t);
+    color+=sunColor*(pow(toSun,5.)*.09+pow(toSun,36.)*.20)*daylight*(.45+lowSun);
+    color=mix(color,mix(color,sunColor,.42),lowSun*(1.-t)*pow(toSun,2.)*daylight);
+    // stars
+    float night=1.-smoothstep(.0,.5,daylight);
+    vec2 sp=d.xz/(abs(d.y)+.35)*210.;
+    color+=vec3(.9,.95,1.)*step(.9975,hash(floor(sp)))*night*smoothstep(.04,.3,d.y)*.8;
+    if(d.y>.004){
+      // cumulus: warped fbm on a flat cloud deck, lit from the sun side
+      vec2 p=d.xz/(d.y+.11)*1.15;
+      vec2 q=p+vec2(fbm(p*.6+3.1),fbm(p*.6+11.7))*.7;
+      float n=fbm(q*1.05);
+      float cover=smoothstep(.50,.72,n);
+      float towards=fbm(q*1.05+sunDirection.xz*.16);
+      float lit=clamp(.58+(n-towards)*3.6,0.,1.);
+      float core=smoothstep(.60,.86,n);
+      vec3 shade=mix(cloudColor*.56,bottomColor,.30);
+      vec3 bright=mix(cloudColor,sunColor,(.30+.35*lowSun)*daylight)*1.10;
+      vec3 cloud=mix(shade,bright,lit)*(1.-core*.22);
+      float far=exp(-.055/(d.y+.02));
+      cover*=smoothstep(.0,.10,d.y);
+      color=mix(color,mix(bottomColor,cloud,far),cover*.92);
+      // cirrus: thin streaks high up
+      float cirrus=smoothstep(.56,.80,fbm(p*vec2(.42,2.3)+41.))*smoothstep(.18,.5,d.y)*.28;
+      color=mix(color,mix(cloudColor,sunColor,.2*daylight),cirrus*(1.-cover));
+    }
+    // layered coxilhas fading into the haze: depth for the Campos de Cima da Serra horizon
+    vec2 az=d.xz/max(.0001,length(d.xz));
+    vec3 ridge=bottomColor*vec3(.52,.66,.72);
+    float h1=.010+.090*(fbm(az*2.6+7.)-.30),h2=.002+.062*(fbm(az*4.7+19.)-.30),h3=-.006+.040*(fbm(az*8.5+31.)-.30);
+    color=mix(color,mix(bottomColor,ridge,.30),(1.-smoothstep(-.003,.003,d.y-h1)));
+    color=mix(color,mix(bottomColor,ridge,.52),(1.-smoothstep(-.003,.003,d.y-h2)));
+    color=mix(color,mix(bottomColor,ridge*vec3(.92,1.,.90),.70),(1.-smoothstep(-.003,.003,d.y-h3)));
+    color=mix(color,bottomColor,(1.-smoothstep(-.05,.0,d.y))*.55);
+    float disc=smoothstep(.99991,.99996,toSun)*step(h1,d.y);
+    color=mix(color,sunColor*1.4,clamp(disc*daylight,0.,1.));
+    gl_FragColor=vec4(color,1.);
+    #include <colorspace_fragment>
+  }`;

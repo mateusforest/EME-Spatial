@@ -4,6 +4,7 @@ import type {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
 import {lots,serraMask,serraRelief,terrainHeight} from './model';
 import {demoStatus} from './demo-stock';
+import type {SerraLook} from './serra-look';
 
 /**
  * Priorità · Serra (v8): entorno ilustrativo dos Campos de Cima da Serra exportado do Blender
@@ -70,7 +71,7 @@ const CELL=1500;
 type Instance=[kind:number,x:number,y:number,z:number,rot:number,scale:number];
 type Chunk={meshes:T.InstancedMesh[];center:T.Vector3};
 
-export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()=>void,shadows:()=>void=invalidate){
+export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()=>void,shadows:()=>void=invalidate,look?:SerraLook){
   const group=new T.Group();group.name='Serra · entorno v8';scene.add(group);
   const chunks:Chunk[]=[];let disposed=false,light=false;
   const loader=new GLTFLoader().setDRACOLoader(draco);
@@ -79,16 +80,46 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
   loader.load(base+'serra-terrain.glb',gltf=>{
     if(disposed)return;
     gltf.scene.traverse(o=>{if(o instanceof T.Mesh){
-      const m=o.material as T.MeshStandardMaterial;m.vertexColors=true;m.roughness=1;m.metalness=0;m.envMapIntensity=.55;
+      const m=o.material as T.MeshStandardMaterial;m.vertexColors=true;m.roughness=1;m.metalness=0;m.envMapIntensity=.55;look?.field(m);
       o.receiveShadow=false;o.castShadow=false;owned.push(o.geometry,m);
     }});
     group.add(gltf.scene);invalidate();
   });
   loader.load(base+'serra-extras.glb',gltf=>{
     if(disposed)return;
-    gltf.scene.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true;o.receiveShadow=true;owned.push(o.geometry);}});
-    group.add(gltf.scene);shadows();
+    const styled=new Set<T.Material>();
+    gltf.scene.traverse(o=>{if(o instanceof T.Mesh){o.castShadow=true;o.receiveShadow=true;owned.push(o.geometry);const m=o.material as T.MeshStandardMaterial;if(look&&!styled.has(m)){styled.add(m);look.building(m);}}});
+    group.add(gltf.scene);
+    if(look){let shoulder:T.Mesh|undefined;gltf.scene.traverse(o=>{if(o instanceof T.Mesh&&/Acostamento/.test(o.name))shoulder=o;});if(shoulder)roadFence(shoulder);}
+    shadows();
   });
+  /** Cerca de moirões e arame ao longo da estrada de acesso: dá escala e leitura rural ao campo. Ilustrativa. */
+  function roadFence(shoulder:T.Mesh){
+    const ease=(a:number,b:number,v:number)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
+    const roadX=(y:number)=>y<450?0:70*Math.sin((y-450)/650)*ease(450,900,y);
+    const ray=new T.Raycaster(),down=new T.Vector3(0,-1,0),from=new T.Vector3();
+    shoulder.updateMatrixWorld(true);
+    const sides:T.Vector3[][]=[[],[]];
+    for(let y=186;y<1500;y+=3.6){
+      const x=roadX(y),dx=roadX(y+1)-x,len=Math.hypot(dx,1),nx=1/len,nz=dx/len;
+      for(const s of [0,1]){
+        const side=s?1:-1;from.set(x+nx*side*4.9,400,-y+nz*side*4.9);ray.set(from,down);
+        const hit=ray.intersectObject(shoulder,false)[0];
+        if(hit)sides[s].push(new T.Vector3(x+nx*side*7.2,hit.point.y-.12,-y+nz*side*7.2));
+      }
+    }
+    const posts=sides.flat();if(!posts.length)return;
+    const material=new T.MeshStandardMaterial({name:'Cerca · Madeira',color:'#7a6a58',roughness:.95});look!.building(material);
+    const geometry=new T.BoxGeometry(.13,1.35,.13).translate(0,.675,0);
+    const mesh=new T.InstancedMesh(geometry,material,posts.length),dummy=new T.Object3D();
+    posts.forEach((p,i)=>{dummy.position.copy(p);dummy.rotation.set(0,i*1.7,0);dummy.scale.set(1,.92+.16*((i*7919)%13)/13,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+    mesh.computeBoundingSphere();mesh.name='Serra · cerca';group.add(mesh);
+    const wire:number[]=[];
+    for(const line of sides)for(let i=0;i<line.length-1;i++)for(const h of [.42,.78,1.14]){const a=line[i],b=line[i+1];wire.push(a.x,a.y+h,a.z,b.x,b.y+h,b.z);}
+    const wires=new T.LineSegments(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(wire,3)),new T.LineBasicMaterial({color:'#8b8a82',transparent:true,opacity:.65}));
+    wires.name='Serra · arame';group.add(wires);
+    owned.push(geometry,material,mesh,wires.geometry,wires.material as T.Material);
+  }
   loader.load(base+'serra-houses.glb',gltf=>{
     if(disposed)return;
     const placements=housePlacements(),tone=new T.Color();
@@ -96,7 +127,7 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
       const matrices=placements[k];if(!matrices.length)return;
       gltf.scene.getObjectByName(type.name)?.traverse(o=>{
         if(!(o instanceof T.Mesh))return;
-        const material=o.material as T.MeshStandardMaterial;material.envMapIntensity=material.name.includes('Vidro')?1.6:.6;
+        const material=o.material as T.MeshStandardMaterial;material.envMapIntensity=material.name.includes('Vidro')?1.6:.6;look?.building(material);
         const mesh=new T.InstancedMesh(o.geometry,material,matrices.length);
         matrices.forEach((m,i)=>{mesh.setMatrixAt(i,m);if(material.name.includes('Parede'))mesh.setColorAt(i,tone.set(wallTones[(i*3+k)%wallTones.length]));});
         mesh.castShadow=true;mesh.receiveShadow=true;mesh.computeBoundingSphere();mesh.name='Serra · '+type.name;
@@ -115,21 +146,26 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
     const parts:{kind:number;geometry:T.BufferGeometry;material:T.Material}[]=[];
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh))return;
-      const geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);
+      let geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);
       const material=o.material as T.MeshStandardMaterial;material.envMapIntensity=.5;
+      // Copas arredondadas: solda os vértices e recalcula normais suaves para tirar as facetas.
+      if(look&&!/Casca/.test(material.name)){geometry.deleteAttribute('normal');const welded=mergeVertices(geometry,.02);geometry.dispose();geometry=welded;geometry.computeVertexNormals();}
+      if(look){if(/Casca/.test(material.name))look.bark(material);else look.foliage(material,/arauc/i.test(material.name));}
       parts.push({kind:o.name.startsWith('mata')||o.parent?.name.startsWith('mata')?1:0,geometry,material});
       owned.push(geometry,material);
     });
     const cells=new Map<string,Instance[]>();
     for(const i of instances){const key=`${Math.floor(i[1]/CELL)},${Math.floor(i[3]/CELL)}`;(cells.get(key)||cells.set(key,[]).get(key)!).push(i);}
-    const dummy=new T.Object3D();
+    look?.setCanopy(instances,light);
+    const dummy=new T.Object3D(),tint=new T.Color();
     for(const list of cells.values()){
       const meshes:T.InstancedMesh[]=[];const center=new T.Vector3();
       list.forEach(i=>center.add(new T.Vector3(i[1],i[2],i[3])));center.divideScalar(list.length);
       for(const part of parts){
         const mine=list.filter(i=>i[0]===part.kind);if(!mine.length)continue;
         const mesh=new T.InstancedMesh(part.geometry,part.material,mine.length);
-        mine.forEach((i,n)=>{dummy.position.set(i[1],i[2]+serraRelief(i[1],i[3]),i[3]);dummy.rotation.set(0,i[4],0);dummy.scale.setScalar(i[5]);dummy.updateMatrix();mesh.setMatrixAt(n,dummy.matrix);});
+        mine.forEach((i,n)=>{dummy.position.set(i[1],i[2]+serraRelief(i[1],i[3]),i[3]);dummy.rotation.set(0,i[4],0);dummy.scale.setScalar(i[5]);dummy.updateMatrix();mesh.setMatrixAt(n,dummy.matrix);
+          if(look){const h=Math.sin(i[1]*12.9898+i[3]*78.233)*43758.5453,r=h-Math.floor(h),k=part.kind?.22:.14;mesh.setColorAt(n,tint.setRGB(1-k*.5+k*r,1-k*.35+k*.7*((r*7.3)%1),1-k*.6+k*((r*3.1)%1)));}});
         mesh.computeBoundingSphere();mesh.castShadow=false;mesh.receiveShadow=false;mesh.name='Serra · capão';
         meshes.push(mesh);group.add(mesh);
       }
