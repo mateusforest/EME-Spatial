@@ -16,12 +16,14 @@ import {openingHour} from './visual-profile';
 import {createStreetLighting,streetLampLayout} from './street-lighting';
 import {createSurfaceFinish} from './surface-finish';
 import {projectLotAnchor,walkFieldOfView} from './walk-view';
+import {createSerraContext} from './serra';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
 type Transition={start:number;duration:number;from:T.Vector3;to:T.Vector3;fromTarget:T.Vector3;toTarget:T.Vector3;done?:()=>void};
 
-export function createPrioritaScene(host:HTMLDivElement, events:Events) {
+export function createPrioritaScene(host:HTMLDivElement, events:Events, options:{serra?:boolean}={}) {
+  const serra=Boolean(options.serra);
   let disposed=false,dirty=true,mode:ViewMode='aerial',selected='',hovered='',showStock=true,showLabels=true;
   let focusedBlock='',paused=false;
   let filtered:Set<string>|null=null;
@@ -34,6 +36,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const solarGuide=createSolarGuide(scene,host);
   const draco=new DRACOLoader().setDecoderPath('/assets/priorita/draco/').setWorkerLimit(2);
   scene.fog=new T.Fog('#9ebccc',900,10500);
+  let serraContext:ReturnType<typeof createSerraContext>|undefined;
   const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace=T.SRGBColorSpace;
@@ -50,7 +53,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   camera.position.set(132,103,182);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.target.set(8,0,23);controls.enableDamping=true;controls.dampingFactor=.085;
-  controls.minDistance=16;controls.maxDistance=550;controls.maxPolarAngle=Math.PI*.47;
+  controls.minDistance=16;controls.maxDistance=serra?900:550;controls.maxPolarAngle=Math.PI*.47;
   controls.screenSpacePanning=false;
   controls.addEventListener('change',invalidate);
   let environment:T.WebGLRenderTarget|undefined;
@@ -138,7 +141,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         vec3 lawnFinish=mix(vec3(.96,1.025,.93),vec3(1.04,1.015,.95),smoothstep(.09,.16,lawnPatch));
         // Quiet, dry meadow outside; layered living grass only inside the development.
         float meadow=dot(lawnMix.rgb,vec3(.2126,.7152,.0722));
-        vec3 contextGrass=mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70);
+        vec3 contextGrass=${serra?'mix(vec3(.13,.17,.05),vec3(.31,.27,.11),smoothstep(.09,.16,lawnPatch))*(.75+meadow*1.1)':'mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70)'};
         lawnMix.rgb=mix(contextGrass,mix(lawnMix.rgb,livingGrass,.76)*lawnFinish*fibers*variation*(.985+mowing*.03),siteMask);
         diffuseColor*=lawnMix;
       #endif`);
@@ -156,7 +159,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
         normal=normalize(abs(det)*normal-sign(det)*(dFdx(bladeHeight)*rx+dFdy(bladeHeight)*ry));
       `);
     };
-    material.customProgramCacheKey=()=> 'priorita-lawn-v20';
+    material.customProgramCacheKey=()=> serra?'priorita-lawn-v20-serra':'priorita-lawn-v20';
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
@@ -173,6 +176,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
   const raycaster=new T.Raycaster(),pointer=new T.Vector2();
   const drag={active:false,x:0,y:0,lastX:0,lastY:0,moved:false,id:-1};
   function invalidate(){dirty=true;}
+  if(serra)serraContext=createSerraContext(scene,draco,invalidate);
 
   function surface(polygon:number[][],offset=0,holes:number[][][]=[]){
     const contour=polygon.map(([x,z])=>new T.Vector2(x,z));
@@ -211,8 +215,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       if(material.name.startsWith('Grama')){
         material.color.set('#d0d7b8');material.roughness=.90;material.normalScale.set(.42,.42);
         const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);streetLighting.apply(contextMaterial);
-        const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
-        context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);
+        if(!serra){const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
+        context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);}
       }
       if(material.name.startsWith('Asfalto')){material.color.set('#9ca2a4');material.roughness=.72;material.roughnessMap=null;material.envMapIntensity=.65;material.normalScale.set(.25,.25);}
       if(material.name.startsWith('Calçada')){material.color.set('#d3cdc1');material.roughness=.82;material.envMapIntensity=.5;material.normalScale.set(.18,.18);}
@@ -648,6 +652,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       updateLocalLamp(nearView);
       parcelOutlines.visible=(mode==='aerial'||mode==='plan')&&camera.position.y>35;
       for(const chunk of grassChunks){grassViewer.copy(chunk.boundingSphere!.center);chunk.visible=!lightQuality&&camera.position.distanceTo(grassViewer)<62;}
+      serraContext?.update(camera.position);
       camera.updateMatrixWorld();annotations.update(camera,mode,selected,focusedBlock,showLabels,selectedArea,filtered);solarGuide.project(camera);
       const lotPreview=host.parentElement!.querySelector<HTMLElement>('.pr-walk-lot'),previewLot=lotById.get(selected);
       if(lotPreview&&previewLot&&mode==='walk'){
@@ -696,7 +701,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
     setStock(show:boolean){showStock=show;updateLotColors();},
     setLabels(show:boolean){showLabels=show;invalidate();},
     setContours(show:boolean){contours.visible=show;invalidate();},
-    setQuality(light:boolean){lightQuality=light;vegetationDirty=true;renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,1.5));sun.shadow.mapSize.setScalar(light?1024:2048);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;resize();},
+    setQuality(light:boolean){lightQuality=light;serraContext?.setQuality(light);vegetationDirty=true;renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,1.5));sun.shadow.mapSize.setScalar(light?1024:2048);sun.shadow.map?.dispose();sun.shadow.map=null;renderer.shadowMap.needsUpdate=true;resize();},
     hold(key:string,value:boolean){if(value&&mode==='walk'){if(route.length)stopWalk();held.add(key);}else held.delete(key);},
     zoom(direction:number){if(['walk','lot','area'].includes(mode)){const next=walkFieldOfView(camera.aspect,walkZoom)+(direction>0?-7:7);walkZoom=T.MathUtils.clamp(next,45,96)-walkFieldOfView(camera.aspect);camera.fov=walkFieldOfView(camera.aspect,walkZoom);camera.updateProjectionMatrix();invalidate();return;}if(!controls.enabled)return;camera.position.sub(controls.target).multiplyScalar(direction>0?.8:1.25).add(controls.target);controls.update();invalidate();},
     screenshot(){
@@ -705,7 +710,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events) {
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       return output.toDataURL('image/png');
     },
-    dispose(){disposed=true;cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
+    dispose(){disposed=true;serraContext?.dispose();cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
   };
 }
 export type PrioritaScene=ReturnType<typeof createPrioritaScene>;

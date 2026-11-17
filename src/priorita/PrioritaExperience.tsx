@@ -22,7 +22,7 @@ const ids=new Set(lots.map(l=>l.id));
 const favoriteKey='priorita:favorites:v1';
 function loadFavorites(){try{return validFavorites(JSON.parse(localStorage.getItem(favoriteKey)||'[]'),ids);}catch{return [];}}
 
-export default function PrioritaExperience(){
+export default function PrioritaExperience({serra=false}:{serra?:boolean}={}){
  const canvas=useRef<HTMLDivElement>(null),scene=useRef<PrioritaScene|null>(null),shell=useRef<HTMLDivElement>(null),info=useRef<HTMLDialogElement>(null);
  const [ready,setReady]=useState(false),[error,setError]=useState(''),[retry,setRetry]=useState(0);
  const [capture,setCapture]=useState('');
@@ -40,7 +40,7 @@ export default function PrioritaExperience(){
  const filtering=statusFilter!=='all'||block!=='Todas'||Boolean(query.trim())||onlyFavorites;
  const simulated=lots.some(l=>stock[l.id]!==demoStatus(l.id));
  const panelOpen=Boolean(lot&&(mode!=='walk'||walkDetails)||area||listOpen||areasOpen||compareOpen);
- useEffect(()=>{const old=document.title;document.title='Priorità · Seu próximo lugar | EME Spatial';return()=>{document.title=old;};},[]);
+ useEffect(()=>{const old=document.title;document.title=serra?'Priorità · Serra Gaúcha | EME Spatial':'Priorità · Seu próximo lugar | EME Spatial';return()=>{document.title=old;};},[]);
  useEffect(()=>{
   let engine:PrioritaScene|undefined;
   try{engine=createPrioritaScene(canvas.current!,{
@@ -48,7 +48,7 @@ export default function PrioritaExperience(){
    onArea:id=>{setSelectedArea(id);if(id){setAreasOpen(false);setListOpen(false);setCompareOpen(false);setCollapsed(false);}},
    onWalkState:setWalkState,onNotice:setNotice,
    onBlock:b=>{setBlock(b);if(b!=='Todas'){setListOpen(true);setCollapsed(false);}},onMode:setMode,onReady:()=>setReady(true),onError:()=>setError('Não foi possível concluir a visita 3D. Você pode reabrir o cenário.')
-  });scene.current=engine;}catch(e){setError('Não foi possível iniciar o 3D neste navegador. Tente reabrir a experiência.');console.error('Priorità',e);}
+  },{serra});scene.current=engine;}catch(e){setError('Não foi possível iniciar o 3D neste navegador. Tente reabrir a experiência.');console.error('Priorità',e);}
   return()=>{engine?.dispose();scene.current=null;};
  },[retry]);
  useEffect(()=>{if(!ready)return;const v=solarValue.current;scene.current?.lighting(v.hour,v.date);scene.current?.setSolarTrajectory(v.trajectory);const requested=new URL(location.href).searchParams.get('lote');if(requested&&lotById.has(requested)){setSelected(requested);scene.current?.select(requested,true);}},[ready,retry]);
