@@ -168,6 +168,9 @@ const serraSkyFragment=`uniform vec3 topColor;uniform vec3 bottomColor;uniform v
     color=mix(color,bottomColor,(1.-smoothstep(-.05,.0,d.y))*.55);
     float disc=smoothstep(.99991,.99996,toSun)*step(h1,d.y);
     color=mix(color,sunColor*1.4,clamp(disc*daylight,0.,1.));
+    #ifdef TONE_MAPPING
+      color=srGrade(color);
+    #endif
     gl_FragColor=vec4(color,1.);
     #include <colorspace_fragment>
   }`;

@@ -8,6 +8,26 @@ import * as T from 'three';
  */
 export const CANOPY_EXTENT=5200;
 
+/**
+ * Final colour grade for the Serra route, applied after ACES: vibrance (muted tones gain more than
+ * already-saturated ones), a little contrast and a slightly warm lift. Neutral whites stay neutral.
+ */
+const gradeGLSL=`
+vec3 srGrade(vec3 c){
+  float l=dot(c,vec3(.2126,.7152,.0722));
+  float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b));
+  c=mix(vec3(l),c,1.05+.20*(1.-clamp((mx-mn)*2.6,0.,1.)));
+  c=pow(max(c,vec3(0.)),vec3(1.08))*vec3(1.10,1.085,1.06);
+  return clamp(c,0.,1.);
+}
+`;
+export function installSerraGrade(renderer:T.WebGLRenderer){
+  const plain='vec3 CustomToneMapping( vec3 color ) { return color; }';
+  if(T.ShaderChunk.tonemapping_pars_fragment.includes(plain))
+    T.ShaderChunk.tonemapping_pars_fragment=T.ShaderChunk.tonemapping_pars_fragment.replace(plain,gradeGLSL+'vec3 CustomToneMapping( vec3 color ) { return srGrade( ACESFilmicToneMapping( color ) ); }');
+  if(T.ShaderChunk.tonemapping_pars_fragment.includes('srGrade'))renderer.toneMapping=T.CustomToneMapping;
+}
+
 export const noiseGLSL=`
 float srHash(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 float srNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(srHash(i),srHash(i+vec2(1.,0.)),f.x),mix(srHash(i+vec2(0.,1.)),srHash(i+vec2(1.,1.)),f.x),f.y);}
@@ -21,7 +41,7 @@ vec3 srField(vec2 xz,float footprint){
   float macro=srFbm(xz*.0034+4.7);
   float meso=srFbm(xz*.019+31.);
   float micro=srNoise(xz*.33);
-  vec3 green=vec3(.060,.125,.028),olive=vec3(.135,.150,.036),straw=vec3(.205,.168,.060);
+  vec3 green=vec3(.058,.122,.030),olive=vec3(.128,.148,.038),straw=vec3(.212,.172,.060);
   float broad=srFbm(xz*.0011+83.);
   vec3 c=mix(green,olive,smoothstep(.34,.58,macro));
   c=mix(c,straw,smoothstep(.46,.70,meso*.60+macro*.30+broad*.24));
@@ -33,6 +53,14 @@ vec3 srField(vec2 xz,float footprint){
   float tuft=srNoise(xz*1.7)*.6+srNoise(xz*4.3)*.4;
   c*=mix(1.,.80+.40*tuft,1.-smoothstep(.05,1.6,footprint));
   c*=.88+.24*micro;
+  // lâminas e sementes: só a poucos metros da câmera
+  float blade=1.-smoothstep(.008,.11,footprint);
+  float blades=srNoise(vec2(xz.x*37.+srNoise(xz*2.7)*7.,xz.y*8.))*.5+srNoise(vec2(xz.x*9.+3.,xz.y*43.))*.5;
+  c*=mix(1.,.66+.68*blades,blade*.75);
+  // flores do campo: pontos claros esparsos, em manchas
+  vec2 cell=floor(xz*4.5);
+  float flower=step(.988,srHash(cell))*smoothstep(.50,.62,srNoise(xz*.045+9.))*(1.-smoothstep(.015,.10,footprint));
+  c=mix(c,mix(vec3(.80,.66,.16),vec3(.86,.86,.80),step(.5,srHash(cell+3.))),flower*.8);
   // fibra fotográfica só de perto
   float d=dot(texture2D(srDetail,xz/3.7).rgb,vec3(.2126,.7152,.0722));
   c*=mix(1.,.60+d*3.3,(1.-smoothstep(.03,.42,footprint))*.85);
@@ -93,11 +121,27 @@ const surfaces:Record<string,{albedo:string;rough?:number;metal?:number}>={
   roof:{rough:.64,metal:.18,albedo:`
     float u=abs(srN.x)>abs(srN.z)?srLocal.z:srLocal.x;
     float seam=(1.-smoothstep(.0,.045,abs(fract(u/.42)-.5)))*srNear;
-    diffuseColor.rgb*=(.90+.20*srFbm(srLocal.xz*.9))*(1.-.22*seam);
-    srH=seam*.007;`},
+    diffuseColor.rgb*=(.94+.10*srFbm(srLocal.xz*.6))*(1.-.14*seam);
+    srH=0.;`},
   panel:{rough:.5,metal:.4,albedo:`
     float f=fract(srLocal.y/.48);float groove=mix(1.,smoothstep(0.,.05,f)*(1.-smoothstep(.95,1.,f)),srNear);
     diffuseColor.rgb*=mix(.55,1.,groove)*(.95+.08*srNoise(w*30.));srH=groove*.006*srNear;`},
+  concrete:{rough:.86,albedo:`
+    float form=fract(w.y/.62),pour=srFbm(w*vec2(.35,2.2)+9.);
+    float line=mix(1.,smoothstep(0.,.03,form)*(1.-smoothstep(.97,1.,form)),srNear);
+    diffuseColor.rgb*=(.90+.16*pour)*(.95+.08*srNoise(w*28.)*srNear)*mix(.80,1.,line);
+    srH=(line*.004+srNoise(w*28.)*.0015)*srNear;`},
+  slats:{rough:.7,albedo:`
+    float s=(abs(srN.y)>.7?w.y:w.x)/.085,along=abs(srN.y)>.7?w.x:w.y;float id=floor(s),f=fract(s);
+    float gap=mix(.72,smoothstep(.0,.10,f)*(1.-smoothstep(.62,.72,f)),srNear);
+    float grain=srNoise(vec2(id*5.,along*1.9));
+    diffuseColor.rgb*=mix(1.,.86+.26*srHash(vec2(id,5.)),srNear)*(.95+.09*grain)*mix(.10,1.,gap);
+    srH=gap*.02*srNear;`},
+  cladding:{rough:.6,metal:.25,albedo:`
+    float u=abs(srN.x)>abs(srN.z)?srLocal.z:srLocal.x;
+    float seam=(1.-smoothstep(.0,.03,abs(fract(u/.33)-.5)))*srNear;
+    diffuseColor.rgb*=(.92+.14*srFbm(w*.8))*(1.-.30*seam);
+    srH=seam*.006;`},
   gravel:{rough:.96,albedo:`
     diffuseColor.rgb*=(.78+.40*srFbm(srWorld.xz*1.9))*(.90+.22*srNoise(srWorld.xz*23.)*srNear);
     srH=srNoise(srWorld.xz*23.)*.006*srNear;`},
@@ -105,13 +149,13 @@ const surfaces:Record<string,{albedo:string;rough?:number;metal?:number}>={
     diffuseColor.rgb*=vec3(1.18,1.18,1.2)*(.84+.30*srFbm(srWorld.xz*.55))*(.90+.22*srNoise(srWorld.xz*31.)*srNear);
     srH=srNoise(srWorld.xz*31.)*.004*srNear;`},
 };
-const surfaceFor=(name:string)=>/Parede|Reboco/.test(name)?'plaster':/Madeira|Deck/.test(name)?'wood':/Pedra|Basalto/.test(name)?'stone'
+const surfaceFor=(name:string)=>/Concreto/.test(name)?'concrete':/Ripado/.test(name)?'slats':/Escuro/.test(name)?'cladding':/Parede|Reboco/.test(name)?'plaster':/Madeira|Deck/.test(name)?'wood':/Pedra|Basalto/.test(name)?'stone'
   :/Telhado|Cobertura/.test(name)?'roof':/Portão/.test(name)?'panel':/Saibro/.test(name)?'gravel':/Asfalto/.test(name)?'asphalt':'';
 
 export function createSerraLook(detail:T.Texture){
   const canopy=new T.CanvasTexture(document.createElement('canvas'));
   canopy.generateMipmaps=true;canopy.minFilter=T.LinearMipmapLinearFilter;canopy.magFilter=T.LinearFilter;
-  const uniforms={srDetail:{value:detail},srCanopy:{value:canopy as T.Texture},srSunShift:{value:new T.Vector3(0,0,1)}};
+  const uniforms={srDetail:{value:detail},srCanopy:{value:canopy as T.Texture},srSunShift:{value:new T.Vector3(0,0,1)},srSkyLow:{value:new T.Color('#9ebccc')},srSkyHigh:{value:new T.Color('#2875ae')}};
   const glass:T.MeshStandardMaterial[]=[];
   const bind=(shader:Shader)=>Object.assign(shader.uniforms,uniforms);
 
@@ -133,7 +177,8 @@ export function createSerraLook(detail:T.Texture){
       }
       canopy.flipY=false;canopy.dispose();canopy.needsUpdate=true;
     },
-    setSun(direction:T.Vector3,daylight:number,night:number){
+    setSun(direction:T.Vector3,daylight:number,night:number,horizon?:T.Color,zenith?:T.Color){
+      if(horizon)uniforms.srSkyLow.value.copy(horizon);if(zenith)uniforms.srSkyHigh.value.copy(zenith);
       const reach=9/Math.max(.22,direction.y);
       uniforms.srSunShift.value.set(direction.x*reach,direction.z*reach,daylight);
       for(const m of glass)m.emissiveIntensity=night*1.5;
@@ -183,14 +228,21 @@ export function createSerraLook(detail:T.Texture){
     /** Houses, gate and access road, matched by the material names exported from Blender. */
     building(material:T.MeshStandardMaterial){
       if(/Vidro/.test(material.name)){
-        material.color.set('#4d6272');material.roughness=.05;material.metalness=.9;material.envMapIntensity=3.2;
+        material.color.set('#1c2328');material.roughness=.06;material.metalness=.55;material.envMapIntensity=1.1;
         material.emissive.set('#ffc98a');material.emissiveIntensity=0;glass.push(material);
         material.onBeforeCompile=shader=>{
-          worldVarying(shader);
-          shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
-            totalEmissiveRadiance*=.25+.75*step(.42,srHash(floor(srLocal.xz/1.9)+floor(srLocal.y/2.6)+floor(srWorld.xz/9.)));`);
+          worldVarying(shader);shader.uniforms.srSkyLow=uniforms.srSkyLow;shader.uniforms.srSkyHigh=uniforms.srSkyHigh;
+          shader.fragmentShader='uniform vec3 srSkyLow;uniform vec3 srSkyHigh;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+            totalEmissiveRadiance*=.25+.75*step(.42,srHash(floor(srLocal.xz/1.9)+floor(srLocal.y/2.6)+floor(srWorld.xz/9.)));
+            // reflexo do céu: o vidro espelha o horizonte de frente e o zênite em ângulo rasante
+            vec3 srView=normalize(vViewPosition);
+            vec3 srReflect=inverseTransformDirection(reflect(-srView,normal),viewMatrix);
+            float srFresnel=.34+.66*pow(1.-max(dot(normal,srView),0.),3.);
+            vec3 srSky=mix(srSkyLow*vec3(.82,.90,.86),srSkyHigh,smoothstep(.0,.55,srReflect.y));
+            srSky=mix(srSky,srSkyLow*vec3(.42,.52,.36),step(srReflect.y,-.02)*.75);
+            totalEmissiveRadiance+=srSky*srFresnel*(.72+.10*srNoise(srWorld.xz*.7+srWorld.y));`);
         };
-        material.customProgramCacheKey=()=> 'sr-glass-v1';material.needsUpdate=true;return;
+        material.customProgramCacheKey=()=> 'sr-glass-v2';material.needsUpdate=true;return;
       }
       const kind=surfaceFor(material.name),surface=surfaces[kind];
       if(!surface)return;

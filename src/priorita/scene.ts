@@ -17,7 +17,7 @@ import {createStreetLighting,streetLampLayout} from './street-lighting';
 import {createSurfaceFinish} from './surface-finish';
 import {projectLotAnchor,walkFieldOfView} from './walk-view';
 import {createSerraContext,reliefGeometry} from './serra';
-import {createSerraLook} from './serra-look';
+import {createSerraLook,installSerraGrade} from './serra-look';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -43,6 +43,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   renderer.outputColorSpace=T.SRGBColorSpace;
   renderer.toneMapping=T.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.16;
+  if(serra)installSerraGrade(renderer);
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFShadowMap;
   renderer.shadowMap.autoUpdate=false;
@@ -144,7 +145,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         // Quiet, dry meadow outside; layered living grass only inside the development.
         float meadow=dot(lawnMix.rgb,vec3(.2126,.7152,.0722));
         vec3 contextGrass=${serra?'srGround(prWorldXZ,max(length(dFdx(prWorldXZ)),length(dFdy(prWorldXZ))))/max(diffuseColor.rgb,vec3(.001))+meadow*0.':'mix(vec3(meadow),lawnMix.rgb,.34)*vec3(.91,.85,.70)'};
-        lawnMix.rgb=mix(contextGrass,mix(lawnMix.rgb,livingGrass,.76)*lawnFinish*fibers*variation*(.985+mowing*.03),siteMask);
+        lawnMix.rgb=mix(contextGrass,mix(lawnMix.rgb,livingGrass,.76)*lawnFinish*fibers*variation*(.985+mowing*.03)${serra?'*(.80+.30*srFbm(prWorldXZ*.085))*mix(vec3(.98,1.0,.96),vec3(1.10,1.0,.86),srNoise(prWorldXZ*.42+5.))':''},siteMask);
         diffuseColor*=lawnMix;
       #endif`);
     };
@@ -161,7 +162,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         normal=normalize(abs(det)*normal-sign(det)*(dFdx(bladeHeight)*rx+dFdy(bladeHeight)*ry));
       `);
     };
-    material.customProgramCacheKey=()=> serra?'priorita-lawn-v22-serra':'priorita-lawn-v20';
+    material.customProgramCacheKey=()=> serra?'priorita-lawn-v24-serra':'priorita-lawn-v20';
     return material;
   }
   const grassMat=new T.MeshBasicMaterial(); // CPU picking only; no duplicate texture download.
@@ -484,9 +485,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
     skyMaterial.uniforms.daylight.value=T.MathUtils.smoothstep(solar.elevation,-1,3);
     streetLevel=streetLighting.setSun(solar.elevation);
     if(serraLook){
-      serraLook.setSun(dir,T.MathUtils.smoothstep(solar.elevation,-1,9),streetLevel);
+      serraLook.setSun(dir,T.MathUtils.smoothstep(solar.elevation,-1,9),streetLevel,skyMaterial.uniforms.bottomColor.value,skyMaterial.uniforms.topColor.value);
       // Serra: sol um pouco mais quente e sombras mais frias dão volume ao relevo e às casas.
-      sun.intensity*=1.12;hemi.color.set('#b5d0ee');hemi.groundColor.set('#8f9468');hemi.intensity=.22+daylight*.55;
+      sun.intensity*=1.18;sun.color.lerp(new T.Color('#ffe2b8'),.25);hemi.color.set('#aecdf2');hemi.groundColor.set('#8c9a5e');hemi.intensity=.22+daylight*.52;
       scene.environmentIntensity=.10+daylight*.62;
     }
     for(const mat of fixtureMaterials)mat.emissiveIntensity=streetLevel*3;

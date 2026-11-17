@@ -5,6 +5,7 @@ import {mergeVertices} from 'three/addons/utils/BufferGeometryUtils.js';
 import {lots,serraMask,serraRelief,terrainHeight} from './model';
 import {demoStatus} from './demo-stock';
 import type {SerraLook} from './serra-look';
+import {createHouseLibrary,houseTypes,wallTones} from './serra-houses';
 
 /**
  * Priorità · Serra (v8): entorno ilustrativo dos Campos de Cima da Serra exportado do Blender
@@ -47,8 +48,43 @@ export function reliefGeometry(source:T.BufferGeometry,smooth:boolean,maxEdge=2.
 }
 
 /** Illustrative houses, 7.2 m wide, for the ~10 m lots shown as sold. depth = footprint along the lot; rear = deck beyond it. */
-const houseTypes=[{name:'casa-a',depth:14,rear:0},{name:'casa-b',depth:13,rear:0},{name:'casa-c',depth:14,rear:2.2},{name:'casa-d',depth:12,rear:2}];
-const wallTones=['#ffffff','#f3e7d3','#e2e6e4','#ead8c2','#d3dad2','#f6efe6'];
+/**
+ * Copas mais orgânicas: cada tufo (componente conexo) é subdividido e os novos vértices são levados ao seu
+ * elipsoide, com leve irregularidade. Componentes que não se parecem com um elipsoide ficam só subdivididos.
+ */
+function roundCrown(source:T.BufferGeometry,levels:number){
+  const pos=source.attributes.position,index=source.index;if(!index)return source.clone();
+  const count=pos.count,parent=Array.from({length:count},(_,i)=>i);
+  const find=(i:number)=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+  for(let i=0;i<index.count;i+=3){const a=find(index.getX(i));parent[find(index.getX(i+1))]=a;parent[find(index.getX(i+2))]=a;}
+  type Blob={c:T.Vector3;h:T.Vector3;n:number;round:boolean};
+  const blobs=new Map<number,Blob>(),v=new T.Vector3();
+  for(let i=0;i<count;i++){const r=find(i),b=blobs.get(r)||blobs.set(r,{c:new T.Vector3(),h:new T.Vector3(),n:0,round:true}).get(r)!;b.c.add(v.fromBufferAttribute(pos,i));b.n++;}
+  for(const b of blobs.values())b.c.divideScalar(b.n);
+  for(let i=0;i<count;i++){const b=blobs.get(find(i))!;v.fromBufferAttribute(pos,i).sub(b.c);b.h.x+=v.x*v.x;b.h.y+=v.y*v.y;b.h.z+=v.z*v.z;}
+  for(const b of blobs.values())b.h.set(Math.max(.05,Math.sqrt(3*b.h.x/b.n)),Math.max(.05,Math.sqrt(3*b.h.y/b.n)),Math.max(.05,Math.sqrt(3*b.h.z/b.n)));
+  for(let i=0;i<count;i++){const b=blobs.get(find(i))!,rho=v.fromBufferAttribute(pos,i).sub(b.c).divide(b.h).length();if(rho<.8||rho>1.25)b.round=false;}
+  type Tri=[T.Vector3,T.Vector3,T.Vector3,Blob];
+  let tris:Tri[]=[];
+  for(let i=0;i<index.count;i+=3){const a=index.getX(i);tris.push([new T.Vector3().fromBufferAttribute(pos,a),new T.Vector3().fromBufferAttribute(pos,index.getX(i+1)),new T.Vector3().fromBufferAttribute(pos,index.getX(i+2)),blobs.get(find(a))!]);}
+  const mid=(a:T.Vector3,b:T.Vector3,blob:Blob)=>{const m=a.clone().add(b).multiplyScalar(.5);return blob.round?m.sub(blob.c).divide(blob.h).normalize().multiply(blob.h).add(blob.c):m;};
+  for(let level=0;level<levels;level++){
+    const next:Tri[]=[];
+    for(const [a,b,c,blob] of tris){const ab=mid(a,b,blob),bc=mid(b,c,blob),ca=mid(c,a,blob);next.push([a,ab,ca,blob],[ab,b,bc,blob],[ca,bc,c,blob],[ab,bc,ca,blob]);}
+    tris=next;
+  }
+  const out=new Float32Array(tris.length*9);let o=0;
+  for(const [a,b,c,blob] of tris)for(const p of [a,b,c]){
+    // irregularidade determinística pela posição: vértices compartilhados continuam coincidentes
+    const k=blob.round?1+.11*Math.sin(p.x*2.3+blob.c.y)*Math.sin(p.y*2.9+blob.c.x)+.07*Math.sin(p.z*3.7+p.x*1.3):1;
+    out[o++]=blob.c.x+(p.x-blob.c.x)*k;out[o++]=blob.c.y+(p.y-blob.c.y)*k;out[o++]=blob.c.z+(p.z-blob.c.z)*k;
+  }
+  const flat=new T.BufferGeometry();flat.setAttribute('position',new T.BufferAttribute(out,3));
+  const geometry=mergeVertices(flat,1e-3);flat.dispose();geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  return geometry;
+}
+/** Árvores a até esta distância do centro do loteamento usam a copa detalhada. */
+const NEAR_TREES=400;
 function housePlacements(){
   const byType:T.Matrix4[][]=houseTypes.map(()=>[]);let n=0;
   for(const lot of lots){
@@ -61,8 +97,10 @@ function housePlacements(){
     const scale=Math.min(1,(lot.front.value-1.8)/8.2,(lotDepth-3.5-1.2-type.rear)/type.depth);
     if(scale<.72)continue;
     const half=type.depth*scale/2,cx=mx+nx*(3.5+half),cz=mz+nz*(3.5+half),tx=ex/el*3.7*scale,tz=ez/el*3.7*scale;
-    let floor=-Infinity;
-    for(const [u,v] of [[1,1],[1,-1],[-1,1],[-1,-1]])floor=Math.max(floor,terrainHeight(cx+tx*u+nx*half*v,cz+tz*u+nz*half*v));
+    // Piso entre o ponto mais alto e o mais baixo do terreno sob a casa: menos embasamento aparente na encosta.
+    let high=-Infinity,low=Infinity;
+    for(const [u,v] of [[1,1],[1,-1],[-1,1],[-1,-1]]){const y=terrainHeight(cx+tx*u+nx*half*v,cz+tz*u+nz*half*v);high=Math.max(high,y);low=Math.min(low,y);}
+    const floor=low+(high-low)*.78;
     byType[kind].push(new T.Matrix4().compose(new T.Vector3(cx,floor+.12,cz),new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.atan2(-nx,-nz)),new T.Vector3(scale,scale,scale)));
   }
   return byType;
@@ -120,22 +158,23 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
     wires.name='Serra · arame';group.add(wires);
     owned.push(geometry,material,mesh,wires.geometry,wires.material as T.Material);
   }
-  loader.load(base+'serra-houses.glb',gltf=>{
-    if(disposed)return;
-    const placements=housePlacements(),tone=new T.Color();
-    houseTypes.forEach((type,k)=>{
-      const matrices=placements[k];if(!matrices.length)return;
-      gltf.scene.getObjectByName(type.name)?.traverse(o=>{
-        if(!(o instanceof T.Mesh))return;
-        const material=o.material as T.MeshStandardMaterial;material.envMapIntensity=material.name.includes('Vidro')?1.6:.6;look?.building(material);
-        const mesh=new T.InstancedMesh(o.geometry,material,matrices.length);
+  {
+    // Casas contemporâneas geradas em código (serra-houses.ts): uma malha instanciada por material e tipologia.
+    const placements=housePlacements(),tone=new T.Color(),styled=new Set<T.Material>();
+    createHouseLibrary().forEach((type,k)=>{
+      const matrices=placements[k];
+      for(const {material,geometry} of type.parts){
+        owned.push(geometry,material);
+        if(!styled.has(material)){styled.add(material);material.envMapIntensity=material.name.includes('Vidro')?1.6:.6;look?.building(material);}
+        if(!matrices.length)continue;
+        const mesh=new T.InstancedMesh(geometry,material,matrices.length);
         matrices.forEach((m,i)=>{mesh.setMatrixAt(i,m);if(material.name.includes('Parede'))mesh.setColorAt(i,tone.set(wallTones[(i*3+k)%wallTones.length]));});
         mesh.castShadow=true;mesh.receiveShadow=true;mesh.computeBoundingSphere();mesh.name='Serra · '+type.name;
-        group.add(mesh);owned.push(o.geometry,material,mesh);
-      });
+        group.add(mesh);owned.push(mesh);
+      }
     });
     shadows();
-  });
+  }
 
   Promise.all([
     loader.loadAsync(base+'serra-vegetation.glb'),
@@ -143,7 +182,7 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
   ]).then(([gltf,instances])=>{
     if(disposed)return;
     gltf.scene.updateMatrixWorld(true);
-    const parts:{kind:number;geometry:T.BufferGeometry;material:T.Material}[]=[];
+    const parts:{kind:number;geometry:T.BufferGeometry;detail?:T.BufferGeometry;material:T.Material}[]=[];
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh))return;
       let geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);
@@ -151,8 +190,10 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
       // Copas arredondadas: solda os vértices e recalcula normais suaves para tirar as facetas.
       if(look&&!/Casca/.test(material.name)){geometry.deleteAttribute('normal');const welded=mergeVertices(geometry,.02);geometry.dispose();geometry=welded;geometry.computeVertexNormals();}
       if(look){if(/Casca/.test(material.name))look.bark(material);else look.foliage(material,/arauc/i.test(material.name));}
-      parts.push({kind:o.name.startsWith('mata')||o.parent?.name.startsWith('mata')?1:0,geometry,material});
-      owned.push(geometry,material);
+      const kind=o.name.startsWith('mata')||o.parent?.name.startsWith('mata')?1:0;
+      const detail=look&&!light&&!/Casca/.test(material.name)?roundCrown(geometry,1):undefined;
+      parts.push({kind,geometry,detail,material});
+      owned.push(geometry,material);if(detail)owned.push(detail);
     });
     const cells=new Map<string,Instance[]>();
     for(const i of instances){const key=`${Math.floor(i[1]/CELL)},${Math.floor(i[3]/CELL)}`;(cells.get(key)||cells.set(key,[]).get(key)!).push(i);}
@@ -162,12 +203,14 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
       const meshes:T.InstancedMesh[]=[];const center=new T.Vector3();
       list.forEach(i=>center.add(new T.Vector3(i[1],i[2],i[3])));center.divideScalar(list.length);
       for(const part of parts){
-        const mine=list.filter(i=>i[0]===part.kind);if(!mine.length)continue;
-        const mesh=new T.InstancedMesh(part.geometry,part.material,mine.length);
+        for(const near of part.detail?[true,false]:[false]){
+        const mine=list.filter(i=>i[0]===part.kind&&(!part.detail||(Math.hypot(i[1],i[3])<NEAR_TREES)===near));if(!mine.length)continue;
+        const mesh=new T.InstancedMesh(near?part.detail!:part.geometry,part.material,mine.length);
         mine.forEach((i,n)=>{dummy.position.set(i[1],i[2]+serraRelief(i[1],i[3]),i[3]);dummy.rotation.set(0,i[4],0);dummy.scale.setScalar(i[5]);dummy.updateMatrix();mesh.setMatrixAt(n,dummy.matrix);
           if(look){const h=Math.sin(i[1]*12.9898+i[3]*78.233)*43758.5453,r=h-Math.floor(h),k=part.kind?.22:.14;mesh.setColorAt(n,tint.setRGB(1-k*.5+k*r,1-k*.35+k*.7*((r*7.3)%1),1-k*.6+k*((r*3.1)%1)));}});
         mesh.computeBoundingSphere();mesh.castShadow=false;mesh.receiveShadow=false;mesh.name='Serra · capão';
         meshes.push(mesh);group.add(mesh);
+        }
       }
       chunks.push({meshes,center});
     }
