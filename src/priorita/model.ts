@@ -1,4 +1,6 @@
 import source from './plan-source.json';
+/** True only on /apresentar/priorita-serra; Node tests have no location and keep the original study. */
+const serraRoute=typeof location!=='undefined'&&location.pathname.replace(/\/$/,'').split('/').pop()==='priorita-serra';
 
 export type Point2 = [number, number];
 export type LotStatus = 'available' | 'reserved' | 'unavailable';
@@ -18,8 +20,22 @@ export const number = (value: number) => value.toLocaleString('pt-BR', {minimumF
 export const timeLabel = (hour:number) => {const m=Math.round(hour*60);return `${Math.floor(m/60).toString().padStart(2,'0')}:${(m%60).toString().padStart(2,'0')}`;};
 
 /** Authored demonstration landform. Never a survey elevation or earthworks plan. */
+const smoothStep=(a:number,b:number,v:number)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
+/** Where the Serra relief applies: full inside the development, fading to the surrounding field. Zero at the gate. */
+export function serraMask(x: number, z: number) {
+  const sx=1-smoothStep(110,200,Math.abs(x+8));
+  const sz=z<0?1-smoothStep(125,158,-z):1-smoothStep(130,220,z);
+  return sx*sz;
+}
+/** Illustrative small hills and level changes for the Serra route. Not a survey or earthworks design. */
+export function serraRelief(x: number, z: number) {
+  const mask=serraMask(x,z);
+  if(mask<=0)return 0;
+  return mask*(2.4*Math.sin(.043*x+.021*z+1.1)+1.5*Math.sin(-.027*x+.049*z+2.3)+.7*Math.sin(.085*x-.05*z+.4)+.2*Math.sin(.19*x+.13*z));
+}
 export function terrainHeight(x: number, z: number) {
-  return 2.3 * Math.sin(x * .012) + 3.1 * Math.sin(z * .011) + 1.15 * Math.cos((x + z) * .018) + z * .008;
+  const base=2.3 * Math.sin(x * .012) + 3.1 * Math.sin(z * .011) + 1.15 * Math.cos((x + z) * .018) + z * .008;
+  return serraRoute?base+serraRelief(x,z):base;
 }
 export function lotRelief(lot: Lot) {
   const heights = lot.polygon.map(([x,z]) => terrainHeight(x,z));

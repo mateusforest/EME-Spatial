@@ -16,7 +16,7 @@ import {openingHour} from './visual-profile';
 import {createStreetLighting,streetLampLayout} from './street-lighting';
 import {createSurfaceFinish} from './surface-finish';
 import {projectLotAnchor,walkFieldOfView} from './walk-view';
-import {createSerraContext} from './serra';
+import {createSerraContext,reliefGeometry} from './serra';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -176,7 +176,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   const raycaster=new T.Raycaster(),pointer=new T.Vector2();
   const drag={active:false,x:0,y:0,lastX:0,lastY:0,moved:false,id:-1};
   function invalidate(){dirty=true;}
-  if(serra)serraContext=createSerraContext(scene,draco,invalidate);
+  if(serra)serraContext=createSerraContext(scene,draco,invalidate,()=>{renderer.shadowMap.needsUpdate=true;invalidate();});
 
   function surface(polygon:number[][],offset=0,holes:number[][][]=[]){
     const contour=polygon.map(([x,z])=>new T.Vector2(x,z));
@@ -185,11 +185,11 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
     const faces=T.ShapeUtils.triangulateShape(contour,hh);
     const positions:number[]=[],uv:number[]=[];
     const triangle=(a:T.Vector2,b:T.Vector2,c:T.Vector2,depth:number)=>{
-      if(depth<7&&Math.max(a.distanceTo(b),a.distanceTo(c),b.distanceTo(c))>5){
+      if(depth<7&&Math.max(a.distanceTo(b),a.distanceTo(c),b.distanceTo(c))>(serra?2.5:5)){
         const ab=a.clone().add(b).multiplyScalar(.5),bc=b.clone().add(c).multiplyScalar(.5),ca=c.clone().add(a).multiplyScalar(.5);
         triangle(a,ab,ca,depth+1);triangle(ab,b,bc,depth+1);triangle(ca,bc,c,depth+1);triangle(ab,bc,ca,depth+1);return;
       }
-      for(const p of [a,c,b]){positions.push(p.x,terrainHeight(p.x,p.y)+offset,p.y);uv.push(p.x/6,p.y/6);}
+      for(const p of [a,c,b]){positions.push(p.x,terrainHeight(p.x,p.y)+offset+(serra?.05:0),p.y);uv.push(p.x/6,p.y/6);}
     };
     for(const [a,b,c] of faces)triangle(verts[a],verts[b],verts[c],0);
     const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();return geo;
@@ -222,7 +222,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       if(material.name.startsWith('Calçada')){material.color.set('#d3cdc1');material.roughness=.82;material.envMapIntensity=.5;material.normalScale.set(.18,.18);}
       if(material.name.startsWith('Sinalização')){material.color.set('#c6bfa4');material.roughness=.92;}
       streetLighting.apply(material);surfaceFinish.apply(material);
-      const geometry=mergeGeometries(geometries);
+      let geometry=mergeGeometries(geometries);
+      if(serra&&geometry){const flat=geometry;geometry=reliefGeometry(flat,/^(Grama|Asfalto|Calçada|Sinalização|Canteiro)/.test(material.name));flat.dispose();}
       if(geometry){const object=mesh(geometry,material);object.castShadow=/Concreto|Metal|Banco/.test(material.name);}
       geometries.forEach(g=>g.dispose());
     }
@@ -437,7 +438,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
 
   // 1 m illustrative contours, computed from the exact displayed height field.
   const contourPoints:number[]=[];
-  for(let level=-7;level<=7;level++)for(let x=-115;x<100;x+=3)for(let z=-135;z<135;z+=3){
+  for(let level=-13;level<=13;level++)for(let x=-115;x<100;x+=3)for(let z=-135;z<135;z+=3){
     const corners=[[x,z],[x+3,z],[x+3,z+3],[x,z+3]],crossings:number[][]=[];
     for(let i=0;i<4;i++){const a=corners[i],b=corners[(i+1)%4],ha=terrainHeight(...a as [number,number]),hb=terrainHeight(...b as [number,number]);if((ha<=level&&hb>level)||(hb<=level&&ha>level)){const t=(level-ha)/(hb-ha);crossings.push([T.MathUtils.lerp(a[0],b[0],t),level+.12,T.MathUtils.lerp(a[1],b[1],t)]);}}
     if(crossings.length===2)contourPoints.push(...crossings[0],...crossings[1]);
