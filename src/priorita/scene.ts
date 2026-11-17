@@ -4,7 +4,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {areas,areaById,plan,canWalk, containsPoint, lotById, lots, solarPosition, statusInfo, terrainHeight} from './model';
+import {brandName,insideDistance,areas,areaById,plan,canWalk, containsPoint, lotById, lots, solarPosition, statusInfo, terrainHeight} from './model';
 import type {LotStatus, ViewMode} from './model';
 import {createAnnotations} from './annotations';
 import {frameBounds} from './camera-layout';
@@ -18,6 +18,9 @@ import {createSurfaceFinish} from './surface-finish';
 import {projectLotAnchor,walkFieldOfView} from './walk-view';
 import {createSerraContext,reliefGeometry} from './serra';
 import {createSerraLook,installSerraGrade} from './serra-look';
+import {blocksMouth,createSerraRoads} from './serra-roads';
+import {createSerraCity} from './serra-city';
+import {amenityBenches,amenityShrubs,amenityTrees,clearings,createSerraAmenities} from './serra-amenities';
 
 export type WalkState='idle'|'choosing'|'moving';
 type Events = {onSelect: (id:string)=>void;onArea:(id:string)=>void;onWalkState:(state:WalkState)=>void;onNotice:(message:string)=>void; onBlock:(block:string)=>void; onMode:(mode:ViewMode)=>void; onReady:()=>void; onError:(message:string)=>void};
@@ -25,6 +28,9 @@ type Transition={start:number;duration:number;from:T.Vector3;to:T.Vector3;fromTa
 
 export function createPrioritaScene(host:HTMLDivElement, events:Events, options:{serra?:boolean}={}) {
   const serra=Boolean(options.serra);
+  /** Janela da máscara do gramado dos lotes (x0, largura, z do topo, profundidade). A rota Serra cobre o traçado ampliado. */
+  const MASK=serra?{x0:-220,w:440,z1:230,d:460}:{x0:-150,w:300,z1:180,d:360};
+  const siteMaterials:T.MeshStandardMaterial[]=[];
   let disposed=false,dirty=true,mode:ViewMode='aerial',selected='',hovered='',showStock=true,showLabels=true;
   let focusedBlock='',paused=false;
   let filtered:Set<string>|null=null;
@@ -47,7 +53,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFShadowMap;
   renderer.shadowMap.autoUpdate=false;
-  renderer.domElement.setAttribute('aria-label','Cenário 3D do loteamento Priorità. Use a lista de lotes para selecionar pelo teclado.');
+  renderer.domElement.setAttribute('aria-label','Cenário 3D do loteamento '+brandName+'. Use a lista de lotes para selecionar pelo teclado.');
   renderer.domElement.tabIndex=0;
   host.append(renderer.domElement);
   const camera=new T.PerspectiveCamera(47,1,1.5,30000);
@@ -74,7 +80,9 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   Object.assign(sun.shadow.camera,{left:-190,right:190,top:210,bottom:-210,near:1,far:850});
   sun.shadow.bias=-.00012;sun.shadow.normalBias=.07;sun.shadow.radius=2;scene.add(sun,sun.target);
   const textures:T.Texture[]=[];
-  const lampLayout=streetLampLayout(plan.roads);
+  // Émera: vias novas do traçado ampliado (materiais definitivos chegam com o site.glb).
+  const newRoads=serra?createSerraRoads({asphalt:new T.MeshStandardMaterial({color:'#55585a',roughness:.85}),sidewalk:new T.MeshStandardMaterial({color:'#c9c3b8',roughness:.85}),curb:new T.MeshStandardMaterial({color:'#d5d0c6',roughness:.8})},(polygon,offset)=>surface(polygon,offset),terrainHeight):undefined;
+  const lampLayout=[...streetLampLayout(plan.roads.filter(r=>!('generated' in r))),...(newRoads?.lamps||[])];
   const streetLighting=createStreetLighting(lampLayout,terrainHeight);
   textures.push(streetLighting.texture);
   let streetLevel=0;
@@ -103,10 +111,10 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   }
   // One tiny shared mask confines the new lawn finish to the actual parcels
   // and common areas. No extra geometry or changes to the outer landscape.
-  const lawnMaskCanvas=document.createElement('canvas');lawnMaskCanvas.width=256;lawnMaskCanvas.height=384;
+  const lawnMaskCanvas=document.createElement('canvas');lawnMaskCanvas.width=serra?384:256;lawnMaskCanvas.height=serra?400:384;
   const lawnMaskContext=lawnMaskCanvas.getContext('2d')!;
   lawnMaskContext.fillStyle='#000';lawnMaskContext.fillRect(0,0,256,384);lawnMaskContext.fillStyle='#fff';
-  for(const item of [...lots,...areas]){lawnMaskContext.beginPath();item.polygon.forEach(([x,z],i)=>{const u=(x+150)/300*256,v=(180-z)/360*384;i?lawnMaskContext.lineTo(u,v):lawnMaskContext.moveTo(u,v);});lawnMaskContext.closePath();lawnMaskContext.fill();}
+  for(const item of [...lots,...areas]){lawnMaskContext.beginPath();item.polygon.forEach(([x,z],i)=>{const u=(x-MASK.x0)/MASK.w*lawnMaskCanvas.width,v=(MASK.z1-z)/MASK.d*lawnMaskCanvas.height;i?lawnMaskContext.lineTo(u,v):lawnMaskContext.moveTo(u,v);});lawnMaskContext.closePath();lawnMaskContext.fill();}
   const lawnMask=new T.CanvasTexture(lawnMaskCanvas);lawnMask.generateMipmaps=false;lawnMask.minFilter=T.LinearFilter;textures.push(lawnMask);
   // A shared photographic detail map adds grass fibers and tonal variation,
   // masked to the subdivision. It does not add geometry or another render pass.
@@ -131,7 +139,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         vec4 lawnA=texture2D(map,vMapUv);
         vec4 lawnB=texture2D(map,mat2(.8,-.6,.6,.8)*vMapUv*.731+vec2(.173,.371));
         vec4 lawnMix=mix(lawnA,lawnB,.42);
-        float siteMask=texture2D(prLawnMask,(prWorldXZ+vec2(150.0,180.0))/vec2(300.0,360.0)).r;
+        float siteMask=texture2D(prLawnMask,(prWorldXZ-vec2(${MASK.x0.toFixed(1)},${(MASK.z1-MASK.d).toFixed(1)}))/vec2(${MASK.w.toFixed(1)},${MASK.d.toFixed(1)})).r;
         vec3 grassPhoto=texture2D(prLawnDetail,prWorldXZ/3.2).rgb;
         float detail=dot(grassPhoto,vec3(.2126,.7152,.0722));
         float lawnPatch=dot(texture2D(prLawnDetail,mat2(.8,-.6,.6,.8)*prWorldXZ/31.0).rgb,vec3(.2126,.7152,.0722));
@@ -155,7 +163,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
         float grassFootprint=max(length(dFdx(prWorldXZ)),length(dFdy(prWorldXZ)));
         float grassDetailFade=1.0-smoothstep(.035,.18,grassFootprint);
-        float bladeHeight=dot(texture2D(prLawnDetail,prWorldXZ/3.2).rgb,vec3(.2126,.7152,.0722))*.025*grassDetailFade*texture2D(prLawnMask,vec2((prWorldXZ.x+150.0)/300.0,(prWorldXZ.y+180.0)/360.0)).r;
+        float bladeHeight=dot(texture2D(prLawnDetail,prWorldXZ/3.2).rgb,vec3(.2126,.7152,.0722))*.025*grassDetailFade*texture2D(prLawnMask,(prWorldXZ-vec2(${MASK.x0.toFixed(1)},${(MASK.z1-MASK.d).toFixed(1)}))/vec2(${MASK.w.toFixed(1)},${MASK.d.toFixed(1)})).r;
         vec3 dpdx=dFdx(-vViewPosition),dpdy=dFdy(-vViewPosition);
         vec3 rx=cross(dpdy,normal),ry=cross(normal,dpdx);
         float det=dot(dpdx,rx);
@@ -181,6 +189,18 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   function invalidate(){dirty=true;}
   if((import.meta as any).env?.DEV)(window as any).__pr={scene,renderer,camera,controls,T,lighting:(h:number,d:string)=>lighting(h,d)};
   if(serra)serraContext=createSerraContext(scene,draco,invalidate,()=>{renderer.shadowMap.needsUpdate=true;invalidate();},serraLook);
+  const city=serra?createSerraCity(scene):undefined;
+  const amenities=serra?createSerraAmenities(scene,serraLook,()=>{renderer.shadowMap.needsUpdate=true;invalidate();}):undefined;
+  /** Remove triângulos cujo centro fica mais de `inset` metros para dentro do polígono (caminho e canteiros antigos da Recreação 01). */
+  function dropInside(source:T.BufferGeometry,polygon:number[][],inset:number){return dropWhere(source,(x,z)=>insideDistance(x,z,polygon)>=inset);}
+  /** Remove os triângulos cujo centro satisfaz drop. */
+  function dropWhere(source:T.BufferGeometry,drop:(x:number,z:number)=>boolean){
+    const flat=source.index?source.toNonIndexed():source,pos=flat.attributes.position,keep:number[]=[];
+    for(let i=0;i<pos.count;i+=3){const x=(pos.getX(i)+pos.getX(i+1)+pos.getX(i+2))/3,z=(pos.getZ(i)+pos.getZ(i+1)+pos.getZ(i+2))/3;if(!drop(x,z))keep.push(i);}
+    const out=new T.BufferGeometry();
+    for(const [name,attr] of Object.entries(flat.attributes)){const size=attr.itemSize,data=new Float32Array(keep.length*3*size);keep.forEach((i,k)=>{for(let v=0;v<3;v++)for(let c=0;c<size;c++)data[(k*3+v)*size+c]=attr.getComponent(i+v,c);});out.setAttribute(name,new T.BufferAttribute(data,size));}
+    if(flat!==source)flat.dispose();source.dispose();return out;
+  }
 
   function surface(polygon:number[][],offset=0,holes:number[][][]=[]){
     const contour=polygon.map(([x,z])=>new T.Vector2(x,z));
@@ -227,9 +247,21 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       if(material.name.startsWith('Sinalização')){material.color.set('#c6bfa4');material.roughness=.92;}
       streetLighting.apply(material);surfaceFinish.apply(material);
       let geometry=mergeGeometries(geometries);
+      if(serra&&geometry&&/^(Calçada|Canteiro|Concreto|Metal)/.test(material.name))geometry=dropInside(geometry,areas[0].polygon,material.name.startsWith('Canteiro')?.05:1.5);
+      if(serra&&geometry&&/^(Calçada|Concreto)/.test(material.name))geometry=dropWhere(geometry,blocksMouth);
+      if(serra)siteMaterials.push(material);
       if(serra&&geometry){const flat=geometry;geometry=reliefGeometry(flat,/^(Grama|Asfalto|Calçada|Sinalização|Canteiro)/.test(material.name));flat.dispose();}
       if(geometry){const object=mesh(geometry,material);object.castShadow=/Concreto|Metal|Banco/.test(material.name);}
       geometries.forEach(g=>g.dispose());
+    }
+    if(newRoads){
+      // as vias novas usam os mesmos materiais do site (asfalto, calçada e meio-fio da prancha)
+      const find=(re:RegExp)=>siteMaterials.find(m=>re.test(m.name));
+      const [asphalt,walk,kerb]=newRoads.group.children as T.Mesh[];
+      if(asphalt)asphalt.material=find(/^Asfalto/)||asphalt.material;
+      if(walk)walk.material=find(/^Calçada/)||walk.material;
+      if(kerb)kerb.material=find(/^Concreto/)||kerb.material;
+      scene.add(newRoads.group);
     }
     renderer.shadowMap.needsUpdate=true;invalidate();events.onReady();
   },undefined,()=>events.onError('Não foi possível carregar o cenário. Tente reabrir a visita.'));
@@ -323,6 +355,12 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
   });
   const plantingLayout=(file:string)=>fetch(`/assets/priorita/production-v4/${file}.json`).then(r=>{if(!r.ok)throw new Error('planting layout');return r.json() as Promise<number[][]>;});
   Promise.all([plantingLayout('trees'),plantingLayout('gardens')]).then(([trees,gardens])=>{
+    if(serra){
+      // Recreação 01 e área institucional redesenhadas: tira plantas do caminho antigo e dos equipamentos novos.
+      const cleared=(x:number,z:number)=>clearings.some(([a,b,c,d])=>x>a&&x<b&&z>c&&z<d);
+      trees=trees.filter(([x,z])=>!cleared(x,z)).concat(amenityTrees,newRoads?.trees||[]);
+      gardens=gardens.filter(([x,z])=>insideDistance(x,z,areas[0].polygon)<0&&!cleared(x,z)).concat(amenityShrubs);
+    }
     if(disposed)return;
     surfaceFinish.contacts([
       ...trees.map(([x,z,h])=>({x,z,radius:Math.min(3.3,h*.28),strength:.8})),
@@ -334,7 +372,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       shade:trees.filter((_,i)=>i%3===1).map(([x,z,h,a])=>[x,z,h,a]),
       shrub0:gardens.filter((_,i)=>i%3===0).map(([x,z,h,a])=>[x,z,h*(.79+.08*Math.sin(x+z)),a]),
       shrub1:gardens.filter((_,i)=>i%3!==0).map(([x,z,h,a])=>[x,z,h*(.52+.07*Math.sin(x-z)),a]),
-      bench:[[-48,-80,1,0],[-64,-47,1,0],[-40,-68,1,0],[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]],
+      bench:serra?[...amenityBenches,[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]]:[[-48,-80,1,0],[-64,-47,1,0],[-40,-68,1,0],[-88,56,1,Math.PI/2],[-87,74,1,Math.PI/2]],
       lamp:lampLayout.map(({x,z,rotation})=>[x,z,1,rotation]),
     };
     // Low planting at the existing street-tree beds, reusing the small v7
@@ -486,6 +524,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
     streetLevel=streetLighting.setSun(solar.elevation);
     if(serraLook){
       serraLook.setSun(dir,T.MathUtils.smoothstep(solar.elevation,-1,9),streetLevel,skyMaterial.uniforms.bottomColor.value,skyMaterial.uniforms.topColor.value);
+      amenities?.setNight(streetLevel);city?.setNight(streetLevel);
       // Serra: sol um pouco mais quente e sombras mais frias dão volume ao relevo e às casas.
       sun.intensity*=1.18;sun.color.lerp(new T.Color('#ffe2b8'),.25);hemi.color.set('#aecdf2');hemi.groundColor.set('#8c9a5e');hemi.intensity=.22+daylight*.52;
       scene.environmentIntensity=.10+daylight*.62;
@@ -721,7 +760,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       const context=output.getContext('2d')!;context.drawImage(renderer.domElement,0,0);context.scale(output.width/host.clientWidth,output.height/host.clientHeight);annotations.draw(context);
       return output.toDataURL('image/png');
     },
-    dispose(){disposed=true;serraContext?.dispose();serraLook?.dispose();cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
+    dispose(){disposed=true;serraContext?.dispose();amenities?.dispose();city?.dispose();serraLook?.dispose();cancelAnimationFrame(raf);resizeObserver.disconnect();uiObserver.disconnect();annotations.dispose();solarGuide.dispose();walkTarget.remove();controls.dispose();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',blur);renderer.domElement.removeEventListener('webglcontextlost',contextLost);localLamp.shadow.map?.dispose();disposeObject(scene);pickables.forEach(m=>m.geometry.dispose());grassMat.dispose();textures.forEach(t=>t.dispose());environment?.dispose();pmrem.dispose();draco.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();},
   };
 }
 export type PrioritaScene=ReturnType<typeof createPrioritaScene>;

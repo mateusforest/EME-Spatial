@@ -7,3 +7,7 @@
  .priorita.pr-mode-walk .pr-walk-options{left:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px));padding:0 10px;height:36px;border-radius:20px}.priorita .pr-walk-options button{min-height:34px;font-size:10px;gap:7px}.priorita .pr-walk-breadcrumb,.priorita .pr-instructions,.priorita .pr-north{display:none}
  .priorita.pr-mode-walk .pr-walk-controls{left:50%;bottom:125px;transform:translateX(-50%)}.priorita .pr-settings{max-height:calc(100dvh - 190px);overflow:auto}.priorita .pr-sheet .pr-panel-heading button{min-width:32px;min-height:32px}.priorita .pr-solar-sheet .pr-panel-heading button{min-width:34px;min-height:34px}
 }
+
+/* Émera (rota Serra): marca no cabeçalho */
+.priorita .pr-header-center b.pr-brand-emera{letter-spacing:.32em;font-weight:400;padding-left:.32em}
+

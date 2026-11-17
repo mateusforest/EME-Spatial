@@ -1,6 +1,13 @@
-import source from './plan-source.json';
+import original from './plan-source.json';
+import {serraPlan} from './serra-plan';
 /** True only on /apresentar/priorita-serra; Node tests have no location and keep the original study. */
 const serraRoute=typeof location!=='undefined'&&location.pathname.replace(/\/$/,'').split('/').pop()==='priorita-serra';
+/** Rota Serra: traçado ampliado (serra-plan.ts). Demais rotas: a prancha original. */
+const source=(serraRoute?serraPlan:original) as typeof original;
+
+/** Nome comercial exibido. A rota Serra usa a nova marca ÉMERA; o estudo original mantém Priorità. */
+export const brandName=serraRoute?'Émera':'Priorità';
+export const isSerraRoute=serraRoute;
 
 export type Point2 = [number, number];
 export type LotStatus = 'available' | 'reserved' | 'unavailable';
@@ -9,6 +16,8 @@ export const plan = source;
 export type Lot = typeof source.lots[number];
 export const lots = source.lots;
 export const lotById = new Map(lots.map(lot => [lot.id, lot]));
+/** Quadras presentes no plano ativo, em ordem. */
+export const blockNames=[...new Set(source.lots.map(l=>l.block))];
 export const areas=source.otherPolygons.map((area,i)=>({...area,id:`area-${i+1}`,name:['Recreação 01','Área institucional','Recreação 02'][i],kind:i===1?'Institucional':'Recreação'}));
 export const areaById=new Map(areas.map(area=>[area.id,area]));
 export const statusInfo = {
@@ -28,13 +37,74 @@ export function serraMask(x: number, z: number) {
   return sx*sz;
 }
 /** Illustrative small hills and level changes for the Serra route. Not a survey or earthworks design. */
-export function serraRelief(x: number, z: number) {
+function rawRelief(x: number, z: number) {
   const mask=serraMask(x,z);
   if(mask<=0)return 0;
   return mask*(2.4*Math.sin(.043*x+.021*z+1.1)+1.5*Math.sin(-.027*x+.049*z+2.3)+.7*Math.sin(.085*x-.05*z+.4)+.2*Math.sin(.19*x+.13*z));
 }
+const baseHeight=(x:number,z:number)=>2.3 * Math.sin(x * .012) + 3.1 * Math.sin(z * .011) + 1.15 * Math.cos((x + z) * .018) + z * .008;
+
+/**
+ * Centro do loteamento mais plano (rota Serra): dentro do traçado ampliado o relevo é aproximado de um
+ * plano em CENTER_FLAT (85 %), voltando ao relevo natural numa faixa de transição até o campo.
+ */
+const CENTER_FLAT=.85;
+let centerLevel:number|undefined;
+function centerWeight(x:number,z:number){
+  const d=Math.max(Math.abs(x+5)/170,z<27?(27-z)/160:(z-27)/165);
+  return 1-smoothStep(.95,1.4,d);
+}
+function shapedHeight(x:number,z:number){
+  const natural=baseHeight(x,z)+rawRelief(x,z);
+  if(!serraRoute)return natural;
+  if(centerLevel===undefined){let s=0,n=0;for(let gx=-150;gx<=140;gx+=10)for(let gz=-120;gz<=175;gz+=10){s+=baseHeight(gx,gz)+rawRelief(gx,gz);n++;}centerLevel=s/n;}
+  const w=centerWeight(x,z)*CENTER_FLAT;
+  return w>0?natural+(centerLevel-natural)*w:natural;
+}
+
+/**
+ * Plataformas niveladas (rota Serra): Recreação 01 (quadra de areia e letreiro) e área institucional
+ * (quiosque e piscina). Dentro da área o terreno fica plano; uma faixa de PAD_EDGE metros junto ao limite
+ * concorda com o relevo vizinho, sem mexer em ruas e lotes. Ilustrativo: não é projeto de terraplenagem.
+ */
+export const PAD_EDGE=7;
+type Pad={polygon:number[][];minX:number;maxX:number;minZ:number;maxZ:number;level:number};
+let padCache:Pad[]|undefined;
+function pads(){
+  if(padCache)return padCache;
+  padCache=serraRoute?[0,1].map(i=>{
+    const polygon=source.otherPolygons[i].polygon as number[][];
+    const xs=polygon.map(p=>p[0]),zs=polygon.map(p=>p[1]);
+    // nível = média do terreno ao longo do contorno: concordância suave com ruas e lotes vizinhos
+    let sum=0,n=0;
+    for(let k=0;k<polygon.length;k++){const a=polygon[k],b=polygon[(k+1)%polygon.length],steps=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/2);
+      for(let s=0;s<steps;s++){const x=a[0]+(b[0]-a[0])*s/steps,z=a[1]+(b[1]-a[1])*s/steps;sum+=shapedHeight(x,z);n++;}}
+    return {polygon,minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),level:sum/n};
+  }):[];
+  return padCache;
+}
+/** Distância de um ponto interno até o contorno do polígono; -1 se estiver fora. */
+export function insideDistance(x:number,z:number,polygon:number[][]){
+  if(!containsPoint([x,z],polygon))return -1;
+  let best=Infinity;
+  for(let k=0;k<polygon.length;k++){const a=polygon[k],b=polygon[(k+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1];
+    const t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));best=Math.min(best,Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t));}
+  return best;
+}
+/** Nível da plataforma da área (0 = Recreação 01, 1 = institucional) na rota Serra. */
+export function padLevel(index:number){return pads()[index]?.level??0;}
+export function serraRelief(x: number, z: number) {
+  let relief=shapedHeight(x,z)-baseHeight(x,z);
+  for(const pad of pads()){
+    if(x<pad.minX||x>pad.maxX||z<pad.minZ||z>pad.maxZ)continue;
+    const d=insideDistance(x,z,pad.polygon);if(d<0)continue;
+    const w=smoothStep(.4,PAD_EDGE,d);
+    relief+=(pad.level-baseHeight(x,z)-relief)*w;
+  }
+  return relief;
+}
 export function terrainHeight(x: number, z: number) {
-  const base=2.3 * Math.sin(x * .012) + 3.1 * Math.sin(z * .011) + 1.15 * Math.cos((x + z) * .018) + z * .008;
+  const base=baseHeight(x,z);
   return serraRoute?base+serraRelief(x,z):base;
 }
 export function lotRelief(lot: Lot) {

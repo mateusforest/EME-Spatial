@@ -142,6 +142,11 @@ const surfaces:Record<string,{albedo:string;rough?:number;metal?:number}>={
     float seam=(1.-smoothstep(.0,.03,abs(fract(u/.33)-.5)))*srNear;
     diffuseColor.rgb*=(.92+.14*srFbm(w*.8))*(1.-.30*seam);
     srH=seam*.006;`},
+  sand:{rough:.98,albedo:`
+    float sg=srNoise(srWorld.xz*7.)*.5+srNoise(srWorld.xz*23.)*.5,big=srFbm(srWorld.xz*.35);
+    float steps=smoothstep(.62,.8,srNoise(srWorld.xz*1.6+3.));
+    diffuseColor.rgb*=(.86+.22*big)*(.92+.14*sg*srNear)*(1.-.10*steps);
+    srH=big*.04+sg*.006*srNear-steps*.02;`},
   gravel:{rough:.96,albedo:`
     diffuseColor.rgb*=(.78+.40*srFbm(srWorld.xz*1.9))*(.90+.22*srNoise(srWorld.xz*23.)*srNear);
     srH=srNoise(srWorld.xz*23.)*.006*srNear;`},
@@ -149,7 +154,7 @@ const surfaces:Record<string,{albedo:string;rough?:number;metal?:number}>={
     diffuseColor.rgb*=vec3(1.18,1.18,1.2)*(.84+.30*srFbm(srWorld.xz*.55))*(.90+.22*srNoise(srWorld.xz*31.)*srNear);
     srH=srNoise(srWorld.xz*31.)*.004*srNear;`},
 };
-const surfaceFor=(name:string)=>/Concreto/.test(name)?'concrete':/Ripado/.test(name)?'slats':/Escuro/.test(name)?'cladding':/Parede|Reboco/.test(name)?'plaster':/Madeira|Deck/.test(name)?'wood':/Pedra|Basalto/.test(name)?'stone'
+const surfaceFor=(name:string)=>/Areia/.test(name)?'sand':/Concreto/.test(name)?'concrete':/Ripado/.test(name)?'slats':/Escuro/.test(name)?'cladding':/Parede|Reboco/.test(name)?'plaster':/Madeira|Deck/.test(name)?'wood':/Pedra|Basalto/.test(name)?'stone'
   :/Telhado|Cobertura/.test(name)?'roof':/Portão/.test(name)?'panel':/Saibro/.test(name)?'gravel':/Asfalto/.test(name)?'asphalt':'';
 
 export function createSerraLook(detail:T.Texture){
@@ -215,6 +220,24 @@ export function createSerraLook(detail:T.Texture){
             #define RE_Direct RE_Direct_SerraLeaf`);
       };
       material.customProgramCacheKey=()=> 'sr-foliage-v1';material.needsUpdate=true;
+    },
+    /** Piscina: ondulação leve, cáusticas e reflexo do céu pelo ângulo de visão (sem render extra). */
+    water(material:T.MeshStandardMaterial,bounds:T.Vector4){
+      material.onBeforeCompile=shader=>{
+        worldVarying(shader);shader.uniforms.srSkyLow=uniforms.srSkyLow;shader.uniforms.srSkyHigh=uniforms.srSkyHigh;shader.uniforms.srPool={value:bounds};
+        shader.fragmentShader='uniform vec3 srSkyLow;uniform vec3 srSkyHigh;uniform vec4 srPool;\n'+shader.fragmentShader
+          .replace('#include <color_fragment>',`#include <color_fragment>
+            float srC=pow(1.-abs(2.*srNoise(srWorld.xz*1.7+srNoise(srWorld.xz*.9)*2.)-1.),7.);
+            float srEdge=smoothstep(.0,.9,min(min(srWorld.x-srPool.x,srPool.y-srWorld.x),min(srWorld.z-srPool.z,srPool.w-srWorld.z)));
+            diffuseColor.rgb=mix(diffuseColor.rgb*vec3(1.05,1.12,1.12),diffuseColor.rgb*vec3(.55,.78,.9),srEdge)+vec3(.30,.36,.34)*srC*.55;`)
+          .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+bumpGLSL('(srNoise(srWorld.xz*1.3)*.5+srNoise(srWorld.xz*3.7+7.)*.5)*.025'))
+          .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+            vec3 srView=normalize(vViewPosition);
+            vec3 srReflect=inverseTransformDirection(reflect(-srView,normal),viewMatrix);
+            float srFresnel=.04+.96*pow(1.-max(dot(normal,srView),0.),5.);
+            totalEmissiveRadiance+=mix(srSkyLow,srSkyHigh,smoothstep(.0,.6,srReflect.y))*srFresnel*.85;`);
+      };
+      material.customProgramCacheKey=()=> 'sr-water-v2';material.needsUpdate=true;
     },
     bark(material:T.MeshStandardMaterial){
       material.color.set('#6b5a4a');material.roughness=.95;material.envMapIntensity=.4;

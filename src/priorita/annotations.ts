@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {areas,lotById, lots, number, plan, terrainHeight} from './model';
+import {areas,blockNames,lotById, lots, number, plan, terrainHeight} from './model';
 import type {ViewMode} from './model';
 
 type Kind='lot'|'block'|'road'|'area'|'measure';
@@ -23,7 +23,7 @@ export function createAnnotations(host:HTMLDivElement,select:(id:string)=>void,f
     markers.push(marker);return marker;
   }
   for(const lot of lots)add(lot.id,'lot',lot.id,point(...lot.center as [number,number]),lot.block,()=>select(lot.id));
-  for(const block of 'ABCDEFGH'){
+  for(const block of blockNames){
     const members=lots.filter(l=>l.block===block),x=members.reduce((n,l)=>n+l.center[0],0)/members.length,z=members.reduce((n,l)=>n+l.center[1],0)/members.length;
     add(`Quadra ${block}`,'block',block,point(x,z),block,()=>focusBlock(block));
   }
