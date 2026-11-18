@@ -148,7 +148,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         float mowing=.5+.5*sin(prWorldXZ.x*.46+prWorldXZ.y*.12);
         // Photographic fine ground replaces the oversized painted patches.
         // Reuse the already-loaded texture: no new texture or render pass.
-        vec3 livingGrass=grassPhoto*vec3(.77,1.28,.62);
+        vec3 livingGrass=grassPhoto*${serra?'vec3(.81,1.20,.86)':'vec3(.77,1.28,.62)'};
         vec3 lawnFinish=mix(vec3(.96,1.025,.93),vec3(1.04,1.015,.95),smoothstep(.09,.16,lawnPatch));
         // Quiet, dry meadow outside; layered living grass only inside the development.
         float meadow=dot(lawnMix.rgb,vec3(.2126,.7152,.0722));
@@ -237,7 +237,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       horizon(material);
       for(const value of Object.values(material))if(value instanceof T.Texture)value.anisotropy=4;
       if(material.name.startsWith('Grama')){
-        material.color.set('#d0d7b8');material.roughness=.90;material.normalScale.set(.42,.42);
+        material.color.set(serra?'#d2dfc9':'#d0d7b8');material.roughness=.90;material.normalScale.set(.42,.42);
         const contextMaterial=material.clone();contextMaterial.vertexColors=true;horizon(contextMaterial);streetLighting.apply(contextMaterial);
         if(!serra){const context=new T.Mesh(createContextGeometry(terrainHeight,geometries),contextMaterial);
         context.name='Horizonte ilustrativo · colinas contínuas';scene.add(context);}
@@ -413,7 +413,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
                 prCrownDepth=smoothstep(.30,.95,position.y);
               `);
               shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-                diffuseColor.rgb*=mix(vec3(.74,.79,.65),vec3(1.03,1.03,.92),prCrownDepth);
+                diffuseColor.rgb*=mix(${serra?'vec3(.74,.85,.80),vec3(1.16,1.10,.89)':'vec3(.74,.79,.65),vec3(1.03,1.03,.92)'},prCrownDepth);
               `);
               shader.fragmentShader=shader.fragmentShader.replace('#include <lights_physical_pars_fragment>',`#include <lights_physical_pars_fragment>
                 void RE_Direct_Leaf(const in IncidentLight light, const in vec3 position, const in vec3 normal, const in vec3 viewDir, const in vec3 coatNormal, const in PhysicalMaterial material, inout ReflectedLight reflected) {
@@ -425,7 +425,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
                 #undef RE_Direct
                 #define RE_Direct RE_Direct_Leaf`);
             };
-            mat.customProgramCacheKey=()=> 'priorita-leaf-v20';
+            mat.customProgramCacheKey=()=>serra?'emera-leaf-v1':'priorita-leaf-v20';
             mat.emissiveMap=mat.map;mat.emissive.set('#82956b');mat.emissiveIntensity=.065*sunlightAmount;foliageMaterials.push(mat);
           }
           if(mat.emissiveIntensity>0&&!/folh|leaf|leav|forra/i.test(mat.name)){mat.emissiveIntensity=streetLevel*3;fixtureMaterials.push(mat);}
@@ -464,7 +464,7 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
         if(states[i]!==level)return;
         const isTree=kind==='tree'||kind==='shade';
         const crownWidth=isTree?1.08+(.5+.5*Math.sin(x*.73+z*.41))*.18:1;
-        dummy.position.set(x,terrainHeight(x,z)+(isTree?0:.06),z);dummy.scale.set(h*crownWidth,h,h*crownWidth);dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count,dummy.matrix);
+        dummy.position.set(x,terrainHeight(x,z)+(isTree?0:.06),z);const aspect=serra&&isTree?1+.14*Math.sin(a*3+x*.53):1;dummy.scale.set(h*crownWidth*aspect,h,h*crownWidth/aspect);dummy.rotation.set(0,a,0);dummy.updateMatrix();inst.setMatrixAt(count,dummy.matrix);
         const tint=.5+.5*Math.sin(x*1.71+z*.83);
         const color=new T.Color().setRGB(.86+tint*.14,.91+tint*.09,.78+tint*.18);
         inst.setColorAt(count,color);count++;
@@ -528,7 +528,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       serraLook.setSun(dir,T.MathUtils.smoothstep(solar.elevation,-1,9),streetLevel,skyMaterial.uniforms.bottomColor.value,skyMaterial.uniforms.topColor.value);
       amenities?.setNight(streetLevel);city?.setNight(streetLevel);
       // Serra: sol um pouco mais quente e sombras mais frias dão volume ao relevo e às casas.
-      sun.intensity*=1.18;sun.color.lerp(new T.Color('#ffe2b8'),.25);hemi.color.set('#aecdf2');hemi.groundColor.set('#8c9a5e');hemi.intensity=.22+daylight*.52;
+      sun.intensity*=1.05;
+      hemi.color.set('#d1e1ec');hemi.groundColor.set('#a29a83');hemi.intensity=.22+daylight*.80;
       scene.environmentIntensity=.10+daylight*.62;
     }
     for(const mat of fixtureMaterials)mat.emissiveIntensity=streetLevel*3;

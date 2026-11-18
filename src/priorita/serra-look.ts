@@ -15,9 +15,9 @@ export const CANOPY_EXTENT=5200;
 const gradeGLSL=`
 vec3 srGrade(vec3 c){
   float l=dot(c,vec3(.2126,.7152,.0722));
-  float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b));
-  c=mix(vec3(l),c,1.05+.20*(1.-clamp((mx-mn)*2.6,0.,1.)));
-  c=pow(max(c,vec3(0.)),vec3(1.08))*vec3(1.10,1.085,1.06);
+  // Keep both endpoints and the neutral axis intact as the sun crosses the sky.
+  c=mix(vec3(l),c,.98);
+  c+=.17*c*(1.-c)*(2.*c-1.);
   return clamp(c,0.,1.);
 }
 `;
@@ -41,7 +41,7 @@ vec3 srField(vec2 xz,float footprint){
   float macro=srFbm(xz*.0034+4.7);
   float meso=srFbm(xz*.019+31.);
   float micro=srNoise(xz*.33);
-  vec3 green=vec3(.058,.122,.030),olive=vec3(.128,.148,.038),straw=vec3(.212,.172,.060);
+  vec3 green=vec3(.066,.123,.055),olive=vec3(.130,.147,.077),straw=vec3(.218,.180,.102);
   float broad=srFbm(xz*.0011+83.);
   vec3 c=mix(green,olive,smoothstep(.34,.58,macro));
   c=mix(c,straw,smoothstep(.46,.70,meso*.60+macro*.30+broad*.24));
@@ -55,12 +55,14 @@ vec3 srField(vec2 xz,float footprint){
   c*=.88+.24*micro;
   // lâminas e sementes: só a poucos metros da câmera
   float blade=1.-smoothstep(.008,.11,footprint);
+  if(blade>0.){
   float blades=srNoise(vec2(xz.x*37.+srNoise(xz*2.7)*7.,xz.y*8.))*.5+srNoise(vec2(xz.x*9.+3.,xz.y*43.))*.5;
   c*=mix(1.,.66+.68*blades,blade*.75);
   // flores do campo: pontos claros esparsos, em manchas
   vec2 cell=floor(xz*4.5);
   float flower=step(.988,srHash(cell))*smoothstep(.50,.62,srNoise(xz*.045+9.))*(1.-smoothstep(.015,.10,footprint));
   c=mix(c,mix(vec3(.80,.66,.16),vec3(.86,.86,.80),step(.5,srHash(cell+3.))),flower*.8);
+  }
   // fibra fotográfica só de perto
   float d=dot(texture2D(srDetail,xz/3.7).rgb,vec3(.2126,.7152,.0722));
   c*=mix(1.,.60+d*3.3,(1.-smoothstep(.03,.42,footprint))*.85);
@@ -71,7 +73,7 @@ vec3 srGround(vec2 xz,float footprint){
   float srCast=texture2D(srCanopy,(xz+srSunShift.xy)/${CANOPY_EXTENT}.+.5).r;
   // sob os capões o campo dá lugar a serapilheira e sub-bosque, mais escuros e frios
   vec3 c=mix(srField(xz,footprint),vec3(.050,.078,.030),clamp(under*1.5,0.,.85));
-  return c*(1.-clamp(max(under*.45,srCast*srSunShift.z*.85),0.,.78));
+  return c*(1.-clamp(max(under*.45,srCast*srSunShift.z*.55),0.,.78));
 }
 `;
 
@@ -175,7 +177,7 @@ export function createSerraLook(detail:T.Texture){
       const g=canvas.getContext('2d')!;g.fillStyle='#000';g.fillRect(0,0,size,size);g.globalCompositeOperation='lighter';
       const scale=size/CANOPY_EXTENT;
       for(const [kind,x,,z,,s] of instances){
-        const r=Math.max(2.2,(kind?6.5:8.5)*s*scale),px=(x/CANOPY_EXTENT+.5)*size,py=(z/CANOPY_EXTENT+.5)*size;
+        const r=Math.max(.75,(kind?6.5:8.5)*s*scale),px=(x/CANOPY_EXTENT+.5)*size,py=(z/CANOPY_EXTENT+.5)*size;
         if(px<r+2||py<r+2||px>size-r-2||py>size-r-2)continue;
         const grad=g.createRadialGradient(px,py,0,px,py,r);grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(.6,'rgba(255,255,255,.62)');grad.addColorStop(1,'rgba(255,255,255,0)');
         g.fillStyle=grad;g.beginPath();g.arc(px,py,r,0,Math.PI*2);g.fill();
@@ -184,7 +186,7 @@ export function createSerraLook(detail:T.Texture){
     },
     setSun(direction:T.Vector3,daylight:number,night:number,horizon?:T.Color,zenith?:T.Color){
       if(horizon)uniforms.srSkyLow.value.copy(horizon);if(zenith)uniforms.srSkyHigh.value.copy(zenith);
-      const reach=9/Math.max(.22,direction.y);
+      const reach=Math.min(18,6/Math.max(.22,direction.y));
       uniforms.srSunShift.value.set(direction.x*reach,direction.z*reach,daylight);
       for(const m of glass)m.emissiveIntensity=night*1.5;
     },
@@ -204,13 +206,13 @@ export function createSerraLook(detail:T.Texture){
     /** Araucária and native-forest crowns: mottled leaf mass, dark undersides, warm sunlit tops, thin-leaf back light. */
     foliage(material:T.MeshStandardMaterial,araucaria:boolean){
       material.roughness=.88;material.metalness=0;material.envMapIntensity=.45;
-      material.color.set(araucaria?'#2c4628':'#36522a');
+      material.color.set(araucaria?'#344c40':'#48603c');
       material.onBeforeCompile=shader=>{
         worldVarying(shader);
         shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
             float srMottle=srNoise(srWorld.xz*.85+srWorld.y*.6)*.55+srNoise(srWorld.xz*3.3+srWorld.y*2.1)*.45;
             diffuseColor.rgb*=mix(.58,1.22,srMottle);
-            diffuseColor.rgb*=mix(vec3(.42,.50,.50),vec3(1.10,1.08,.90),smoothstep(-.8,.9,normalize(srLocalN).y));`)
+            diffuseColor.rgb*=mix(vec3(.68,.74,.73),vec3(1.13,1.09,.92),smoothstep(-.8,.9,normalize(srLocalN).y));`)
           .replace('#include <lights_physical_pars_fragment>',`#include <lights_physical_pars_fragment>
             void RE_Direct_SerraLeaf(const in IncidentLight light,const in vec3 position,const in vec3 normal,const in vec3 viewDir,const in vec3 coatNormal,const in PhysicalMaterial material,inout ReflectedLight reflected){
               RE_Direct_Physical(light,position,normal,viewDir,coatNormal,material,reflected);

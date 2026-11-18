@@ -1,3 +1,4 @@
+import distantIndices from './serra-canopy-lod.json';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import type {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
@@ -105,9 +106,9 @@ function housePlacements(){
   }
   return byType;
 }
-const CELL=1500;
+const OUTER_CELL=1000;
 type Instance=[kind:number,x:number,y:number,z:number,rot:number,scale:number];
-type Chunk={meshes:T.InstancedMesh[];center:T.Vector3};
+type Chunk={meshes:T.InstancedMesh[];center:T.Vector3;lod:{mesh:T.InstancedMesh;close:T.BufferGeometry;far:T.BufferGeometry}[]};
 
 export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()=>void,shadows:()=>void=invalidate,look?:SerraLook){
   const group=new T.Group();group.name='Serra · entorno v8';scene.add(group);
@@ -184,44 +185,65 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
     // Os capões ficam a pelo menos ~40 m dos lotes do traçado ampliado (nenhum grupo de árvores colado às quadras).
     instances=instances.filter(i=>!(i[1]>-205&&i[1]<192&&i[3]>-172&&i[3]<224));
     gltf.scene.updateMatrixWorld(true);
-    const parts:{kind:number;geometry:T.BufferGeometry;detail?:T.BufferGeometry;material:T.Material}[]=[];
+    const parts:{kind:number;geometry:T.BufferGeometry;detail?:T.BufferGeometry;distant:T.BufferGeometry;material:T.Material}[]=[];
     gltf.scene.traverse(o=>{
       if(!(o instanceof T.Mesh))return;
       let geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);
+      // Offline simplification retains the source silhouette and tree locations.
+      const indices=distantIndices[o.name as keyof typeof distantIndices];
+      const distant=geometry.clone();
+      if(indices)distant.setIndex(indices);
+      distant.deleteAttribute('normal');
+      const distantSmooth=mergeVertices(distant,.02);
+      distant.dispose();
+      distantSmooth.computeVertexNormals();
       const material=o.material as T.MeshStandardMaterial;material.envMapIntensity=.5;
       // Copas arredondadas: solda os vértices e recalcula normais suaves para tirar as facetas.
       if(look&&!/Casca/.test(material.name)){geometry.deleteAttribute('normal');const welded=mergeVertices(geometry,.02);geometry.dispose();geometry=welded;geometry.computeVertexNormals();}
       if(look){if(/Casca/.test(material.name))look.bark(material);else look.foliage(material,/arauc/i.test(material.name));}
       const kind=o.name.startsWith('mata')||o.parent?.name.startsWith('mata')?1:0;
       const detail=look&&!light&&!/Casca/.test(material.name)?roundCrown(geometry,1):undefined;
-      parts.push({kind,geometry,detail,material});
-      owned.push(geometry,material);if(detail)owned.push(detail);
+      parts.push({kind,geometry,detail,distant:distantSmooth,material});
+      owned.push(geometry,distantSmooth,material);if(detail)owned.push(detail);
     });
     const cells=new Map<string,Instance[]>();
-    for(const i of instances){const key=`${Math.floor(i[1]/CELL)},${Math.floor(i[3]/CELL)}`;(cells.get(key)||cells.set(key,[]).get(key)!).push(i);}
+    for(const i of instances){const size=Math.hypot(i[1],i[3])<650?260:OUTER_CELL;const key=`${size}:${Math.floor(i[1]/size)},${Math.floor(i[3]/size)}`;(cells.get(key)||cells.set(key,[]).get(key)!).push(i);}
     look?.setCanopy(instances,light);
     const dummy=new T.Object3D(),tint=new T.Color();
     for(const list of cells.values()){
-      const meshes:T.InstancedMesh[]=[];const center=new T.Vector3();
+      const meshes:T.InstancedMesh[]=[];const lod:Chunk['lod']=[];const center=new T.Vector3();
       list.forEach(i=>center.add(new T.Vector3(i[1],i[2],i[3])));center.divideScalar(list.length);
       for(const part of parts){
-        for(const near of part.detail?[true,false]:[false]){
-        const mine=list.filter(i=>i[0]===part.kind&&(!part.detail||(Math.hypot(i[1],i[3])<NEAR_TREES)===near));if(!mine.length)continue;
-        const mesh=new T.InstancedMesh(near?part.detail!:part.geometry,part.material,mine.length);
-        mine.forEach((i,n)=>{dummy.position.set(i[1],i[2]+serraRelief(i[1],i[3]),i[3]);dummy.rotation.set(0,i[4],0);dummy.scale.setScalar(i[5]);dummy.updateMatrix();mesh.setMatrixAt(n,dummy.matrix);
+        const groups=[{geometry:part.detail??part.geometry,trees:[] as Instance[]},{geometry:part.distant,trees:[] as Instance[]}];
+        for(const tree of list){
+          if(tree[0]!==part.kind)continue;
+          const distance=Math.hypot(tree[1],tree[3]);
+          groups[distance<NEAR_TREES?0:1].trees.push(tree);
+        }
+        for(const {geometry,trees:mine} of groups){
+        if(!mine.length)continue;
+        const mesh=new T.InstancedMesh(geometry,part.material,mine.length);
+        mine.forEach((i,n)=>{dummy.position.set(i[1],i[2]+serraRelief(i[1],i[3]),i[3]);dummy.rotation.set(0,i[4],0);const width=1+.13*Math.sin(i[4]*3+i[1]);dummy.scale.set(i[5]*width,i[5],i[5]/width);dummy.updateMatrix();mesh.setMatrixAt(n,dummy.matrix);
           if(look){const h=Math.sin(i[1]*12.9898+i[3]*78.233)*43758.5453,r=h-Math.floor(h),k=part.kind?.22:.14;mesh.setColorAt(n,tint.setRGB(1-k*.5+k*r,1-k*.35+k*.7*((r*7.3)%1),1-k*.6+k*((r*3.1)%1)));}});
         mesh.computeBoundingSphere();mesh.castShadow=false;mesh.receiveShadow=false;mesh.name='Serra · capão';
         meshes.push(mesh);group.add(mesh);
+        if(geometry!==part.distant)lod.push({mesh,close:geometry,far:part.distant});
         }
       }
-      chunks.push({meshes,center});
+      chunks.push({meshes,center,lod});
     }
     update(new T.Vector3());invalidate();
   }).catch(()=>{});
 
   function update(camera:T.Vector3){
     const reach=light?2600:Infinity;
-    for(const c of chunks){const on=c.center.distanceTo(camera)<reach+CELL;for(const m of c.meshes)m.visible=on;}
+    for(const chunk of chunks){
+      const distance=chunk.center.distanceTo(camera);
+      const visible=distance<reach+OUTER_CELL;
+      for(const mesh of chunk.meshes)mesh.visible=visible;
+      // Near the streets, keep the detailed silhouette. From above, use the baked mesh.
+      for(const part of chunk.lod)part.mesh.geometry=distance<(light?350:650)?part.close:part.far;
+    }
   }
   return {
     setQuality(value:boolean){light=value;},
