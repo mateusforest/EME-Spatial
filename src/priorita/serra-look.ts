@@ -239,6 +239,38 @@ export function createSerraLook(detail:T.Texture){
       };
       material.customProgramCacheKey=()=> 'sr-water-v2';material.needsUpdate=true;
     },
+    /**
+     * Desgaste do pavimento por cima do material do site (encadeia os ganchos de iluminação já existentes):
+     * manchas de tom, remendos, trincas seladas, marcas de óleo no asfalto; encardido nas juntas da calçada.
+     */
+    wear(material:T.MeshStandardMaterial,kind:'asphalt'|'sidewalk'){
+      const prev=material.onBeforeCompile,prevKey=material.customProgramCacheKey.bind(material);
+      material.onBeforeCompile=(shader,renderer)=>{
+        prev.call(material,shader,renderer);
+        if(shader.fragmentShader.includes('srWear'))return;
+        worldVarying(shader);
+        const asphalt=`
+          float srWear=srFbm(srWorld.xz*.07);
+          float srCrackZone=smoothstep(.56,.72,srNoise(srWorld.xz*.045+3.));
+          float srCrack=(1.-smoothstep(.0,.028,abs(srNoise(srWorld.xz*.32+srNoise(srWorld.xz*1.3)*.35)-.5)))*srCrackZone;
+          vec2 srCell=floor(srWorld.xz/vec2(4.2,2.6));
+          float srPatch=step(.9,srHash(srCell*.71+5.))*smoothstep(.0,.06,min(min(fract(srWorld.x/4.2),1.-fract(srWorld.x/4.2)),min(fract(srWorld.z/2.6),1.-fract(srWorld.z/2.6))));
+          float srOil=smoothstep(.70,.88,srFbm(srWorld.xz*.55+7.));
+          float srGrit=srNoise(srWorld.xz*38.)*.5+srNoise(srWorld.xz*91.)*.5;
+          diffuseColor.rgb*=(.88+.22*srWear)*(1.-.42*srCrack)*mix(1.,.86,srPatch)*(1.-.28*srOil)*(.93+.14*srGrit);`;
+        const sidewalk=`
+          float srWear=srFbm(srWorld.xz*.18);
+          float srDirt=smoothstep(.55,.85,srFbm(srWorld.xz*.9+4.));
+          float srMoss=smoothstep(.62,.8,srNoise(srWorld.xz*.3+12.))*.35;
+          diffuseColor.rgb*=(.9+.18*srWear)*(1.-.18*srDirt);
+          diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.78,.86,.70),srMoss);`;
+        shader.fragmentShader=shader.fragmentShader
+          .replace('#include <color_fragment>','#include <color_fragment>\n'+(kind==='asphalt'?asphalt:sidewalk))
+          .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+            ${kind==='asphalt'?'roughnessFactor=clamp(roughnessFactor*(1.-.32*srOil)+.04*srPatch,.05,1.);':'roughnessFactor=clamp(roughnessFactor+.06*srDirt,.05,1.);'}`);
+      };
+      material.customProgramCacheKey=()=>prevKey()+'-sr-wear-'+kind+'-v1';material.needsUpdate=true;
+    },
     bark(material:T.MeshStandardMaterial){
       material.color.set('#6b5a4a');material.roughness=.95;material.envMapIntensity=.4;
       material.onBeforeCompile=shader=>{

@@ -1,13 +1,13 @@
 import {Download,RotateCcw} from 'lucide-react';
 import {commercialTerms,money} from './commercial';
-import {lotById,lots,number,statusInfo} from './model';
+import {brandName,lotById,lots,number,statusInfo} from './model';
 import type {LotStatus} from './model';
 import {defaultPayment,simulatePayment} from './payment-simulation';
 import type {PaymentInputs} from './payment-simulation';
 import LotMiniPlan from './LotMiniPlan';
 import ReferenceFinance from './ReferenceFinance';
 
-export default function PaymentSimulator({selected,stock,onSelect,saved,onSave}:{selected:string;stock:Record<string,LotStatus>;onSelect:(id:string)=>void;saved:Record<string,PaymentInputs>;onSave:(id:string,input:PaymentInputs)=>void}){
+export default function PaymentSimulator({selected,stock,onSelect,saved,onSave,reference=true}:{selected:string;stock:Record<string,LotStatus>;onSelect:(id:string)=>void;saved:Record<string,PaymentInputs>;onSave:(id:string,input:PaymentInputs)=>void;reference?:boolean}){
  const lot=lotById.get(selected)!,offer=commercialTerms(lot.id,lot.area),price=offer.price||0;
  const defaults={...defaultPayment,downPercent:offer.downPaymentPercent??20,months:offer.installments??60};
  const input=saved[selected]||defaults,result=simulatePayment(price,input);
@@ -16,13 +16,13 @@ export default function PaymentSimulator({selected,stock,onSelect,saved,onSave}:
   if('error'in result)return;
   const f=(v:number)=>v.toFixed(2).replace('.',',');
   const csv=['SIMULAÇÃO ILUSTRATIVA - SEM VALIDADE DE OFERTA',`Lote;${selected}`,`Valor;${f(price)}`,`Entrada;${f(result.down)}`,`Juros ao mês (%);${f(input.interest)}`,`Correção ${input.index==='none'?'Sem correção':input.index==='cub'?'CUB hipotético':'Índice personalizado'} ao mês (%);${f(input.index==='none'?0:input.correction)}`,`Reforço base;${f(input.balloon)}`,`Intervalo dos reforços (meses);${input.frequency}`,'Mês;Parcela;Reforço;Pagamento total;Saldo projetado',...result.rows.map(r=>[r.month,f(r.installment),f(r.balloon),f(r.total),f(r.balance)].join(';')),`Total com entrada;${f(result.total)}`].join('\r\n');
-  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`priorita-${selected}-simulacao.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`${brandName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}-${selected}-simulacao.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  return <>
   <div className="pr-section-intro"><div><span className="pr-eyebrow">PLANEJE SUA POSSIBILIDADE · SIMULAÇÃO</span><h3>Seu lote. Suas condições.</h3></div><label className="pr-material-lot">Lote<select aria-label="Lote da simulação" value={selected} onChange={e=>onSelect(e.target.value)}>{lots.map(l=><option key={l.id} value={l.id}>{l.id} · {statusInfo[stock[l.id]].label}</option>)}</select></label></div>
   <div className="pr-simulator-layout"><div className="pr-simulator-main">
    <section className="pr-sim-price"><div><span className="pr-eyebrow">VALOR ILUSTRATIVO DO LOTE {selected}</span><strong>{money(price)}</strong><span>{number(lot.area)} m² · Quadra {lot.block} · {lot.street}</span></div><span className="pr-sim-status" style={{color:statusInfo[stock[selected]].color}}><i/>{statusInfo[stock[selected]].label}</span></section>
-   <ReferenceFinance price={price} lotId={selected}/>
+   {reference&&<ReferenceFinance price={price} lotId={selected}/>}
    <section className="pr-sim-controls" aria-label="Ajustar condições de pagamento"><header><h4>Simulação personalizada</h4><button onClick={()=>onSave(selected,defaults)}><RotateCcw size={13}/>Restaurar</button></header>
     <div className="pr-sim-fields">
      <label>Entrada (%)<input type="number" min="0" max="100" step="1" value={Number.isFinite(input.downPercent)?input.downPercent:''} onChange={e=>update({downPercent:e.target.valueAsNumber})}/></label>

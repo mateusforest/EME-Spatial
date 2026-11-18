@@ -93,11 +93,37 @@ export function createSerraRoads(materials:{asphalt:T.Material;sidewalk:T.Materi
   strip({at:z=>[AVENUE[1],z],out:[1,0],t0:NORTH1,t1:NORTH_LOTS+WALK},true,true);
   strip({at:x=>[x,NORTH_LOTS],out:[0,1],t0:AVENUE[0],t1:AVENUE[1]},false,false);
 
+  // ------------------------------------------------------------ sinalização horizontal: eixo tracejado e faixas de pedestre
+  const paint:T.BufferGeometry[]=[];
+  const dashes=(at:(t:number)=>[number,number],t0:number,t1:number,skip:[number,number][]=[])=>{
+    for(let t=t0;t<t1-3;t+=8){if(skip.some(([a,b])=>t+3>a&&t<b))continue;const a=at(t),b=at(t+3),dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,nx=-dz/l*.07,nz=dx/l*.07;
+      paint.push(surface(quad([[a[0]-nx,a[1]-nz],[b[0]-nx,b[1]-nz],[b[0]+nx,b[1]+nz],[a[0]+nx,a[1]+nz]]),.05));}
+  };
+  const mouthSkip=cross.map(c=>[c.z0-1,c.z1+1] as [number,number]);
+  dashes(z=>[eastEdge(z)+ROAD/2,z],SOUTH+4,NORTH0-2,mouthSkip);
+  dashes(z=>[westEdge(z)-ROAD/2,z],SOUTH+4,NORTH0-2,mouthSkip);
+  dashes(x=>[x,NORTH0+ROAD/2],westEdge(NORTH0)+2,eastEdge(NORTH0)-2,[[AVENUE[0]-1,AVENUE[1]+1]]);
+  dashes(z=>[(AVENUE[0]+AVENUE[1])/2,z],NORTH1+3,NORTH_LOTS-3);
+  // faixas de pedestre onde as transversais encontram o anel e na entrada da Av. Émera
+  const zebra=(x0:number,x1:number,z0:number,z1:number,alongX:boolean)=>{
+    if(alongX)for(let x=x0;x<x1-.3;x+=.9)paint.push(surface(quad([[x,z0],[x+.5,z0],[x+.5,z1],[x,z1]]),.05));
+    else for(let z=z0;z<z1-.3;z+=.9)paint.push(surface(quad([[x0,z],[x1,z],[x1,z+.5],[x0,z+.5]]),.05));
+  };
+  for(const c of cross){
+    const e=c.east((c.z0+c.z1)/2),w=c.west((c.z0+c.z1)/2);
+    zebra(e-4.2,e-1.4,c.z0+.6,c.z1-.6,false);
+    zebra(w+1.4,w+4.2,c.z0+.6,c.z1-.6,false);
+  }
+  zebra(AVENUE[0]+.6,AVENUE[1]-.6,NORTH1+1.2,NORTH1+4,true);
+  const paintMaterial=new T.MeshStandardMaterial({name:'Sinalização · Émera',color:'#e9e4cf',roughness:.72,polygonOffset:true,polygonOffsetFactor:-2});
   const group=new T.Group();group.name='Émera · vias novas';
   for(const [list,material,shadow] of [[asphalt,materials.asphalt,false],[walk,materials.sidewalk,false],[curb,materials.curb,true]] as [T.BufferGeometry[],T.Material,boolean][]){
     const geometry=mergeGeometries(list.map(g=>{for(const name of Object.keys(g.attributes))if(!['position','normal','uv'].includes(name))g.deleteAttribute(name);return g;}));
     list.forEach(g=>g.dispose());if(!geometry)continue;geometry.computeBoundingSphere();
     const mesh=new T.Mesh(geometry,material);mesh.receiveShadow=true;mesh.castShadow=shadow;mesh.name='Émera · vias novas';group.add(mesh);
   }
+  const paintGeometry=mergeGeometries(paint.map(g=>{for(const name of Object.keys(g.attributes))if(!['position','normal','uv'].includes(name))g.deleteAttribute(name);return g;}));
+  paint.forEach(g=>g.dispose());
+  if(paintGeometry){paintGeometry.computeBoundingSphere();const mesh=new T.Mesh(paintGeometry,paintMaterial);mesh.receiveShadow=true;mesh.name='Émera · sinalização';group.add(mesh);}
   return {group,lamps,trees};
 }

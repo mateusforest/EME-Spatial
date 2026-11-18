@@ -246,6 +246,8 @@ export function createPrioritaScene(host:HTMLDivElement, events:Events, options:
       if(material.name.startsWith('Calçada')){material.color.set('#d3cdc1');material.roughness=.82;material.envMapIntensity=.5;material.normalScale.set(.18,.18);}
       if(material.name.startsWith('Sinalização')){material.color.set('#c6bfa4');material.roughness=.92;}
       streetLighting.apply(material);surfaceFinish.apply(material);
+      if(serraLook&&material.name.startsWith('Asfalto'))serraLook.wear(material,'asphalt');
+      if(serraLook&&material.name.startsWith('Calçada'))serraLook.wear(material,'sidewalk');
       let geometry=mergeGeometries(geometries);
       if(serra&&geometry&&/^(Calçada|Canteiro|Concreto|Metal)/.test(material.name))geometry=dropInside(geometry,areas[0].polygon,material.name.startsWith('Canteiro')?.05:1.5);
       if(serra&&geometry&&/^(Calçada|Concreto)/.test(material.name))geometry=dropWhere(geometry,blocksMouth);

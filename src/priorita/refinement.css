@@ -11,3 +11,82 @@
 /* Émera (rota Serra): marca no cabeçalho */
 .priorita .pr-header-center b.pr-brand-emera{letter-spacing:.32em;font-weight:400;padding-left:.32em}
 
+
+/* Émera (rota Serra): cabeçalho sem faixa — marca e botões flutuam sobre o 3D */
+.priorita.pr-serra .pr-header{background:linear-gradient(180deg,#0d1309a6 0%,#0d130940 55%,transparent 100%);border-bottom:0;height:64px;color:#f2efdf;pointer-events:none}
+.priorita.pr-serra .pr-header>*{pointer-events:auto}
+.priorita.pr-serra .pr-header-center{gap:14px}
+.priorita.pr-serra .pr-header-center>span{color:#efe6d2;text-shadow:0 1px 6px #0008}
+.priorita.pr-serra .pr-header-center>i{border-color:#efe6d266}
+.priorita.pr-serra .pr-emera-logo{display:block;filter:drop-shadow(0 2px 8px #000a)}
+.priorita.pr-serra .pr-brand{text-shadow:0 1px 6px #0009}
+.priorita.pr-serra .pr-header button{background:#141a10a6;border:1px solid #efe6d22e;backdrop-filter:blur(6px);border-radius:999px}
+@media(max-width:700px){.priorita.pr-serra .pr-header-center{display:flex}.priorita.pr-serra .pr-emera-logo{height:30px!important;width:auto!important}.priorita.pr-serra .pr-header .pr-brand span{display:none}}
+
+/* ---------------------------------------------------------------- Émera · HUD limpo e harmônico (rota Serra)
+   3D em tela cheia (sem faixa no topo), controles em vidro escuro com a mesma borda, raio e sombra. */
+.priorita.pr-serra{--hud-bg:#141a10a3;--hud-bg-strong:#141a10d9;--hud-line:#efe6d22e;--hud-text:#f1ebdb;--hud-muted:#c9c4b0;--hud-accent:#e3cf98;--hud-shadow:0 10px 30px #0000004d}
+.priorita.pr-serra .pr-canvas,.priorita.pr-serra .pr-vignette{top:0!important;inset:0!important}
+.priorita.pr-serra .pr-vignette{background:linear-gradient(0deg,#0d130966,transparent 26%),linear-gradient(180deg,#0d130970,transparent 18%)!important}
+.priorita.pr-serra .pr-header{background:none!important;height:68px;padding:0 24px}
+.priorita.pr-serra .pr-search-pill,.priorita.pr-serra .pr-top-actions button,.priorita.pr-serra .pr-dock,.priorita.pr-serra .pr-pan-controls,.priorita.pr-serra .pr-view-controls button,.priorita.pr-serra .pr-header>div button,.priorita.pr-serra .pr-legend,.priorita.pr-serra .pr-north{
+  background:var(--hud-bg)!important;border:1px solid var(--hud-line)!important;color:var(--hud-text)!important;box-shadow:var(--hud-shadow)!important;backdrop-filter:blur(14px) saturate(1.15);-webkit-backdrop-filter:blur(14px) saturate(1.15)}
+.priorita.pr-serra .pr-search-pill button,.priorita.pr-serra .pr-dock button,.priorita.pr-serra .pr-pan-controls button{color:var(--hud-text)!important;background:transparent!important}
+.priorita.pr-serra .pr-dock button[aria-pressed=true]{color:var(--hud-accent)!important}
+.priorita.pr-serra .pr-separator{background:var(--hud-line)!important}
+/* busca, explorar e opções juntos no canto superior direito */
+.priorita.pr-serra .pr-search-pill{left:auto!important;right:80px!important;top:78px!important;height:46px;border-radius:999px!important}
+.priorita.pr-serra .pr-top-actions{top:78px!important;right:24px!important}
+.priorita.pr-serra .pr-top-actions button{width:46px!important;height:46px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center;gap:0!important}
+.priorita.pr-serra .pr-top-actions button span{display:none!important}
+.priorita.pr-serra .pr-top-actions button[aria-expanded=true]{color:var(--hud-accent)!important;border-color:#e3cf9866!important}
+.priorita.pr-serra .pr-settings{top:134px!important;right:24px!important;background:var(--hud-bg-strong)!important;border:1px solid var(--hud-line)!important;color:var(--hud-text)!important;border-radius:18px!important;backdrop-filter:blur(16px);box-shadow:var(--hud-shadow)!important}
+/* painéis laterais abrem abaixo da linha de busca */
+.priorita.pr-serra .pr-sheet{top:134px!important;right:24px!important;max-height:calc(100% - 134px - 112px)!important}
+/* rodapé: sol à esquerda, navegação ao centro, câmera à direita, mesma linha de base */
+.priorita.pr-serra .pr-solar{left:24px!important;bottom:52px!important}
+.priorita.pr-serra .pr-legend{left:24px!important;bottom:18px!important;border-radius:999px!important;padding:5px 12px!important;font-size:11px}
+.priorita.pr-serra .pr-legend button{color:var(--hud-muted)!important;background:none!important}
+.priorita.pr-serra .pr-dock{bottom:24px!important;border-radius:999px!important}
+.priorita.pr-serra .pr-instructions{bottom:86px!important;color:var(--hud-text)!important;text-shadow:0 1px 8px #000c;opacity:.85}
+.priorita.pr-serra .pr-view-controls{right:24px!important;bottom:24px!important;gap:8px!important}
+.priorita.pr-serra .pr-view-controls button{width:44px!important;height:44px!important;border-radius:50%!important}
+.priorita.pr-serra .pr-pan-controls{right:24px!important;bottom:80px!important;border-radius:999px!important;padding:3px 6px!important}
+.priorita.pr-serra .pr-north{right:24px!important;bottom:128px!important;top:auto!important;width:44px!important;height:44px!important;border-radius:50%!important;display:grid!important;place-items:center;padding:0!important}
+.priorita.pr-serra .pr-north span{font-size:8px;position:absolute;bottom:4px}
+.priorita.pr-serra .pr-footnote{right:24px!important;left:auto!important;bottom:4px!important;opacity:.55;font-size:9px}
+.priorita.pr-serra .pr-header>div{gap:8px}
+.priorita.pr-serra .pr-header>div button{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center}
+.priorita.pr-serra .pr-header .pr-material-trigger{width:auto!important;border-radius:999px!important;padding:0 16px!important;display:flex!important;gap:8px}
+@media(max-width:700px){
+  .priorita.pr-serra .pr-search-pill{right:66px!important;left:12px!important;top:62px!important}
+  .priorita.pr-serra .pr-top-actions{top:62px!important;right:12px!important}
+  .priorita.pr-serra .pr-sheet{top:auto!important;right:0!important;max-height:62%!important}
+  .priorita.pr-serra .pr-settings{top:116px!important;right:12px!important}
+  .priorita.pr-serra .pr-solar{left:12px!important;bottom:92px!important}
+  .priorita.pr-serra .pr-legend{display:none!important}
+  .priorita.pr-serra .pr-dock{bottom:16px!important}
+  .priorita.pr-serra .pr-view-controls,.priorita.pr-serra .pr-pan-controls,.priorita.pr-serra .pr-north{right:12px!important}
+  .priorita.pr-serra .pr-instructions,.priorita.pr-serra .pr-footnote{display:none!important}
+}
+.priorita.pr-serra .pr-sheet{max-height:calc(100% - 134px - 196px)!important;background:var(--hud-bg-strong)!important;border:1px solid var(--hud-line)!important;border-radius:20px!important;box-shadow:var(--hud-shadow)!important;backdrop-filter:blur(16px) saturate(1.1);-webkit-backdrop-filter:blur(16px) saturate(1.1)}
+@media(max-width:700px){.priorita.pr-serra .pr-sheet{max-height:62%!important;border-radius:20px 20px 0 0!important}}
+/* Émera · ajustes do celular */
+@media(max-width:700px){
+  .priorita.pr-serra .pr-header{height:60px;padding:0 12px}
+  .priorita.pr-serra .pr-header .pr-material-trigger{width:40px!important;padding:0!important;justify-content:center}
+  .priorita.pr-serra .pr-header .pr-material-trigger span{display:none!important}
+  .priorita.pr-serra .pr-header-center{position:absolute;left:50%;transform:translateX(-50%)}
+  .priorita.pr-serra .pr-emera-logo{height:34px!important}
+  .priorita.pr-serra .pr-search-pill{top:66px!important;height:44px}
+  .priorita.pr-serra .pr-top-actions{top:66px!important}
+  .priorita.pr-serra .pr-top-actions button{width:44px!important;height:44px!important}
+  .priorita.pr-serra .pr-settings{top:118px!important}
+  .priorita.pr-serra .pr-solar{top:auto!important;bottom:84px!important;left:12px!important;height:auto!important}
+  .priorita.pr-serra .pr-view-controls{bottom:84px!important;right:12px!important}
+  .priorita.pr-serra .pr-view-controls button{width:40px!important;height:40px!important}
+  .priorita.pr-serra .pr-north{bottom:134px!important;width:40px!important;height:40px!important}
+  .priorita.pr-serra .pr-dock{left:12px!important;right:12px!important;transform:none!important;width:auto!important;justify-content:space-around;bottom:16px!important}
+  .priorita.pr-serra .pr-map-label{font-size:10px!important;padding:4px 9px!important;min-height:0!important;line-height:1.2!important}
+}
+@media(max-width:700px){.priorita.pr-serra.pr-panel-open .pr-solar,.priorita.pr-serra.pr-panel-open .pr-view-controls,.priorita.pr-serra.pr-panel-open .pr-north{display:none!important}}

@@ -181,6 +181,8 @@ export function createSerraContext(scene:T.Scene,draco:DRACOLoader,invalidate:()
     fetch(base+'serra-instances.json').then(r=>r.json() as Promise<Instance[]>)
   ]).then(([gltf,instances])=>{
     if(disposed)return;
+    // Os capões ficam a pelo menos ~40 m dos lotes do traçado ampliado (nenhum grupo de árvores colado às quadras).
+    instances=instances.filter(i=>!(i[1]>-205&&i[1]<192&&i[3]>-172&&i[3]<224));
     gltf.scene.updateMatrixWorld(true);
     const parts:{kind:number;geometry:T.BufferGeometry;detail?:T.BufferGeometry;material:T.Material}[]=[];
     gltf.scene.traverse(o=>{

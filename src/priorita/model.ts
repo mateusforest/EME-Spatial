@@ -46,9 +46,23 @@ const baseHeight=(x:number,z:number)=>2.3 * Math.sin(x * .012) + 3.1 * Math.sin(
 
 /**
  * Centro do loteamento mais plano (rota Serra): dentro do traçado ampliado o relevo é aproximado de um
- * plano em CENTER_FLAT (85 %), voltando ao relevo natural numa faixa de transição até o campo.
+ * plano em CENTER_FLAT (75 %), voltando ao relevo natural numa faixa de transição até o campo.
  */
-const CENTER_FLAT=.85;
+const CENTER_FLAT=.75;
+/**
+ * Elevações suaves pedidas na apresentação (rota Serra): o lado oeste (quadras C, E, G, J, K e Recreação 02)
+ * e o canto sudeste da quadra I ficam um pouco mais altos. Gaussianas largas: rampas de 2 a 4 %.
+ */
+const MOUNDS:[x:number,z:number,rx:number,rz:number,h:number][]=[
+  [-72,62,82,95,3.4],
+  [-120,150,60,55,1.6],
+  [118,-14,46,40,2.0],
+];
+function mounds(x:number,z:number){
+  let h=0;
+  for(const [cx,cz,rx,rz,a] of MOUNDS){const dx=(x-cx)/rx,dz=(z-cz)/rz,d=dx*dx+dz*dz;if(d<9)h+=a*Math.exp(-d);}
+  return h;
+}
 let centerLevel:number|undefined;
 function centerWeight(x:number,z:number){
   const d=Math.max(Math.abs(x+5)/170,z<27?(27-z)/160:(z-27)/165);
@@ -59,7 +73,7 @@ function shapedHeight(x:number,z:number){
   if(!serraRoute)return natural;
   if(centerLevel===undefined){let s=0,n=0;for(let gx=-150;gx<=140;gx+=10)for(let gz=-120;gz<=175;gz+=10){s+=baseHeight(gx,gz)+rawRelief(gx,gz);n++;}centerLevel=s/n;}
   const w=centerWeight(x,z)*CENTER_FLAT;
-  return w>0?natural+(centerLevel-natural)*w:natural;
+  return (w>0?natural+(centerLevel-natural)*w:natural)+mounds(x,z);
 }
 
 /**
