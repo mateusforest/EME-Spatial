@@ -3,7 +3,7 @@ import MoradasStockPanel from './MoradasStockPanel';
 import DecodedImage from './DecodedImage';
 import { emptyDevelopment, validateDevelopment, type DevelopmentConfig, type DevelopmentPlan } from '../../shared/development.mjs';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Box, Check, ChevronLeft, ChevronRight, ImageIcon, Maximize, Minus, Plus, RotateCcw, Footprints, Sun, Sunset, Moon, Layers3, Trees, Building2, Scan } from 'lucide-react';
 import { Dialog } from '../ui';
 import { whatsappUrl } from '../data';
 import { ASSETS, galleries, type GalleryId, type Lighting, type Place, type TowerId } from './moradas';
@@ -14,6 +14,7 @@ import './moradas-stock-panel.css';
 
 const MoradasUnitExperience=lazy(()=>import('./MoradasUnitExperience'));
 const DevelopmentModel = lazy(() => import('./DevelopmentModel'));
+const MoradasWalk = lazy(() => import('./moradas-walk/MoradasWalk'));
 
 export default function DevelopmentPage() {
   const [config,setConfig]=useState<DevelopmentConfig>(emptyDevelopment);
@@ -33,6 +34,8 @@ export default function DevelopmentPage() {
   const [ready, setReady] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(entry.selected);
+  const [walking, setWalking] = useState(() => new URLSearchParams(window.location.search).has('caminhar'));
+  const openWalk = (open: boolean) => { setWalking(open); const u = new URL(window.location.href); if (open) u.searchParams.set('caminhar', '1'); else u.searchParams.delete('caminhar'); history.replaceState(null, '', u); };
   const pageRef = useRef<HTMLElement>(null);
   const controls = useRef<ModelControls | null>(null);
   const media = gallery ? galleries[gallery] : null;
@@ -78,6 +81,7 @@ export default function DevelopmentPage() {
       <div className="development-view-switch" role="group" aria-label="Visualização do empreendimento">
         <button aria-pressed={mode === 'image'} onClick={() => setMode('image')}><ImageIcon size={14} /> Apresentação</button>
         <button aria-pressed={mode === 'model'} onClick={startModel} disabled={mode === 'model'}><Box size={15} /> Explorar em 3D</button>
+        <button className="development-walk-button" onClick={() => openWalk(true)}><Footprints size={15} /> Caminhar pelo condomínio</button>
       </div>
       <span className="development-model-note">{mode === 'model' ? 'Maquete conceitual · gire para descobrir' : 'Uma experiência EME Select · estudo de apresentação'}</span>
     </section>
@@ -89,6 +93,7 @@ export default function DevelopmentPage() {
       <div className="development-controls"><div><button aria-label="Restaurar visão geral" onClick={() => { setZoom(1); controls.current?.reset(); }}><RotateCcw size={14} /></button><button onClick={fullscreen} aria-label="Alternar tela cheia"><Maximize size={14} /><span>Visão ampla</span></button><button aria-label="Afastar cenário" onClick={() => changeZoom(-1)}><Minus size={16} /></button><button aria-label="Aproximar cenário" onClick={() => changeZoom(1)}><Plus size={16} /></button></div><small>{mode === 'model' ? 'Arraste para girar. Clique em um andar.' : 'Passe o mouse ou toque em um andar.'}</small></div>
     </div>
     <p className="development-footnote">Estudo visual · Arquitetura e disponibilidade sujeitas à validação da incorporadora.</p>
+    {walking && <Suspense fallback={<div className="development-notice" role="status">Abrindo a visita 3D…</div>}><MoradasWalk initialFloor={floor} onClose={() => openWalk(false)} /></Suspense>}
     {notice && <div className="development-notice" role="status"><Check size={14} />{notice}</div>}
     {selectedUnit!==null&&<Suspense fallback={<div className="development-notice" role="status">Abrindo a unidade…</div>}><MoradasUnitExperience number={selectedUnit} config={config} onClose={()=>setSelectedUnit(null)}/></Suspense>}
     {selectedPlan&&<Dialog className="moradas-dialog" title={selectedPlan.title} onClose={()=>setSelectedPlan(null)} wide><img className="development-selected-plan" src={selectedPlan.imageUrl} alt={'Planta '+selectedPlan.title}/><p>{selectedPlan.area} m² · {selectedPlan.bedrooms??'—'} dormitórios · {selectedPlan.suites??'—'} suítes · {selectedPlan.parking??'—'} vagas</p></Dialog>}
