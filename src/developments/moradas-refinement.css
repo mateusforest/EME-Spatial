@@ -102,3 +102,8 @@
 .development-page .development-view-switch button:hover:not(:disabled){filter:brightness(1.08)}
 @media(max-width:900px){.development-page .development-panel{max-height:none}.development-page .development-floors>button{height:44px}}
 .development-page .development-panel h2{font-size:21px;line-height:1.15;letter-spacing:-.7px;max-width:none}
+
+/* Visita a pé (moradas-walk) */
+.development-view-switch .development-walk-button{grid-column:1/-1;width:100%;justify-content:center;font-weight:600}
+.development-view-switch button:nth-child(2):not([aria-pressed=true]){background:#ffffff12;color:#f2e4bb;border-color:#e6d49b70;box-shadow:none}
+.development-view-switch .development-walk-button:hover{filter:brightness(1.12)}
